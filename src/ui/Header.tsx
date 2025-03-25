@@ -5,6 +5,9 @@ import { NavLink } from "react-router-dom";
 export const Header = () => {
   const { me, logOut } = useAccount();
 
+  const isAdmin = me?.profile?.name.includes("foo");
+  const isOfficer = me?.profile?.name.includes("bar");
+
   const isAuthenticated = useIsAuthenticated();
 
   const onLogOut = () => {
@@ -32,6 +35,11 @@ export const Header = () => {
                   <NavLink to="/calendar">Annual Calendar</NavLink>
                 </li>
               </>
+            )}
+            {(isAdmin || isOfficer) && (
+              <li>
+                <NavLink to="/settings">Settings</NavLink>
+              </li>
             )}
             <li>
               <NavLink to="/about">About</NavLink>
