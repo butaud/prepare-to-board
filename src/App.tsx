@@ -11,6 +11,7 @@ import { MeetingView } from "./views/meeting/MeetingView";
 import { MeetingPresent } from "./views/meeting/MeetingPresent";
 import { MeetingRecord } from "./views/meeting/MeetingRecord";
 import { Meeting } from "./views/meeting/Meeting";
+import { Manage } from "./views/Manage";
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
@@ -29,8 +30,9 @@ function App() {
               <Route index element={<Home />} />
               <Route path="action-items" element={<ActionItems />} />
               <Route path="calendar" element={<Calendar />} />
+              <Route path="settings" element={<Settings />} />
               {(isOfficer || isAdmin) && (
-                <Route path="settings" element={<Settings />} />
+                <Route path="manage" element={<Manage />} />
               )}
               <Route path="meeting/:meetingId" element={<Meeting />}>
                 <Route index element={<MeetingView />} />

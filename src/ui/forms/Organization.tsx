@@ -1,6 +1,7 @@
 import { FC, useEffect, useState } from "react";
 import { DraftOrganization, ListOfMeetings, Organization } from "../../schema";
-import { useAccount } from "jazz-react";
+import { useAccount, useCoState } from "jazz-react";
+import { ID } from "jazz-tools";
 
 type OrganizationFormProps = {
   organization: Organization | DraftOrganization;
@@ -81,4 +82,14 @@ export const CreateOrganization = () => {
       {draft && <OrganizationForm organization={draft} onSave={handleSave} />}
     </div>
   );
+};
+
+export const EditOrganization: FC<{ id: ID<Organization> }> = ({ id }) => {
+  const organization = useCoState(Organization, id);
+
+  if (!organization) {
+    return null;
+  }
+
+  return <OrganizationForm organization={organization} />;
 };

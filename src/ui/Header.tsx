@@ -34,11 +34,14 @@ export const Header = () => {
                 <li>
                   <NavLink to="/calendar">Annual Calendar</NavLink>
                 </li>
+                <li>
+                  <NavLink to="/settings">Settings</NavLink>
+                </li>
               </>
             )}
             {(isAdmin || isOfficer) && (
               <li>
-                <NavLink to="/settings">Settings</NavLink>
+                <NavLink to="/manage">Manage</NavLink>
               </li>
             )}
             <li>
