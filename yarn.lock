@@ -163,7 +163,7 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
-"@clerk/clerk-react@^5.25.2":
+"@clerk/clerk-react@^5.4.1":
   version "5.25.2"
   resolved "https://registry.yarnpkg.com/@clerk/clerk-react/-/clerk-react-5.25.2.tgz#8d0e5134249eb95ed6d7add5b1e1442f5de7f4fc"
   integrity sha512-QdqAwYz6iYcbMoinMOvtVlHcvwW6idzPbImFGtH8Aw5WjpFPYb7G2Fv3qMGRu8frE43Z9JyxwsHKgipafU1DSA==
@@ -442,6 +442,23 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@noble/ciphers@^0.1.3":
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/@noble/ciphers/-/ciphers-0.1.4.tgz#96327dca147829ed9eee0d96cfdf7c57915765f0"
+  integrity sha512-d3ZR8vGSpy3v/nllS+bD/OMN5UZqusWiQqkyj7AwzTnhXFH72pF5oB4Ach6DQ50g5kXxC28LdaYBEpsyv9KOUQ==
+
+"@noble/curves@^1.3.0":
+  version "1.8.1"
+  resolved "https://registry.yarnpkg.com/@noble/curves/-/curves-1.8.1.tgz#19bc3970e205c99e4bdb1c64a4785706bce497ff"
+  integrity sha512-warwspo+UYUPep0Q+vtdVB4Ugn8GGQj8iyB3gnRWsztmUHTI3S1nhdiWNsPUGL0vud7JlRRk1XEu7Lq1KGTnMQ==
+  dependencies:
+    "@noble/hashes" "1.7.1"
+
+"@noble/hashes@1.7.1", "@noble/hashes@^1.4.0", "@noble/hashes@~1.7.1":
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.7.1.tgz#5738f6d765710921e7a751e00c20ae091ed8db0f"
+  integrity sha512-B8XBPsn4vT/KJAGqDzbwztd+6Yte3P4V7iafm24bxgDe/mlRuK6xmWPuCNrKt2vDafZ8MfJLlchDG/vYafQEjQ==
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz#7619c2eb21b25483f6d167548b4cfd5a7488c3d5"
@@ -462,6 +479,11 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
+
+"@opentelemetry/api@^1.0.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.9.0.tgz#d03eba68273dc0f7509e2a3d5cba21eae10379fe"
+  integrity sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==
 
 "@rollup/rollup-android-arm-eabi@4.37.0":
   version "4.37.0"
@@ -562,6 +584,24 @@
   version "4.37.0"
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.37.0.tgz#a54d7304c3bd45573d8bcd1270de89771f8195fe"
   integrity sha512-LWbXUBwn/bcLx2sSsqy7pK5o+Nr+VCoRoAohfJ5C/aBio9nfJmGQqHAhU6pwxV/RmyTk5AqdySma7uwWGlmeuA==
+
+"@scure/base@1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.2.1.tgz#dd0b2a533063ca612c17aa9ad26424a2ff5aa865"
+  integrity sha512-DGmGtC8Tt63J5GfHgfl5CuAXh96VF/LD8K9Hr/Gv0J2lAoRGlPOMpqMpMbCTOoOJMZCk2Xt+DskdDyn6dEFdzQ==
+
+"@scure/base@~1.2.4":
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.2.4.tgz#002eb571a35d69bdb4c214d0995dff76a8dcd2a9"
+  integrity sha512-5Yy9czTO47mqz+/J8GM6GIId4umdCk1wc1q8rKERQulIoc8VP9pzDcghv10Tl2E7R96ZUx/PhND3ESYUQX8NuQ==
+
+"@scure/bip39@^1.3.0":
+  version "1.5.4"
+  resolved "https://registry.yarnpkg.com/@scure/bip39/-/bip39-1.5.4.tgz#07fd920423aa671be4540d59bdd344cc1461db51"
+  integrity sha512-TFM4ni0vKvCfBpohoh+/lY05i9gRbSwXWngAsF4CABQxoaOHijxuaZ2R6cStDQ5CHtHO9aGJTr4ksVJASRRyMA==
+  dependencies:
+    "@noble/hashes" "~1.7.1"
+    "@scure/base" "~1.2.4"
 
 "@types/babel__core@^7.20.5":
   version "7.20.5"
@@ -802,6 +842,43 @@ chalk@^4.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
+cojson-storage-indexeddb@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/cojson-storage-indexeddb/-/cojson-storage-indexeddb-0.11.6.tgz#82a439e67b8e9861719e68f3052e9bdd1335d45d"
+  integrity sha512-qGJ0ElH//XkRzAI7sb6t+8WvCkYI2xWETpRH5Mu33JGkOKJF+v7rU7E2qHGQwLLXpjONjbDt8UnPaocBi5uIEw==
+  dependencies:
+    cojson "0.11.6"
+    cojson-storage "0.11.6"
+
+cojson-storage@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/cojson-storage/-/cojson-storage-0.11.6.tgz#e195e8fe5e199ad32c356f8f27fc8151f359ba06"
+  integrity sha512-wXbTGp9QwmK45bZdrr7Z6P+0ymSR2jeVLe8c9x3oHn8lNtn6ICIrfkNf3/RHGIgpbS4b+76x+VSNvA1gKV3cMA==
+  dependencies:
+    cojson "0.11.6"
+
+cojson-transport-ws@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/cojson-transport-ws/-/cojson-transport-ws-0.11.6.tgz#007596d61f8a9b8ac966d390481a58114b7edcf6"
+  integrity sha512-J462zyp/EVtQm8e9vIFvTljPSvrHMuKq8aRZIF5/4lWf20Vxnyf/NJWBr8gg/d4fIz89L3/VnLCqiFzph2pUXg==
+  dependencies:
+    cojson "0.11.6"
+    typescript "~5.6.2"
+
+cojson@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/cojson/-/cojson-0.11.6.tgz#59eb8a94175aa4a650b4f3610af356f633f865cd"
+  integrity sha512-GcWJ3dOu7Jr9LD+kkPQIMeSnE9hQkLv9BP48yAYn+/7hPJmiiUV4XdARRe4fPXbq+lloHQErO8IAm55fUbX+IA==
+  dependencies:
+    "@noble/ciphers" "^0.1.3"
+    "@noble/curves" "^1.3.0"
+    "@noble/hashes" "^1.4.0"
+    "@opentelemetry/api" "^1.0.0"
+    "@scure/base" "1.2.1"
+    jazz-crypto-rs "0.0.6"
+    neverthrow "^7.0.1"
+    queueueue "^4.1.2"
+
 color-convert@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/color-convert/-/color-convert-2.0.1.tgz#72d3a68d598c9bdb3af2ad1e84f21d896abd4de3"
@@ -1029,6 +1106,16 @@ fast-levenshtein@^2.0.6:
   resolved "https://registry.yarnpkg.com/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz#3d8a5c66883a16a30ca8643e851f19baa7797917"
   integrity sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==
 
+fast-list@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/fast-list/-/fast-list-1.0.3.tgz#f5d5754a7c1cbf682a15961ef9a063897571eaa1"
+  integrity sha512-Lm56Ci3EqefHNdIneRFuzhpPcpVVBz9fgqVmG3UQIxAefJv1mEYsZ1WQLTWqmdqeGEwbI2t6fbZgp9TqTYARuA==
+
+fast-myers-diff@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/fast-myers-diff/-/fast-myers-diff-3.2.0.tgz#e16ac218f311a99e3f76ad7ed8f61c0cda3da847"
+  integrity sha512-DxNm4a3gnV35AluvqjeAV3Zx3CAySs0tsaDjnex5JhnJAa2rxEUVCwmaL2gpz42ea1B+IJorlo7XLThXUaTQog==
+
 fastq@^1.6.0:
   version "1.19.1"
   resolved "https://registry.yarnpkg.com/fastq/-/fastq-1.19.1.tgz#d50eaba803c8846a883c16492821ebcd2cda55f5"
@@ -1165,6 +1252,69 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==
 
+jazz-auth-clerk@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/jazz-auth-clerk/-/jazz-auth-clerk-0.11.6.tgz#73ebe08ace4dcb74d0cc999edb6ba1febf19d032"
+  integrity sha512-1+nFDc+V0wxWoAyN87RBh43KSspCcJpi6OZrI2i9XFCD71RTaPtN+8vJEEw9j1hjJIIC6uEdKZale7mUrr74vQ==
+  dependencies:
+    cojson "0.11.6"
+    jazz-browser "0.11.6"
+    jazz-tools "0.11.6"
+
+jazz-browser@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/jazz-browser/-/jazz-browser-0.11.6.tgz#11e34df30bb6dbbf95d90debce7d4f7a6fc2c637"
+  integrity sha512-HzxCPgcF+LLjpmksbqswUqA1ldVIkuirFy42kB1KKV42gGnz6wz/h7nLP0QTkENSjLW6rsSSt50+9pM8mRoqmg==
+  dependencies:
+    cojson "0.11.6"
+    cojson-storage-indexeddb "0.11.6"
+    cojson-transport-ws "0.11.6"
+    jazz-tools "0.11.6"
+
+jazz-crypto-rs@0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/jazz-crypto-rs/-/jazz-crypto-rs-0.0.6.tgz#7ce32d11db451488e2f8da0d7419ba4c8cbbb09f"
+  integrity sha512-+hJM9hPzMjK7Jk9++sUs5mKXlFiCTMDZ2wjO8WsfNpY7RZ+kiYSwkCrKvvvDRHSXPlzoyFQFxrSrXqN0/Fr6Yw==
+
+jazz-react-auth-clerk@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/jazz-react-auth-clerk/-/jazz-react-auth-clerk-0.11.6.tgz#a848294a5526eea4b8236b01f6c98638c8b19f35"
+  integrity sha512-RYhZRMxQiAFwtE7eKMsENj8XQeuKn6rHod7grC+9zJBuVGrm4USkP7zaGiOvWwngtvdpiUKcgcgNDRlF5wxQUg==
+  dependencies:
+    cojson "0.11.6"
+    jazz-auth-clerk "0.11.6"
+    jazz-browser "0.11.6"
+    jazz-react "0.11.6"
+    jazz-tools "0.11.6"
+
+jazz-react-core@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/jazz-react-core/-/jazz-react-core-0.11.6.tgz#de25541bc1d8cd9a7bc684577d1087938e9fda74"
+  integrity sha512-h8KxJbq0AZcAursYY2VWthHo7IwUh1S5UuT6JswcGCoyTCZJ8W7NiMmdzmESI76/oiB6oIvwON6S0PcCT24Lkg==
+  dependencies:
+    cojson "0.11.6"
+    jazz-tools "0.11.6"
+
+jazz-react@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/jazz-react/-/jazz-react-0.11.6.tgz#cfa208546f1eaf2b7bbf39c402c4dcf5034b0e43"
+  integrity sha512-KkmPiFTmNzt2I3vOFGAARBFlL8edwFhXWKfrnuhyqPDZsQ+Ilsl/qfSB8ZyPtgVM6J+6bWr638tYGYyFW3YXyA==
+  dependencies:
+    "@scure/bip39" "^1.3.0"
+    cojson "0.11.6"
+    jazz-browser "0.11.6"
+    jazz-react-core "0.11.6"
+    jazz-tools "0.11.6"
+
+jazz-tools@0.11.6:
+  version "0.11.6"
+  resolved "https://registry.yarnpkg.com/jazz-tools/-/jazz-tools-0.11.6.tgz#1fa5c93eec62d2cd19c36c09df413c753efb5b8d"
+  integrity sha512-3/Cw1MMwv40yDRDC346Sj/WCYeQUbCRNFwbU5AD7crdhp5kOO03FP0rk7mlenFPETcDFHhXkF9deAv6sw7c3gQ==
+  dependencies:
+    "@scure/bip39" "^1.3.0"
+    cojson "0.11.6"
+    fast-myers-diff "^3.2.0"
+
 js-cookie@3.0.5:
   version "3.0.5"
   resolved "https://registry.yarnpkg.com/js-cookie/-/js-cookie-3.0.5.tgz#0b7e2fd0c01552c58ba86e0841f94dc2557dcdbc"
@@ -1283,6 +1433,11 @@ natural-compare@^1.4.0:
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
   integrity sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==
 
+neverthrow@^7.0.1:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/neverthrow/-/neverthrow-7.2.0.tgz#76fa0a6cf1f6d59f0770df461c92b8b270910694"
+  integrity sha512-iGBUfFB7yPczHHtA8dksKTJ9E8TESNTAx1UQWW6TzMF280vo9jdPYpLUXrMN1BCkPdHFdNG3fxOt2CUad8KhAw==
+
 node-releases@^2.0.19:
   version "2.0.19"
   resolved "https://registry.yarnpkg.com/node-releases/-/node-releases-2.0.19.tgz#9e445a52950951ec4d177d843af370b411caf314"
@@ -1364,6 +1519,13 @@ queue-microtask@^1.2.2:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/queue-microtask/-/queue-microtask-1.2.3.tgz#4929228bbc724dfac43e0efb058caf7b6cfb6243"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==
+
+queueueue@^4.1.2:
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/queueueue/-/queueueue-4.1.2.tgz#20bfcbc1d44a4d26f4393990afe3936dcfcd64fe"
+  integrity sha512-YNOihQyk72FRrGQP+fVjUDVCSgxtHS5EdfgXjCYwPCTyhVWXriHfUt0XK0eT7vcBX0m91g0e0KVO8CxoNLh60g==
+  dependencies:
+    fast-list "^1.0.3"
 
 react-dom@^19.0.0:
   version "19.0.0"
@@ -1517,6 +1679,11 @@ typescript-eslint@^8.24.1:
     "@typescript-eslint/eslint-plugin" "8.28.0"
     "@typescript-eslint/parser" "8.28.0"
     "@typescript-eslint/utils" "8.28.0"
+
+typescript@~5.6.2:
+  version "5.6.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.6.3.tgz#5f3449e31c9d94febb17de03cc081dd56d81db5b"
+  integrity sha512-hjcS1mhfuyi4WW8IWtjP7brDrG2cuDZukyrYrSauoXGNgx0S7zceP07adYkJycEr56BOUTNPzbInooiN3fn1qw==
 
 typescript@~5.7.2:
   version "5.7.3"

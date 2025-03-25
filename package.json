@@ -10,7 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.25.2",
+    "@clerk/clerk-react": "^5.4.1",
+    "jazz-react": "0.11.6",
+    "jazz-react-auth-clerk": "0.11.6",
+    "jazz-tools": "0.11.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
