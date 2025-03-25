@@ -1,4 +1,4 @@
-import { PasskeyAuthBasicUI, useAccount, useIsAuthenticated } from "jazz-react";
+import { useAccount, useIsAuthenticated } from "jazz-react";
 import "./Header.css";
 import { Link } from "react-router-dom";
 
@@ -25,13 +25,11 @@ export const Header = () => {
         </ul>
       </nav>
       <div>
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <>
             <h1>Hello, {me?.profile?.name}</h1>
             <button onClick={onLogOut}>Log out</button>
           </>
-        ) : (
-          <PasskeyAuthBasicUI appName="Prepare to Board" />
         )}
       </div>
     </header>
