@@ -39,11 +39,19 @@ header {
                 gap: 20px;
                 list-style: none;
                 margin: 0;
-                padding: 0;
+                padding: 0; 
 
-                li {
+                li a {
                     cursor: pointer;
                     transition: all 0.2s ease-in-out;
+                    color: #007bff;
+                    text-decoration: underline;
+
+                    &.active, &.active:hover {
+                        color: black;
+                        text-decoration: none;
+                        cursor: default;
+                    }
 
                     &:hover {
                         color: #007bff;

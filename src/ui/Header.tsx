@@ -1,6 +1,6 @@
 import { useAccount, useIsAuthenticated } from "jazz-react";
 import "./Header.css";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 export const Header = () => {
   const { me, logOut } = useAccount();
@@ -21,10 +21,20 @@ export const Header = () => {
         <nav>
           <ul>
             <li>
-              <Link to="/">{isAuthenticated ? "Home" : "Welcome"}</Link>
+              <NavLink to="/">{isAuthenticated ? "Home" : "Welcome"}</NavLink>
             </li>
+            {isAuthenticated && (
+              <>
+                <li>
+                  <NavLink to="/action-items">Action Items</NavLink>
+                </li>
+                <li>
+                  <NavLink to="/calendar">Annual Calendar</NavLink>
+                </li>
+              </>
+            )}
             <li>
-              <Link to="/about">About</Link>
+              <NavLink to="/about">About</NavLink>
             </li>
           </ul>
         </nav>
