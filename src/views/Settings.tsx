@@ -1,10 +1,11 @@
 import { useAccount } from "jazz-react";
 import { Organization } from "../schema";
 import { FC } from "react";
+import "./Settings.css";
 
 export const Settings = () => {
   return (
-    <div>
+    <div className="settings">
       <h3>Organizations</h3>
       <ManageOrganizations />
     </div>
@@ -47,11 +48,21 @@ const OrganizationNode: FC<{
   removeOrg: (organization: Organization) => void;
   organization: Organization;
 }> = ({ removeOrg, organization }) => {
+  const handleRemoveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (
+      confirm(
+        "Are you sure you want to remove this organization from your list? You will need to be invited again by an administrator to rejoin."
+      )
+    ) {
+      removeOrg(organization);
+    }
+  };
   return (
     <li>
       <span>{organization.name}</span>
       <span>
-        <button onClick={() => removeOrg(organization)}>Remove</button>
+        <button onClick={handleRemoveClick}>Remove</button>
       </span>
     </li>
   );
