@@ -50,11 +50,52 @@ export const Header = () => {
       <div className="end">
         {isAuthenticated && (
           <>
-            <h3>Hello, {me?.profile?.name}</h3>
+            <h3>Hello, {me?.profile?.formalName}</h3>
+            <OrganizationSelector />
             <button onClick={onLogOut}>Log out</button>
           </>
         )}
       </div>
     </header>
+  );
+};
+
+const OrganizationSelector = () => {
+  const { me } = useAccount();
+  const organizations = me?.root?.organizations;
+  const selectedOrganization = me?.root?.selectedOrganization;
+
+  if (!me?.root || !organizations || organizations.length === 0) {
+    return null;
+  }
+
+  const handleOrganizationChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    if (!me.root) {
+      return;
+    }
+
+    const selectedId = event.target.value;
+    const selectedOrg = organizations.find((org) => org?.id === selectedId);
+    if (selectedOrg) {
+      me.root.selectedOrganization = selectedOrg;
+    }
+  };
+
+  return (
+    <div className="organization-selector">
+      <select
+        id="organization-select"
+        value={selectedOrganization?.id || ""}
+        onChange={handleOrganizationChange}
+      >
+        {organizations.map((org) => (
+          <option key={org?.id} value={org?.id}>
+            {org?.name}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 };

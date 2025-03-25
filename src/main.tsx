@@ -5,6 +5,7 @@ import App from "./App.tsx";
 // import { JazzProviderWithClerk } from "jazz-react-auth-clerk";
 import { JazzProvider as BaseJazzProvider } from "jazz-react";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { UserAccount } from "./schema.ts";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const JAZZ_API_KEY = import.meta.env.VITE_JAZZ_API_KEY;
@@ -35,11 +36,18 @@ const JazzProvider = ({ children }: { children: React.ReactNode }) => {
       sync={{
         peer: `wss://cloud.jazz.tools/?key=${JAZZ_API_KEY}`,
       }}
+      AccountSchema={UserAccount}
     >
       {children}
     </BaseJazzProvider>
   );
 };
+
+declare module "jazz-react" {
+  interface Register {
+    Account: UserAccount;
+  }
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
