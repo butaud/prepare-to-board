@@ -17,6 +17,7 @@ if (!JAZZ_API_KEY) {
   throw new Error("Add your Jazz API Key to the .env file");
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 const JazzProvider = ({ children }: { children: React.ReactNode }) => {
   // const clerk = useClerk();
   // return (
