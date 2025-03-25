@@ -1,5 +1,5 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Geneva,Tahoma,Verdana,sans-serif; 
   line-height: 1.5;
   font-weight: 400;
 
@@ -7,4 +7,11 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0 50px;
+  padding: 0;
+  background-color: hsl(35,67%,92%);
+  color: #333;
 }
