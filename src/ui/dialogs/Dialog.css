@@ -1,0 +1,22 @@
+dialog {
+    margin-top: 10vh;
+    max-width: 80vw;
+    padding: 20px;
+    .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        margin-bottom: 20px;
+
+        h3 {
+            margin: 0;
+        }
+
+        button {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+    }
+}

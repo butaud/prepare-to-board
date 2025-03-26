@@ -12,14 +12,20 @@ import { MeetingPresent } from "./views/meeting/MeetingPresent";
 import { MeetingRecord } from "./views/meeting/MeetingRecord";
 import { Meeting } from "./views/meeting/Meeting";
 import { Manage } from "./views/Manage";
+import { Invite } from "./views/Invite";
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
-  const { me } = useAccount();
+  const { me } = useAccount({
+    root: {
+      selectedOrganization: {},
+    },
+  });
 
-  const isAdmin = me?.profile?.name.includes("foo");
-  const isOfficer = me?.profile?.name.includes("bar");
-
+  const isAdmin =
+    me?.root.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
+  const isOfficer =
+    me?.root.selectedOrganization && me.canWrite(me.root.selectedOrganization);
   return (
     <BrowserRouter>
       <Routes>
@@ -41,6 +47,7 @@ function App() {
               </Route>
             </>
           )}
+          <Route path="invite" element={<Invite />} />
           <Route path="about" element={<About />} />
         </Route>
       </Routes>

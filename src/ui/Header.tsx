@@ -5,8 +5,10 @@ import { NavLink } from "react-router-dom";
 export const Header = () => {
   const { me, logOut } = useAccount();
 
-  const isAdmin = me?.profile?.name.includes("foo");
-  const isOfficer = me?.profile?.name.includes("bar");
+  const isAdmin =
+    me?.root?.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
+  const isOfficer =
+    me?.root?.selectedOrganization && me.canWrite(me.root.selectedOrganization);
 
   const isAuthenticated = useIsAuthenticated();
 

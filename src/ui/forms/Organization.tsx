@@ -1,7 +1,9 @@
 import { FC, useEffect, useState } from "react";
 import { DraftOrganization, ListOfMeetings, Organization } from "../../schema";
 import { useAccount, useCoState } from "jazz-react";
-import { ID } from "jazz-tools";
+import { Group, ID } from "jazz-tools";
+
+import "./Organization.css";
 
 type OrganizationFormProps = {
   organization: Organization | DraftOrganization;
@@ -12,7 +14,7 @@ const OrganizationForm: FC<OrganizationFormProps> = ({
   onSave,
 }) => {
   return (
-    <form onSubmit={onSave}>
+    <form className="organization" onSubmit={onSave}>
       <div>
         <label htmlFor="name">Name</label>
         <input
@@ -56,10 +58,14 @@ export const CreateOrganization = () => {
     }
     setErrors([]);
 
-    const newOrganization = Organization.create({
-      name: draft.name!,
-      meetings: ListOfMeetings.create([]),
-    });
+    const organizationGroup = Group.create();
+    const newOrganization = Organization.create(
+      {
+        name: draft.name!,
+        meetings: ListOfMeetings.create([]),
+      },
+      organizationGroup
+    );
 
     if (me) {
       me.root.organizations.push(newOrganization);

@@ -1,0 +1,11 @@
+.manage {
+    span.me {
+        font-weight: bold;
+    }
+
+    li.member {
+        select {
+            margin: 0 10px;
+        }
+    }
+}
