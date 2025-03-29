@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { About } from "./views/About";
 import { Home } from "./views/Home";
 import { useAccount, useIsAuthenticated } from "jazz-react";
 import { Welcome } from "./views/Welcome";
@@ -13,6 +12,7 @@ import { MeetingRecord } from "./views/meeting/MeetingRecord";
 import { Meeting } from "./views/meeting/Meeting";
 import { Manage } from "./views/Manage";
 import { Invite } from "./views/Invite";
+import { Meetings } from "./views/meeting/Meetings";
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
@@ -34,6 +34,7 @@ function App() {
           {isAuthenticated && (
             <>
               <Route index element={<Home />} />
+              <Route path="meetings" element={<Meetings />} />
               <Route path="action-items" element={<ActionItems />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="settings" element={<Settings />} />
@@ -48,7 +49,6 @@ function App() {
             </>
           )}
           <Route path="invite" element={<Invite />} />
-          <Route path="about" element={<About />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -31,6 +31,9 @@ export const Header = () => {
             {isAuthenticated && (
               <>
                 <li>
+                  <NavLink to="/meetings">Meetings</NavLink>
+                </li>
+                <li>
                   <NavLink to="/action-items">Action Items</NavLink>
                 </li>
                 <li>
@@ -46,9 +49,6 @@ export const Header = () => {
                 <NavLink to="/manage">Manage</NavLink>
               </li>
             )}
-            <li>
-              <NavLink to="/about">About</NavLink>
-            </li>
           </ul>
         </nav>
       </div>
