@@ -1,6 +1,7 @@
 import { useAccount } from "jazz-react";
 import { useState } from "react";
 import { CreateMeetingDialog } from "../../ui/dialogs/CreateMeetingDialog";
+import { Link } from "react-router-dom";
 
 export const Meetings = () => {
   const { me } = useAccount({
@@ -33,7 +34,11 @@ export const Meetings = () => {
           </li>
         )}
         {meetings.map((meeting) => (
-          <li key={meeting.id}>{meeting.name}</li>
+          <li key={meeting.id}>
+            <Link to={`/meeting/${meeting.id}`}>
+              {meeting.date?.toLocaleDateString() ?? "No date"}
+            </Link>
+          </li>
         ))}
       </ul>
     </div>

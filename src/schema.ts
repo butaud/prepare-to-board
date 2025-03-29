@@ -1,16 +1,16 @@
-import { Account, co, CoList, CoMap, Group, Profile } from "jazz-tools";
+import { Account, co, CoList, CoMap, Group, Profile } from "jazz-tools";    
 
 export class Meeting extends CoMap {
-    name = co.string;
+    date = co.Date;
 }
 
 export class DraftMeeting extends CoMap {
-    name = co.optional.string;
+    date = co.optional.Date;
 
     validate() {
         const errors: string[] = [];
-        if (this.name === undefined || this.name === "") {
-            errors.push("Name is required");
+        if (this.date === undefined) {
+            errors.push("Date is required");
         }
         return errors;
     }

@@ -2,6 +2,9 @@ import { FC, FormEvent, useEffect, useState } from "react";
 import { DraftMeeting, Meeting } from "../../schema";
 import { useAccount, useCoState } from "jazz-react";
 import { ID } from "jazz-tools";
+import DatePicker from "react-datepicker";
+
+import "react-datepicker/dist/react-datepicker.css";
 
 type MeetingFormProps = {
   meeting: Meeting | DraftMeeting;
@@ -12,14 +15,21 @@ const MeetingForm: FC<MeetingFormProps> = ({ meeting, onSave }) => {
   return (
     <form className="organization" onSubmit={onSave}>
       <div>
-        <label htmlFor="name">Name</label>
-        <input
-          type="text"
-          id="name"
-          value={meeting.name}
-          onChange={(e) => (meeting.name = e.target.value)}
-          required
-        />
+        <label>
+          Meeting time
+          <DatePicker
+            selected={meeting.date}
+            onChange={(date) => (meeting.date = date ?? undefined)}
+            dateFormat="yyyy/MM/dd h:mm aa"
+            placeholderText="Meeting date and time"
+            showTimeSelect
+            timeFormat="h:mm aa"
+            popperProps={{
+              placement: "bottom",
+              strategy: "fixed",
+            }}
+          />
+        </label>
       </div>
       {onSave && <button type="submit">Save</button>}
     </form>
@@ -61,7 +71,7 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
 
     const newMeeting = Meeting.create(
       {
-        name: draft.name!,
+        date: draft.date!,
       },
       selectedOrganization._owner
     );

@@ -9,7 +9,7 @@ import { Calendar } from "./views/Calendar";
 import { MeetingView } from "./views/meeting/MeetingView";
 import { MeetingPresent } from "./views/meeting/MeetingPresent";
 import { MeetingRecord } from "./views/meeting/MeetingRecord";
-import { Meeting } from "./views/meeting/Meeting";
+import { MeetingShared } from "./views/meeting/MeetingShared";
 import { Manage } from "./views/Manage";
 import { Invite } from "./views/Invite";
 import { Meetings } from "./views/meeting/Meetings";
@@ -41,7 +41,7 @@ function App() {
               {(isOfficer || isAdmin) && (
                 <Route path="manage" element={<Manage />} />
               )}
-              <Route path="meeting/:meetingId" element={<Meeting />}>
+              <Route path="meeting/:meetingId" element={<MeetingShared />}>
                 <Route index element={<MeetingView />} />
                 <Route path="present" element={<MeetingPresent />} />
                 <Route path="record" element={<MeetingRecord />} />
