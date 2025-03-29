@@ -62,7 +62,7 @@ export const CreateOrganization = () => {
     const newOrganization = Organization.create(
       {
         name: draft.name!,
-        meetings: ListOfMeetings.create([]),
+        meetings: ListOfMeetings.create([], organizationGroup),
       },
       organizationGroup
     );

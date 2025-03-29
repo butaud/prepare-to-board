@@ -4,6 +4,18 @@ export class Meeting extends CoMap {
     name = co.string;
 }
 
+export class DraftMeeting extends CoMap {
+    name = co.optional.string;
+
+    validate() {
+        const errors: string[] = [];
+        if (this.name === undefined || this.name === "") {
+            errors.push("Name is required");
+        }
+        return errors;
+    }
+}
+
 export class ListOfMeetings extends CoList.Of(co.ref(Meeting)) {}
 
 export class Organization extends CoMap {

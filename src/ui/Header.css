@@ -1,6 +1,7 @@
 header {
     display: flex;
     justify-content: space-between;
+    gap: 20px;
 
     border-bottom: 1px solid #aaaaaa;
     padding: 10px 0;
@@ -9,7 +10,6 @@ header {
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 10px;
     
         .brand {
             display: flex;
@@ -29,6 +29,7 @@ header {
         nav {
             display: flex;
             flex-direction: row;
+            justify-content: space-evenly;
             gap: 20px;
             font-size: 1.2rem;
             font-weight: 500;
@@ -41,21 +42,25 @@ header {
                 margin: 0;
                 padding: 0; 
 
-                li a {
-                    cursor: pointer;
-                    transition: all 0.2s ease-in-out;
-                    color: #007bff;
-                    text-decoration: underline;
+                li {
+                    text-align: center;
 
-                    &.active, &.active:hover {
-                        color: black;
-                        text-decoration: none;
-                        cursor: default;
-                    }
-
-                    &:hover {
+                    a {
+                        cursor: pointer;
+                        transition: all 0.2s ease-in-out;
                         color: #007bff;
                         text-decoration: underline;
+    
+                        &.active, &.active:hover {
+                            color: black;
+                            text-decoration: none;
+                            cursor: default;
+                        }
+    
+                        &:hover {
+                            color: #007bff;
+                            text-decoration: underline;
+                        }
                     }
                 }
             }
