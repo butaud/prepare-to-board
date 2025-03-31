@@ -58,22 +58,6 @@ header {
 
                 li {
                     text-align: center;
-
-                    a {
-                        cursor: pointer;
-                        color: var(--primary-color);
-                        text-decoration: none;
-    
-                        &.active, &.active:hover {
-                            color: black;
-                            text-decoration: none;
-                            cursor: default;
-                        }
-    
-                        &:hover {
-                            color: var(--primary-color-light);
-                        }
-                    }
                 }
             }
         }

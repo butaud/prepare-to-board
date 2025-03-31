@@ -5,9 +5,9 @@
 
   --button-foreground: hsl(0, 0%, 98%);
 
-  --primary-color: hsl(217, 59%, 45%);
-  --primary-color-light: hsl(217, 59%, 65%);
-  --primary-color-subtle: hsl(217, 59%, 97%);
+  --primary-color: hsl(217, 65%, 45%);
+  --primary-color-light: hsl(217, 65%, 65%);
+  --primary-color-subtle: hsl(217, 65%, 97%);
 
   --secondary-color: hsl(50, 77%, 50%);
   --secondary-color-light: hsl(50, 77%, 75%);
@@ -31,17 +31,12 @@
 
     --button-foreground: hsl(0, 0%, 2%);
 
-    --primary-color: hsl(217, 59%, 55%);
-    --primary-color-light: hsl(217, 59%, 35%);
-    --primary-color-subtle: hsl(217, 59%, 3%);
+    --primary-color: hsl(217, 65%, 55%);
+    --primary-color-light: hsl(217, 65%, 35%);
+    --primary-color-subtle: hsl(217, 65%, 3%);
 
     --secondary-color: hsl(50, 77%, 50%);
     --secondary-color-light: hsl(50, 77%, 25%);
-
-    --neutral-color: hsl(0, 0%, 20%);
-    --neutral-color-medium: hsl(0, 0%, 30%);
-    --neutral-color-strong: hsl(0, 0%, 70%);
-    --neutral-color-light: hsl(0, 0%, 20%);
 
     --completed-color: hsl(133, 34%, 40%);
 
@@ -70,4 +65,42 @@ body {
   padding: 0;
   background-color: var(--background-color);
   color: var(--font-color);
+}
+
+button, input[type="button"], input[type="submit"] {
+  display: inline-block;
+  outline: 0;
+  text-align: center;
+  cursor: pointer;
+  padding: 0px 12px;
+  border-radius: 2px;
+  min-width: 80px;
+  height: 24px;
+  background-color: var(--primary-color-light);
+  color: var(--button-foreground);
+  font-size: 14px;
+  font-weight: 400;
+  box-sizing: border-box;
+  border: 1px solid var(--primary-color);
+  &:hover {
+      background-color: var(--primary-color);
+  }
+}
+
+
+
+a {
+  cursor: pointer;
+  color: var(--primary-color);
+  text-decoration: none;
+
+  &.active, &.active:hover {
+      color: black;
+      text-decoration: none;
+      cursor: default;
+  }
+
+  &:hover {
+      color: var(--primary-color-light);
+  }
 }
