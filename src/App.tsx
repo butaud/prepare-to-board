@@ -41,7 +41,7 @@ function App() {
               {(isOfficer || isAdmin) && (
                 <Route path="manage" element={<Manage />} />
               )}
-              <Route path="meeting/:meetingId" element={<MeetingShared />}>
+              <Route path="meetings/:meetingId" element={<MeetingShared />}>
                 <Route index element={<MeetingView />} />
                 <Route path="present" element={<MeetingPresent />} />
                 <Route path="record" element={<MeetingRecord />} />

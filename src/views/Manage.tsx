@@ -6,6 +6,7 @@ import { useState } from "react";
 import { InviteUserDialog } from "../ui/dialogs/InviteUserDialog";
 
 import "./Manage.css";
+import { Breadcrumbs } from "../ui/Breadcrumbs";
 
 export const Manage = () => {
   const { me } = useAccount({
@@ -40,6 +41,7 @@ export const Manage = () => {
 
   return (
     <div className="manage">
+      <Breadcrumbs />
       {isInviteDialogOpen && (
         <InviteUserDialog
           closeDialog={closeDialog}

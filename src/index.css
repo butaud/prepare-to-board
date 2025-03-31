@@ -1,3 +1,59 @@
+/* define color variables */
+:root {
+  --font-color: hsl(0, 0%, 2%);
+  --background-color: hsl(0, 0%, 98%);
+
+  --button-foreground: hsl(0, 0%, 98%);
+
+  --primary-color: hsl(217, 59%, 45%);
+  --primary-color-light: hsl(217, 59%, 65%);
+  --primary-color-subtle: hsl(217, 59%, 97%);
+
+  --secondary-color: hsl(50, 77%, 50%);
+  --secondary-color-light: hsl(50, 77%, 75%);
+
+  --completed-color: hsl(133, 34%, 60%);
+
+  --danger-color: hsl(0, 83%, 82%);
+  --danger-color-strong: hsl(0, 83%, 70%);
+
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-color-strong: rgba(0, 0, 0, 0.3);
+
+  --semitransparent: hsla(0, 0%, 90%, 0.8);
+}
+
+/* dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --font-color: hsl(0, 0%, 98%);
+    --background-color: hsl(0, 0%, 10%);
+
+    --button-foreground: hsl(0, 0%, 2%);
+
+    --primary-color: hsl(217, 59%, 55%);
+    --primary-color-light: hsl(217, 59%, 35%);
+    --primary-color-subtle: hsl(217, 59%, 3%);
+
+    --secondary-color: hsl(50, 77%, 50%);
+    --secondary-color-light: hsl(50, 77%, 25%);
+
+    --neutral-color: hsl(0, 0%, 20%);
+    --neutral-color-medium: hsl(0, 0%, 30%);
+    --neutral-color-strong: hsl(0, 0%, 70%);
+    --neutral-color-light: hsl(0, 0%, 20%);
+
+    --completed-color: hsl(133, 34%, 40%);
+
+    --danger-color: hsl(0, 83%, 35%);
+    --danger-color-strong: hsl(0, 83%, 30%);
+
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --shadow-color-strong: rgba(0, 0, 0, 0.3);
+    --semitransparent: hsla(0, 0%, 10%, 0.2);
+  }
+}
+
 :root {
   font-family: Geneva,Tahoma,Verdana,sans-serif; 
   line-height: 1.5;
@@ -12,6 +68,6 @@
 body {
   margin: 0 50px;
   padding: 0;
-  background-color: hsl(35,67%,92%);
-  color: #333;
+  background-color: var(--background-color);
+  color: var(--font-color);
 }

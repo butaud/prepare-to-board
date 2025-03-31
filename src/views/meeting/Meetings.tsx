@@ -2,6 +2,7 @@ import { useAccount } from "jazz-react";
 import { useState } from "react";
 import { CreateMeetingDialog } from "../../ui/dialogs/CreateMeetingDialog";
 import { Link } from "react-router-dom";
+import { Breadcrumbs } from "../../ui/Breadcrumbs";
 
 export const Meetings = () => {
   const { me } = useAccount({
@@ -24,7 +25,7 @@ export const Meetings = () => {
       {isCreateMeetingOpen && (
         <CreateMeetingDialog closeDialog={() => setCreateMeetingOpen(false)} />
       )}
-      <h2>Meetings</h2>
+      <Breadcrumbs />
       <ul>
         {isOfficer && (
           <li>
@@ -35,7 +36,7 @@ export const Meetings = () => {
         )}
         {meetings.map((meeting) => (
           <li key={meeting.id}>
-            <Link to={`/meeting/${meeting.id}`}>
+            <Link to={`/meetings/${meeting.id}`}>
               {meeting.date?.toLocaleDateString() ?? "No date"}
             </Link>
           </li>

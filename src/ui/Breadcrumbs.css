@@ -1,0 +1,15 @@
+.breadcrumbs {
+    span {
+        color: var(--font-color);
+        font-size: 1em;
+        font-weight: 600;
+    }
+
+    span a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    span a:hover {
+        color: var(--primary-color-light);
+    }
+}

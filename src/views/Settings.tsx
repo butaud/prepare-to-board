@@ -2,10 +2,12 @@ import { useAccount } from "jazz-react";
 import { Organization } from "../schema";
 import { FC } from "react";
 import "./Settings.css";
+import { Breadcrumbs } from "../ui/Breadcrumbs";
 
 export const Settings = () => {
   return (
     <div className="settings">
+      <Breadcrumbs />
       <h3>Organizations</h3>
       <ManageOrganizations />
     </div>
