@@ -1,22 +1,25 @@
 dialog {
-    margin-top: 10vh;
-    max-width: 80vw;
-    padding: 20px;
-    .dialog-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+  margin-top: 10vh;
+  max-width: 80vw;
+  padding: 20px;
+  background-color: var(--background-color);
+  border-radius: 8px;
+  border: 2px solid var(--secondary-color);
+  .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-        margin-bottom: 20px;
+    margin-bottom: 20px;
 
-        h3 {
-            margin: 0;
-        }
-
-        button {
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
+    h3 {
+      margin: 0;
     }
+
+    button {
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+  }
 }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CreateMeetingDialog } from "../../ui/dialogs/CreateMeetingDialog";
 import { Link } from "react-router-dom";
 import { Breadcrumbs } from "../../ui/Breadcrumbs";
+import { SlPlus } from "react-icons/sl";
 
 export const Meetings = () => {
   const { me } = useAccount({
@@ -30,7 +31,7 @@ export const Meetings = () => {
         {isOfficer && (
           <li>
             <button onClick={() => setCreateMeetingOpen(true)}>
-              Create a new meeting
+              <SlPlus /> Create a new meeting
             </button>
           </li>
         )}

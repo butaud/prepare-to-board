@@ -24,8 +24,6 @@ function App() {
 
   const isAdmin =
     me?.root.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
-  const isOfficer =
-    me?.root.selectedOrganization && me.canWrite(me.root.selectedOrganization);
   return (
     <BrowserRouter>
       <Routes>
@@ -38,9 +36,8 @@ function App() {
               <Route path="action-items" element={<ActionItems />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="settings" element={<Settings />} />
-              {(isOfficer || isAdmin) && (
-                <Route path="manage" element={<Manage />} />
-              )}
+              {isAdmin && <Route path="manage" element={<Manage />} />}
+              <Route path="members" element={<Manage />} />
               <Route path="meetings/:meetingId" element={<MeetingShared />}>
                 <Route index element={<MeetingView />} />
                 <Route path="present" element={<MeetingPresent />} />

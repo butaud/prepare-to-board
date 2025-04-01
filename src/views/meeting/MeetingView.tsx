@@ -1,6 +1,7 @@
 import { useAccount } from "jazz-react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { Meeting } from "../../schema";
+import { SlTrash } from "react-icons/sl";
 
 export const MeetingView = () => {
   const { me } = useAccount({
@@ -31,7 +32,12 @@ export const MeetingView = () => {
   };
   return (
     <>
-      {isOfficer && <button onClick={onDeleteClick}>Delete Meeting</button>}
+      {isOfficer && (
+        <button className="danger" onClick={onDeleteClick}>
+          <SlTrash />
+          Delete Meeting
+        </button>
+      )}
       <p>
         This is where you can view a meeting and edit if you are an officer.
       </p>

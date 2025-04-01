@@ -7,8 +7,6 @@ export const Header = () => {
 
   const isAdmin =
     me?.root?.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
-  const isOfficer =
-    me?.root?.selectedOrganization && me.canWrite(me.root.selectedOrganization);
 
   const isAuthenticated = useIsAuthenticated();
 
@@ -40,9 +38,13 @@ export const Header = () => {
                 </li>
               </>
             )}
-            {(isAdmin || isOfficer) && (
+            {isAdmin ? (
               <li>
                 <NavLink to="/manage">Manage</NavLink>
+              </li>
+            ) : (
+              <li>
+                <NavLink to="/members">Members</NavLink>
               </li>
             )}
           </ul>

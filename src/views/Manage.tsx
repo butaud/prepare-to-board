@@ -31,6 +31,7 @@ export const Manage = () => {
   }
 
   const organizationGroup = me.root.selectedOrganization._owner.castAs(Group);
+  const isAdmin = me.canAdmin(me.root.selectedOrganization);
 
   const closeDialog = () => {
     setInviteDialogOpen(false);
@@ -56,7 +57,7 @@ export const Manage = () => {
         <tbody>
           {organizationGroup.members.length === 0 && (
             <tr>
-              <td colSpan={3}>No members yet.</td>
+              <td>No members yet.</td>
             </tr>
           )}
           {organizationGroup.members.map((member) => (
@@ -66,14 +67,17 @@ export const Manage = () => {
               organizationGroup={organizationGroup}
               startingRole={member.role}
               isSelf={member.id === me.id}
+              isAdmin={isAdmin}
             />
           ))}
         </tbody>
       </table>
-      <button onClick={openDialog}>
-        <SlPlus />
-        Invite a new user
-      </button>
+      {isAdmin && (
+        <button onClick={openDialog}>
+          <SlPlus />
+          Invite a new user
+        </button>
+      )}
       <p>
         Note: If a user has removed the organization from their list, they may
         not be able to see it even if they are in the list above. If that
@@ -89,6 +93,7 @@ type MemberNodeProps = {
   organizationGroup: Group;
   startingRole: string;
   isSelf: boolean;
+  isAdmin: boolean;
 };
 
 const MemberNode = ({
@@ -96,6 +101,7 @@ const MemberNode = ({
   organizationGroup,
   startingRole,
   isSelf,
+  isAdmin,
 }: MemberNodeProps) => {
   const account = useCoState(UserAccount, id, {
     profile: {},
@@ -131,7 +137,7 @@ const MemberNode = ({
       <td className={isSelf ? "me" : ""}>
         {account?.profile.name + (isSelf ? " (me)" : "")}{" "}
       </td>
-      {!isSelf && (
+      {isAdmin && !isSelf && (
         <>
           <td>
             <RolePicker role={startingRole} onChange={handleRoleChange} />

@@ -3,6 +3,7 @@ import { Organization } from "../schema";
 import { FC } from "react";
 import "./Settings.css";
 import { Breadcrumbs } from "../ui/Breadcrumbs";
+import { SlBan } from "react-icons/sl";
 
 export const Settings = () => {
   return (
@@ -64,7 +65,9 @@ const OrganizationNode: FC<{
     <li>
       <span>{organization.name}</span>
       <span>
-        <button onClick={handleRemoveClick}>Remove</button>
+        <button className="danger" onClick={handleRemoveClick}>
+          <SlBan /> Remove
+        </button>
       </span>
     </li>
   );
