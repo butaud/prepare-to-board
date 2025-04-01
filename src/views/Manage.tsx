@@ -4,6 +4,7 @@ import { Group, ID } from "jazz-tools";
 import { UserAccount } from "../schema";
 import { useState } from "react";
 import { InviteUserDialog } from "../ui/dialogs/InviteUserDialog";
+import { SlPlus, SlBan } from "react-icons/sl";
 
 import "./Manage.css";
 import { Breadcrumbs } from "../ui/Breadcrumbs";
@@ -51,20 +52,28 @@ export const Manage = () => {
       <h3>Organization Details</h3>
       <EditOrganization id={me.root.selectedOrganization.id} />
       <h3>Organization Members</h3>
-      <ul>
-        {organizationGroup.members.map((member) => (
-          <MemberNode
-            key={member.id}
-            id={member.id}
-            organizationGroup={organizationGroup}
-            startingRole={member.role}
-            isSelf={member.id === me.id}
-          />
-        ))}
-        <li>
-          <button onClick={openDialog}>Invite a new user</button>
-        </li>
-      </ul>
+      <table>
+        <tbody>
+          {organizationGroup.members.length === 0 && (
+            <tr>
+              <td colSpan={3}>No members yet.</td>
+            </tr>
+          )}
+          {organizationGroup.members.map((member) => (
+            <MemberNode
+              key={member.id}
+              id={member.id}
+              organizationGroup={organizationGroup}
+              startingRole={member.role}
+              isSelf={member.id === me.id}
+            />
+          ))}
+        </tbody>
+      </table>
+      <button onClick={openDialog}>
+        <SlPlus />
+        Invite a new user
+      </button>
       <p>
         Note: If a user has removed the organization from their list, they may
         not be able to see it even if they are in the list above. If that
@@ -118,23 +127,33 @@ const MemberNode = ({
   };
 
   return (
-    <li className="member">
-      <span className={isSelf ? "me" : ""}>{account?.profile.name} </span>
+    <tr className="member">
+      <td className={isSelf ? "me" : ""}>
+        {account?.profile.name + (isSelf ? " (me)" : "")}{" "}
+      </td>
       {!isSelf && (
-        <span>
-          <RolePicker role={startingRole} onChange={handleRoleChange} />
-          <button
-            onClick={handleRemoveClick}
-            disabled={startingRole === "admin"}
-            title={
-              startingRole === "admin" ? "Admins cannot be removed" : undefined
-            }
-          >
-            Remove
-          </button>
-        </span>
+        <>
+          <td>
+            <RolePicker role={startingRole} onChange={handleRoleChange} />
+          </td>
+          <td>
+            <button
+              className="danger"
+              onClick={handleRemoveClick}
+              disabled={startingRole === "admin"}
+              title={
+                startingRole === "admin"
+                  ? "Admins cannot be removed"
+                  : undefined
+              }
+            >
+              <SlBan />
+              Remove
+            </button>
+          </td>
+        </>
       )}
-    </li>
+    </tr>
   );
 };
 
