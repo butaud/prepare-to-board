@@ -75,6 +75,10 @@ body {
   color: var(--font-color);
 }
 
+dialog {
+  color: var(--font-color);
+}
+
 @media screen and (max-width: 600px) {
   body {
     margin: 0 20px;
@@ -168,7 +172,7 @@ a {
 
   &.active,
   &.active:hover {
-    color: black;
+    color: var(--font-color);
     text-decoration: none;
     cursor: default;
   }
