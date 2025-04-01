@@ -1,6 +1,9 @@
 import { useAccount, useIsAuthenticated } from "jazz-react";
 import "./Header.css";
 import { Link, NavLink } from "react-router-dom";
+import { CgFileDocument } from "react-icons/cg";
+import { LuCalendarDays, LuListChecks } from "react-icons/lu";
+import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 
 export const Header = () => {
   const { me, logOut } = useAccount();
@@ -18,38 +21,43 @@ export const Header = () => {
     <header>
       <div className="start">
         <div className="brand">
-          <img src="/logo.png" alt="Logo" />
+          <NavLink to="/">
+            <img src="/logo.png" alt="Logo" />
+          </NavLink>
           <h3>
             <NavLink to="/">Prepare To Board</NavLink>
           </h3>
         </div>
-        <nav>
-          <ul>
-            {isAuthenticated && (
-              <>
-                <li>
-                  <NavLink to="/meetings">Meetings</NavLink>
-                </li>
-                <li>
-                  <NavLink to="/action-items">Action Items</NavLink>
-                </li>
-                <li>
-                  <NavLink to="/calendar">Annual Calendar</NavLink>
-                </li>
-              </>
-            )}
-            {isAdmin ? (
-              <li>
-                <NavLink to="/manage">Manage</NavLink>
-              </li>
-            ) : (
-              <li>
-                <NavLink to="/members">Members</NavLink>
-              </li>
-            )}
-          </ul>
-        </nav>
       </div>
+      <nav>
+        {isAuthenticated && (
+          <>
+            <NavLink to="/meetings">
+              <CgFileDocument />
+              <span className="name">Meetings</span>
+            </NavLink>
+            <NavLink to="/action-items">
+              <LuListChecks />
+              <span className="name">Action Items</span>
+            </NavLink>
+            <NavLink to="/calendar">
+              <LuCalendarDays />
+              <span className="name">Annual Calendar</span>
+            </NavLink>
+          </>
+        )}
+        {isAdmin ? (
+          <NavLink to="/manage">
+            <LiaUsersCogSolid />
+            <span className="name">Manage</span>
+          </NavLink>
+        ) : (
+          <NavLink to="/members">
+            <LiaUsersSolid />
+            <span className="name">Members</span>
+          </NavLink>
+        )}
+      </nav>
       <div className="end">
         {isAuthenticated && (
           <>
