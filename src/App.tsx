@@ -12,7 +12,7 @@ import { MeetingRecord } from "./views/meeting/MeetingRecord";
 import { MeetingShared } from "./views/meeting/MeetingShared";
 import { Manage } from "./views/Manage";
 import { Invite } from "./views/Invite";
-import { Meetings } from "./views/meeting/Meetings";
+import { MeetingList } from "./views/meeting/MeetingList";
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
@@ -32,7 +32,7 @@ function App() {
           {isAuthenticated && (
             <>
               <Route index element={<Home />} />
-              <Route path="meetings" element={<Meetings />} />
+              <Route path="meetings" element={<MeetingList />} />
               <Route path="action-items" element={<ActionItems />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="settings" element={<Settings />} />

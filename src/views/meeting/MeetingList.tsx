@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Breadcrumbs } from "../../ui/Breadcrumbs";
 import { SlPlus } from "react-icons/sl";
 
-export const Meetings = () => {
+export const MeetingList = () => {
   const { me } = useAccount({
     root: {
       selectedOrganization: {
