@@ -1,7 +1,20 @@
 import { Account, co, CoList, CoMap, Group, Profile } from "jazz-tools";    
 
+export class Topic extends CoMap {
+    title = co.string;
+    isDraft = co.optional.boolean;
+    outcome = co.optional.string;
+    plannedStartMinute = co.optional.number;
+    plannedDurationMinutes = co.optional.number;
+    actualStartTime = co.optional.Date;
+    actualEndTime = co.optional.Date;
+}
+
+export class ListOfTopics extends CoList.Of(co.ref(Topic)) {}
+
 export class Meeting extends CoMap {
     date = co.Date;
+    topics = co.ref(ListOfTopics);
 }
 
 export class DraftMeeting extends CoMap {

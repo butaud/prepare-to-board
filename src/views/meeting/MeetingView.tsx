@@ -2,11 +2,12 @@ import { useAccount } from "jazz-react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { Meeting } from "../../schema";
 import { SlTrash } from "react-icons/sl";
+import { TopicList } from "../topic/TopicList";
 
 export const MeetingView = () => {
   const { me } = useAccount({
     root: {
-      selectedOrganization: { meetings: [] },
+      selectedOrganization: { meetings: [{}] },
     },
   });
   const meeting = useOutletContext() as Meeting;
@@ -14,6 +15,10 @@ export const MeetingView = () => {
 
   if (!meeting || !me || !me.root.selectedOrganization) {
     return <p>Loading...</p>;
+  }
+
+  if (!meeting.topics) {
+    return <p>No topics</p>;
   }
 
   const isOfficer = me?.canWrite(me.root.selectedOrganization);
@@ -38,9 +43,7 @@ export const MeetingView = () => {
           Delete Meeting
         </button>
       )}
-      <p>
-        This is where you can view a meeting and edit if you are an officer.
-      </p>
+      <TopicList topicList={meeting.topics} />
     </>
   );
 };
