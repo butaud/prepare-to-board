@@ -17,7 +17,7 @@ export const MeetingView = () => {
     return <p>Loading...</p>;
   }
 
-  if (!meeting.topics) {
+  if (!meeting.plannedAgenda) {
     return <p>No topics</p>;
   }
 
@@ -43,7 +43,7 @@ export const MeetingView = () => {
           Delete Meeting
         </button>
       )}
-      <TopicList topicList={meeting.topics} />
+      <TopicList topicList={meeting.plannedAgenda} />
     </>
   );
 };

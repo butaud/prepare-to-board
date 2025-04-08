@@ -4,17 +4,26 @@ export class Topic extends CoMap {
     title = co.string;
     isDraft = co.optional.boolean;
     outcome = co.optional.string;
-    plannedStartMinute = co.optional.number;
-    plannedDurationMinutes = co.optional.number;
-    actualStartTime = co.optional.Date;
-    actualEndTime = co.optional.Date;
+    durationMinutes = co.optional.number;
+    plannedTopic = co.optional.ref(Topic);
+    cancelled = co.optional.boolean;
 }
 
 export class ListOfTopics extends CoList.Of(co.ref(Topic)) {}
 
+export class Minute extends CoMap {
+    topic = co.ref(Topic);
+    durationMinutes = co.number;
+}
+
+export class ListOfMinutes extends CoList.Of(co.ref(Minute)) {}
+
 export class Meeting extends CoMap {
     date = co.Date;
-    topics = co.ref(ListOfTopics);
+    status = co.optional.literal("draft", "published", "live", "completed");
+    plannedAgenda = co.ref(ListOfTopics);
+    liveAgenda = co.ref(ListOfTopics);
+    minutes = co.ref(ListOfMinutes);
 }
 
 export class DraftMeeting extends CoMap {

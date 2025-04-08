@@ -1,5 +1,10 @@
 import { FC, FormEvent, useEffect, useState } from "react";
-import { DraftMeeting, ListOfTopics, Meeting } from "../../schema";
+import {
+  DraftMeeting,
+  ListOfMinutes,
+  ListOfTopics,
+  Meeting,
+} from "../../schema";
 import { useAccount, useCoState } from "jazz-react";
 import { ID } from "jazz-tools";
 import DatePicker from "react-datepicker";
@@ -72,7 +77,10 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
     const newMeeting = Meeting.create(
       {
         date: draft.date!,
-        topics: ListOfTopics.create([], selectedOrganization._owner),
+        plannedAgenda: ListOfTopics.create([], selectedOrganization._owner),
+        liveAgenda: ListOfTopics.create([], selectedOrganization._owner),
+        minutes: ListOfMinutes.create([], selectedOrganization._owner),
+        status: "draft",
       },
       selectedOrganization._owner
     );
