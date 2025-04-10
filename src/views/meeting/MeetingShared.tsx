@@ -6,7 +6,11 @@ import { Breadcrumbs } from "../../ui/Breadcrumbs";
 
 export const MeetingShared = () => {
   const { meetingId } = useParams();
-  const meeting = useCoState(Meeting, meetingId as ID<Meeting>);
+  const meeting = useCoState(Meeting, meetingId as ID<Meeting>, {
+    resolve: {
+      plannedAgenda: { $each: true },
+    },
+  });
   return (
     <div>
       <Breadcrumbs dynamicTitle={meeting?.date?.toLocaleDateString()} />

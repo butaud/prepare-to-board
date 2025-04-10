@@ -10,7 +10,7 @@ export type TopicNodeProps = {
 
 export const TopicNode: FC<TopicNodeProps> = ({ topic, onDelete }) => {
   const { me } = useAccount();
-  const canEdit = me?.canWrite(topic);
+  const canEdit = me.canWrite(topic);
   return (
     <div className="topic-node">
       <EditableText

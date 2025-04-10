@@ -3,20 +3,20 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import { Meeting } from "../../schema";
 import { SlTrash } from "react-icons/sl";
 import { TopicList } from "../topic/TopicList";
+import { Resolved } from "jazz-tools";
 
 export const MeetingView = () => {
   const { me } = useAccount({
     resolve: {
       root: {
         selectedOrganization: {
-          meetings: {
-            $each: true,
-          },
+          meetings: true,
         },
       },
     },
   });
-  const meeting = useOutletContext() as Meeting;
+  const meeting =
+    useOutletContext<Resolved<Meeting, { plannedAgenda: { $each: true } }>>();
   const navigate = useNavigate();
 
   if (!meeting || !me || !me.root.selectedOrganization) {

@@ -2,9 +2,15 @@ import { useAccount } from "jazz-react";
 import { ListOfTopics, Topic } from "../../schema";
 import { FC } from "react";
 import { TopicNode } from "../../ui/doc/TopicNode";
+import { Resolved } from "jazz-tools";
 
 export type TopicListProps = {
-  topicList: ListOfTopics;
+  topicList: Resolved<
+    ListOfTopics,
+    {
+      $each: true;
+    }
+  >;
 };
 
 export const TopicList: FC<TopicListProps> = ({ topicList }) => {
@@ -22,14 +28,13 @@ export const TopicList: FC<TopicListProps> = ({ topicList }) => {
       <h4>Topics</h4>
       <ul>
         {topicList
-          .filter(Boolean)
-          .filter((topic) => isOfficer || !topic?.isDraft)
+          .filter((topic) => isOfficer || !topic.isDraft)
           .map((topic) => (
-            <li key={topic!.id}>
+            <li key={topic.id}>
               <TopicNode
-                topic={topic!}
+                topic={topic}
                 onDelete={
-                  isOfficer ? () => handleDeleteClick(topic!) : undefined
+                  isOfficer ? () => handleDeleteClick(topic) : undefined
                 }
               />
             </li>

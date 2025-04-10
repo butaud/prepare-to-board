@@ -32,9 +32,13 @@ const OrganizationForm: FC<OrganizationFormProps> = ({
 
 export const CreateOrganization = () => {
   const { me } = useAccount({
-    root: {
-      selectedOrganization: {},
-      organizations: [{}],
+    resolve: {
+      root: {
+        selectedOrganization: true,
+        organizations: {
+          $each: true,
+        },
+      },
     },
   });
   const [draft, setDraft] = useState<DraftOrganization>();

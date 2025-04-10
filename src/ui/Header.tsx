@@ -6,12 +6,18 @@ import { LuCalendarDays, LuListChecks } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 
 export const Header = () => {
-  const { me, logOut } = useAccount();
-
-  const isAdmin =
-    me?.root?.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
+  const { me, logOut } = useAccount({
+    resolve: {
+      root: {
+        selectedOrganization: true,
+      },
+    },
+  });
 
   const isAuthenticated = useIsAuthenticated();
+
+  const isAdmin =
+    me?.root.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
 
   const onLogOut = () => {
     logOut();
