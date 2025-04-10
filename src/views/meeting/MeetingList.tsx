@@ -7,9 +7,13 @@ import { SlPlus } from "react-icons/sl";
 
 export const MeetingList = () => {
   const { me } = useAccount({
-    root: {
-      selectedOrganization: {
-        meetings: [{}],
+    resolve: {
+      root: {
+        selectedOrganization: {
+          meetings: {
+            $each: true,
+          },
+        },
       },
     },
   });

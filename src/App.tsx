@@ -17,8 +17,10 @@ import { MeetingList } from "./views/meeting/MeetingList";
 function App() {
   const isAuthenticated = useIsAuthenticated();
   const { me } = useAccount({
-    root: {
-      selectedOrganization: {},
+    resolve: {
+      root: {
+        selectedOrganization: true,
+      },
     },
   });
 

@@ -47,8 +47,10 @@ export type CreateMeetingProps = {
 
 export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
   const { me } = useAccount({
-    root: {
-      selectedOrganization: { meetings: [] },
+    resolve: {
+      root: {
+        selectedOrganization: { meetings: true },
+      },
     },
   });
   const [draft, setDraft] = useState<DraftMeeting>();

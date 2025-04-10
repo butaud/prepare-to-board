@@ -3,9 +3,13 @@ import { CreateOrganization } from "../ui/forms/Organization";
 
 export const Home = () => {
   const { me } = useAccount({
-    root: {
-      selectedOrganization: {},
-      organizations: [{}],
+    resolve: {
+      root: {
+        selectedOrganization: true,
+        organizations: {
+          $each: true,
+        },
+      },
     },
   });
 

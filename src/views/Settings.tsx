@@ -17,8 +17,12 @@ export const Settings = () => {
 
 export const ManageOrganizations = () => {
   const { me } = useAccount({
-    root: {
-      organizations: [{}],
+    resolve: {
+      root: {
+        organizations: {
+          $each: true,
+        },
+      },
     },
   });
   if (!me) {

@@ -516,7 +516,7 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@opentelemetry/api@^1.0.0":
+"@opentelemetry/api@^1.9.0":
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.9.0.tgz#d03eba68273dc0f7509e2a3d5cba21eae10379fe"
   integrity sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==
@@ -687,10 +687,22 @@
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.7.tgz#4158d3105276773d5b7695cd4834b1722e4f37a8"
   integrity sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==
 
+"@types/image-blob-reduce@^4.1.1":
+  version "4.1.4"
+  resolved "https://registry.yarnpkg.com/@types/image-blob-reduce/-/image-blob-reduce-4.1.4.tgz#16e9d391eacaf5b51c7d1609db59b7f4ee4ee2fa"
+  integrity sha512-IMG+KVL7iy/g05zaJQFqc+Y0l+SlBVVW3GVKLM+ZkBtENoJSZ5nqIgtSZcs04QJvF+ticYJn9n3ZG427wg7Yhg==
+  dependencies:
+    "@types/pica" "*"
+
 "@types/json-schema@^7.0.15":
   version "7.0.15"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.15.tgz#596a1747233694d50f6ad8a7869fcb6f56cf5841"
   integrity sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==
+
+"@types/pica@*":
+  version "9.0.5"
+  resolved "https://registry.yarnpkg.com/@types/pica/-/pica-9.0.5.tgz#a526b51d45b7cb70423b7af0223ab9afd151a26e"
+  integrity sha512-OSd4905yxFNtRanHuyyQAfC9AkxiYcbhlzP606Gl6rFcYRgq4vdLCZuYKokLQBihgrkNzyPkoeykvJDWcPjaCw==
 
 "@types/react-dom@^19.0.4":
   version "19.0.4"
@@ -888,38 +900,38 @@ clsx@^2.1.1:
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-2.1.1.tgz#eed397c9fd8bd882bfb18deab7102049a2f32999"
   integrity sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==
 
-cojson-storage-indexeddb@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/cojson-storage-indexeddb/-/cojson-storage-indexeddb-0.11.6.tgz#82a439e67b8e9861719e68f3052e9bdd1335d45d"
-  integrity sha512-qGJ0ElH//XkRzAI7sb6t+8WvCkYI2xWETpRH5Mu33JGkOKJF+v7rU7E2qHGQwLLXpjONjbDt8UnPaocBi5uIEw==
+cojson-storage-indexeddb@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/cojson-storage-indexeddb/-/cojson-storage-indexeddb-0.13.0.tgz#829bff80b3ffce75d780167f2467914dc0c49675"
+  integrity sha512-RF8+9M64StZjx4YrX/XzDTeHaA5nFDx0b/dJKpMP8LW/spFCCBlmqUT553GmmWLjtFnhdOo6i3RW7rwNpkyUVA==
   dependencies:
-    cojson "0.11.6"
-    cojson-storage "0.11.6"
+    cojson "0.13.0"
+    cojson-storage "0.13.0"
 
-cojson-storage@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/cojson-storage/-/cojson-storage-0.11.6.tgz#e195e8fe5e199ad32c356f8f27fc8151f359ba06"
-  integrity sha512-wXbTGp9QwmK45bZdrr7Z6P+0ymSR2jeVLe8c9x3oHn8lNtn6ICIrfkNf3/RHGIgpbS4b+76x+VSNvA1gKV3cMA==
+cojson-storage@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/cojson-storage/-/cojson-storage-0.13.0.tgz#c3e0a16d5964208956bfcf65b7b098f0dcf5ab1b"
+  integrity sha512-+q0XfKRLItmSBr6RgyUx+gZV3365qeUUza6yIgj3pwdBOqWP+x9vCHM0n989YAvayiVeX24IawvGwhVdaDoQWw==
   dependencies:
-    cojson "0.11.6"
+    cojson "0.13.0"
 
-cojson-transport-ws@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/cojson-transport-ws/-/cojson-transport-ws-0.11.6.tgz#007596d61f8a9b8ac966d390481a58114b7edcf6"
-  integrity sha512-J462zyp/EVtQm8e9vIFvTljPSvrHMuKq8aRZIF5/4lWf20Vxnyf/NJWBr8gg/d4fIz89L3/VnLCqiFzph2pUXg==
+cojson-transport-ws@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/cojson-transport-ws/-/cojson-transport-ws-0.13.0.tgz#2d91265c4c09bfce0254fecb094d6e9a19d2a95c"
+  integrity sha512-/zAnbY9nTs7hpFOnHQp7DfDP+4SHP4lOv5s9mA1bM6BFQJ6ylu5EbIIP6lpyF7EeCDRFZcoHeLyrxahreNneSA==
   dependencies:
-    cojson "0.11.6"
+    cojson "0.13.0"
     typescript "~5.6.2"
 
-cojson@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/cojson/-/cojson-0.11.6.tgz#59eb8a94175aa4a650b4f3610af356f633f865cd"
-  integrity sha512-GcWJ3dOu7Jr9LD+kkPQIMeSnE9hQkLv9BP48yAYn+/7hPJmiiUV4XdARRe4fPXbq+lloHQErO8IAm55fUbX+IA==
+cojson@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/cojson/-/cojson-0.13.0.tgz#b4a55fd23a4806946959569e831a676c142d3eb2"
+  integrity sha512-KSeS0pa+w0DS9J//f/YfODcbu261vv+0PVY7kRSQwjnEiY3cxk+JQBf8lxyhOOB6gNENfrsWTLgMDEOnjBII2A==
   dependencies:
     "@noble/ciphers" "^0.1.3"
     "@noble/curves" "^1.3.0"
     "@noble/hashes" "^1.4.0"
-    "@opentelemetry/api" "^1.0.0"
+    "@opentelemetry/api" "^1.9.0"
     "@scure/base" "1.2.1"
     jazz-crypto-rs "0.0.6"
     neverthrow "^7.0.1"
@@ -1258,6 +1270,11 @@ globals@^15.15.0:
   resolved "https://registry.yarnpkg.com/globals/-/globals-15.15.0.tgz#7c4761299d41c32b075715a4ce1ede7897ff72a8"
   integrity sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==
 
+glur@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/glur/-/glur-1.1.2.tgz#f20ea36db103bfc292343921f1f91e83c3467689"
+  integrity sha512-l+8esYHTKOx2G/Aao4lEQ0bnHWg4fWtJbVoZZT9Knxi01pB8C80BR85nONLFwkkQoFRCmXY+BUcGZN3yZ2QsRA==
+
 graphemer@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/graphemer/-/graphemer-1.4.0.tgz#fb2f1d55e0e3a1849aeffc90c4fa0dd53a0e66c6"
@@ -1272,6 +1289,13 @@ ignore@^5.2.0, ignore@^5.3.1:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/ignore/-/ignore-5.3.2.tgz#3cd40e729f3643fd87cb04e50bf0eb722bc596f5"
   integrity sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==
+
+image-blob-reduce@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/image-blob-reduce/-/image-blob-reduce-4.1.0.tgz#45f1e146ceaa45079025febe307f9b1e8b6833c9"
+  integrity sha512-iljleP8Fr7tS1ezrAazWi30abNPYXtBGXb9R9oTZDWObqiKq18AQJGTUb0wkBOtdCZ36/IirkuuAIIHTjBJIjA==
+  dependencies:
+    pica "^9.0.0"
 
 import-fresh@^3.2.1:
   version "3.3.1"
@@ -1308,67 +1332,80 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==
 
-jazz-auth-clerk@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/jazz-auth-clerk/-/jazz-auth-clerk-0.11.6.tgz#73ebe08ace4dcb74d0cc999edb6ba1febf19d032"
-  integrity sha512-1+nFDc+V0wxWoAyN87RBh43KSspCcJpi6OZrI2i9XFCD71RTaPtN+8vJEEw9j1hjJIIC6uEdKZale7mUrr74vQ==
+jazz-auth-clerk@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/jazz-auth-clerk/-/jazz-auth-clerk-0.13.0.tgz#4a8e4134a6079b775cc6ce08f6ea86d8fbe5790f"
+  integrity sha512-jbW+0G0loTY+PG+yEE49rOG0xZpCqUb66kGjirnuzQVtlpULTeJxeE4yq0VYm6sImwwWKnzbggr/uhXT5E4PqQ==
   dependencies:
-    cojson "0.11.6"
-    jazz-browser "0.11.6"
-    jazz-tools "0.11.6"
+    cojson "0.13.0"
+    jazz-browser "0.13.0"
+    jazz-tools "0.13.0"
 
-jazz-browser@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/jazz-browser/-/jazz-browser-0.11.6.tgz#11e34df30bb6dbbf95d90debce7d4f7a6fc2c637"
-  integrity sha512-HzxCPgcF+LLjpmksbqswUqA1ldVIkuirFy42kB1KKV42gGnz6wz/h7nLP0QTkENSjLW6rsSSt50+9pM8mRoqmg==
+jazz-browser-media-images@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/jazz-browser-media-images/-/jazz-browser-media-images-0.13.0.tgz#10046b311ad4874d604823a99e8661ac6dbbe658"
+  integrity sha512-Zqrcfn5j8B40Nq4bjR4E90Zx87KpYfKAu3GWlbV/HSShSzAONM53ntTAo/qubSRfq2PF+N2fmRO0we08RnjkqA==
   dependencies:
-    cojson "0.11.6"
-    cojson-storage-indexeddb "0.11.6"
-    cojson-transport-ws "0.11.6"
-    jazz-tools "0.11.6"
+    "@types/image-blob-reduce" "^4.1.1"
+    image-blob-reduce "^4.1.0"
+    jazz-browser "0.13.0"
+    jazz-tools "0.13.0"
+    pica "^9.0.1"
+    typescript "~5.6.2"
+
+jazz-browser@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/jazz-browser/-/jazz-browser-0.13.0.tgz#1570477b0200195a1cc8e13e48e9a8cd2fd26466"
+  integrity sha512-/p2/dEJaNBciQcEAJjluDcr6V5lA1TrCwAvwKIk14Dv24XQrLSN1HRd8qLTSWFrvkwg410yMM32rYH9DEHgI9A==
+  dependencies:
+    cojson "0.13.0"
+    cojson-storage-indexeddb "0.13.0"
+    cojson-transport-ws "0.13.0"
+    jazz-tools "0.13.0"
 
 jazz-crypto-rs@0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/jazz-crypto-rs/-/jazz-crypto-rs-0.0.6.tgz#7ce32d11db451488e2f8da0d7419ba4c8cbbb09f"
   integrity sha512-+hJM9hPzMjK7Jk9++sUs5mKXlFiCTMDZ2wjO8WsfNpY7RZ+kiYSwkCrKvvvDRHSXPlzoyFQFxrSrXqN0/Fr6Yw==
 
-jazz-react-auth-clerk@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/jazz-react-auth-clerk/-/jazz-react-auth-clerk-0.11.6.tgz#a848294a5526eea4b8236b01f6c98638c8b19f35"
-  integrity sha512-RYhZRMxQiAFwtE7eKMsENj8XQeuKn6rHod7grC+9zJBuVGrm4USkP7zaGiOvWwngtvdpiUKcgcgNDRlF5wxQUg==
+jazz-react-auth-clerk@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/jazz-react-auth-clerk/-/jazz-react-auth-clerk-0.13.0.tgz#c11b6d9603042a7e4434bda690397df00336d209"
+  integrity sha512-esgOkp4mUbnZuGydXVnNn5iz923ox+LQxg0xgCENk5OR3frWDLvlIRCmY1hjib9aw6OKwPE5N0nFQdX8ipoSUA==
   dependencies:
-    cojson "0.11.6"
-    jazz-auth-clerk "0.11.6"
-    jazz-browser "0.11.6"
-    jazz-react "0.11.6"
-    jazz-tools "0.11.6"
+    cojson "0.13.0"
+    jazz-auth-clerk "0.13.0"
+    jazz-browser "0.13.0"
+    jazz-react "0.13.0"
+    jazz-tools "0.13.0"
 
-jazz-react-core@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/jazz-react-core/-/jazz-react-core-0.11.6.tgz#de25541bc1d8cd9a7bc684577d1087938e9fda74"
-  integrity sha512-h8KxJbq0AZcAursYY2VWthHo7IwUh1S5UuT6JswcGCoyTCZJ8W7NiMmdzmESI76/oiB6oIvwON6S0PcCT24Lkg==
+jazz-react-core@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/jazz-react-core/-/jazz-react-core-0.13.0.tgz#014bbd5e4ca3dcf71bc4e4da4d9ee475da3f836d"
+  integrity sha512-YZnulh3bjiSNaMqQ9ueMAfzc7yUBun52i7/2lWPne/BaY7ar/TNIO68SPMmQhQI7RSfk4yEwRNh/TgA6UbrwQA==
   dependencies:
-    cojson "0.11.6"
-    jazz-tools "0.11.6"
+    cojson "0.13.0"
+    jazz-tools "0.13.0"
 
-jazz-react@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/jazz-react/-/jazz-react-0.11.6.tgz#cfa208546f1eaf2b7bbf39c402c4dcf5034b0e43"
-  integrity sha512-KkmPiFTmNzt2I3vOFGAARBFlL8edwFhXWKfrnuhyqPDZsQ+Ilsl/qfSB8ZyPtgVM6J+6bWr638tYGYyFW3YXyA==
+jazz-react@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/jazz-react/-/jazz-react-0.13.0.tgz#7fc908070c804d85af611f5cd798e5cfc520a884"
+  integrity sha512-cAm1DtDYQEpXc+B71YUrjtjyURGRQ3zUEmkd/iMmDYpIRFos8ZvSnS2UjGyWWgilUEnXlNbcthuDjSUaLygEhA==
   dependencies:
     "@scure/bip39" "^1.3.0"
-    cojson "0.11.6"
-    jazz-browser "0.11.6"
-    jazz-react-core "0.11.6"
-    jazz-tools "0.11.6"
+    cojson "0.13.0"
+    jazz-browser "0.13.0"
+    jazz-browser-media-images "0.13.0"
+    jazz-react-core "0.13.0"
+    jazz-tools "0.13.0"
 
-jazz-tools@0.11.6:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/jazz-tools/-/jazz-tools-0.11.6.tgz#1fa5c93eec62d2cd19c36c09df413c753efb5b8d"
-  integrity sha512-3/Cw1MMwv40yDRDC346Sj/WCYeQUbCRNFwbU5AD7crdhp5kOO03FP0rk7mlenFPETcDFHhXkF9deAv6sw7c3gQ==
+jazz-tools@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/jazz-tools/-/jazz-tools-0.13.0.tgz#b4616a0017af2c006f83b43bb067f3b754db59ac"
+  integrity sha512-9p+0hscD+tGQ4x1XlVJMpkAC9ny8AGiR4S0WEz/TL6mE8Z1FxUXOtkjo5x2M6lIGR/AnrO/+fPoiSYtFiNXtog==
   dependencies:
     "@scure/bip39" "^1.3.0"
-    cojson "0.11.6"
+    cojson "0.13.0"
     fast-myers-diff "^3.2.0"
 
 js-cookie@3.0.5:
@@ -1479,6 +1516,14 @@ ms@^2.1.3:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
+multimath@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/multimath/-/multimath-2.0.0.tgz#0d37acf67c328f30e3d8c6b0d3209e6082710302"
+  integrity sha512-toRx66cAMJ+Ccz7pMIg38xSIrtnbozk0dchXezwQDMgQmbGpfxjtv68H+L00iFL8hxDaVjrmwAFSb3I6bg8Q2g==
+  dependencies:
+    glur "^1.1.2"
+    object-assign "^4.1.1"
+
 nanoid@^3.3.8:
   version "3.3.11"
   resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.11.tgz#4f4f112cefbe303202f2199838128936266d185b"
@@ -1498,6 +1543,11 @@ node-releases@^2.0.19:
   version "2.0.19"
   resolved "https://registry.yarnpkg.com/node-releases/-/node-releases-2.0.19.tgz#9e445a52950951ec4d177d843af370b411caf314"
   integrity sha512-xxOWJsBKtzAq7DY0J+DTzuz58K8e7sJbdgwkbMWQe8UYB6ekmsQ45q0M/tJDsGaZmbC+l7n57UV8Hl5tHxO9uw==
+
+object-assign@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.1.tgz#2109adc7965887cfc05cbbd442cac8bfbb360863"
+  integrity sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==
 
 optionator@^0.9.3:
   version "0.9.4"
@@ -1541,6 +1591,16 @@ path-key@^3.1.0:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/path-key/-/path-key-3.1.1.tgz#581f6ade658cbba65a0d3380de7753295054f375"
   integrity sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==
+
+pica@^9.0.0, pica@^9.0.1:
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/pica/-/pica-9.0.1.tgz#9ba5a5e81fc09dca9800abef9fb8388434b18b2f"
+  integrity sha512-v0U4vY6Z3ztz9b4jBIhCD3WYoecGXCQeCsYep+sXRefViL+mVVoTL+wqzdPeE+GpBFsRUtQZb6dltvAt2UkMtQ==
+  dependencies:
+    glur "^1.1.2"
+    multimath "^2.0.0"
+    object-assign "^4.1.1"
+    webworkify "^1.5.0"
 
 picocolors@^1.0.0, picocolors@^1.1.1:
   version "1.1.1"
@@ -1822,6 +1882,11 @@ vite@^6.2.0:
     rollup "^4.30.1"
   optionalDependencies:
     fsevents "~2.3.3"
+
+webworkify@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/webworkify/-/webworkify-1.5.0.tgz#734ad87a774de6ebdd546e1d3e027da5b8f4a42c"
+  integrity sha512-AMcUeyXAhbACL8S2hqqdqOLqvJ8ylmIbNwUIqQujRSouf4+eUFaXbG6F1Rbu+srlJMmxQWsiU7mOJi0nMBfM1g==
 
 which@^2.0.1:
   version "2.0.2"

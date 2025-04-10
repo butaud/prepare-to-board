@@ -10,8 +10,12 @@ export const Invite = () => {
     invitedObjectSchema: Organization,
     onAccept: async (organizationId: ID<Organization>) => {
       const me = await UserAccount.getMe().ensureLoaded({
-        root: {
-          organizations: [{}],
+        resolve: {
+          root: {
+            organizations: {
+              $each: true,
+            },
+          },
         },
       });
 

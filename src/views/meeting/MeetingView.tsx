@@ -6,8 +6,14 @@ import { TopicList } from "../topic/TopicList";
 
 export const MeetingView = () => {
   const { me } = useAccount({
-    root: {
-      selectedOrganization: { meetings: [{}] },
+    resolve: {
+      root: {
+        selectedOrganization: {
+          meetings: {
+            $each: true,
+          },
+        },
+      },
     },
   });
   const meeting = useOutletContext() as Meeting;

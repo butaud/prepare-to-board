@@ -11,8 +11,10 @@ import { Breadcrumbs } from "../ui/Breadcrumbs";
 
 export const Manage = () => {
   const { me } = useAccount({
-    root: {
-      selectedOrganization: {},
+    resolve: {
+      root: {
+        selectedOrganization: true,
+      },
     },
   });
   const [isInviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -104,7 +106,9 @@ const MemberNode = ({
   isAdmin,
 }: MemberNodeProps) => {
   const account = useCoState(UserAccount, id, {
-    profile: {},
+    resolve: {
+      profile: true,
+    },
   });
 
   const membership = organizationGroup.members.find(
