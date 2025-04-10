@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.4.1",
-    "jazz-react": "0.13.0",
-    "jazz-react-auth-clerk": "0.13.0",
-    "jazz-tools": "0.13.0",
+    "jazz-react": "0.13.3",
+    "jazz-react-auth-clerk": "0.13.3",
+    "jazz-tools": "0.13.3",
     "react": "^19.0.0",
     "react-datepicker": "^8.2.1",
     "react-dom": "^19.0.0",
