@@ -1332,77 +1332,77 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==
 
-jazz-auth-clerk@0.13.3:
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/jazz-auth-clerk/-/jazz-auth-clerk-0.13.3.tgz#b8e9e208490eb64da699262ce0789f059fc5f642"
-  integrity sha512-FFaf4V4X/novxX82wCzyFymo7R/89YU2fZwX0KDjNeXnLb/4CnG5h+Z9MqEaIxKcyyGQ66hbdkyxzk1J5ScncA==
+jazz-auth-clerk@0.13.4:
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/jazz-auth-clerk/-/jazz-auth-clerk-0.13.4.tgz#f38ad163f7ae03aa5e4e2908c7f114dc2f529dc3"
+  integrity sha512-hsupyAOl4HW9WlEsgQmv3Nhoh1pIunuphfyB/9eBLWlbf2Bb9+MAf75Zya7IPhF/AZ7QmWybnIGFHdpHfZZBNA==
   dependencies:
     cojson "0.13.2"
-    jazz-browser "0.13.3"
-    jazz-tools "0.13.3"
+    jazz-browser "0.13.4"
+    jazz-tools "0.13.4"
 
-jazz-browser-media-images@0.13.3:
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/jazz-browser-media-images/-/jazz-browser-media-images-0.13.3.tgz#dfd730ae8591a0216e87d612e32f6dbf7eee2bb3"
-  integrity sha512-xMt5uSH/OMZNa3tnWvd1eG6UXZVuwzr+RE6yrNijj+Tc9rsixhPkcWFLhXmkQCygUzYpZygGWizUWD+Kf//PnQ==
+jazz-browser-media-images@0.13.4:
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/jazz-browser-media-images/-/jazz-browser-media-images-0.13.4.tgz#ea1057df48f335a459dd6d5b9f7ed811d386aa01"
+  integrity sha512-4YKsXzCpDCeTJTzarqh0342QGMJrVivHs43Zt26gtt5C1Pch+b0/8WBjYrBTNwXaafZkPg8Ctmu4Cu4O4Ap35w==
   dependencies:
     "@types/image-blob-reduce" "^4.1.1"
     image-blob-reduce "^4.1.0"
-    jazz-browser "0.13.3"
-    jazz-tools "0.13.3"
+    jazz-browser "0.13.4"
+    jazz-tools "0.13.4"
     pica "^9.0.1"
     typescript "~5.6.2"
 
-jazz-browser@0.13.3:
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/jazz-browser/-/jazz-browser-0.13.3.tgz#cfbb2c4910d6273b1f61504d4b06c2e86d7bc884"
-  integrity sha512-8qu2zx5CqfMrcYbmFr0JDMpNDTnYBeRig0/8ocxmrThR/3Oe6bH6yhvnAQV/5gWBY9bEdDQNY6Rfa8+xw+1VIg==
+jazz-browser@0.13.4:
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/jazz-browser/-/jazz-browser-0.13.4.tgz#ddedfe6fa564a86c50f045949f08244076a2e4c9"
+  integrity sha512-snQWM6b88xEekU5cMjgV00vWn1vHhxMBjyYhxWC7CdncjdwlpM347Q/CJInUIMF+aOLr0dt7HQy9je8JmsInLw==
   dependencies:
     cojson "0.13.2"
     cojson-storage-indexeddb "0.13.2"
     cojson-transport-ws "0.13.3"
-    jazz-tools "0.13.3"
+    jazz-tools "0.13.4"
 
 jazz-crypto-rs@0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/jazz-crypto-rs/-/jazz-crypto-rs-0.0.6.tgz#7ce32d11db451488e2f8da0d7419ba4c8cbbb09f"
   integrity sha512-+hJM9hPzMjK7Jk9++sUs5mKXlFiCTMDZ2wjO8WsfNpY7RZ+kiYSwkCrKvvvDRHSXPlzoyFQFxrSrXqN0/Fr6Yw==
 
-jazz-react-auth-clerk@0.13.3:
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/jazz-react-auth-clerk/-/jazz-react-auth-clerk-0.13.3.tgz#173e5ceabc3a28c89f5d65653b60b97a2c3cf945"
-  integrity sha512-dYipQ8olKOkOAixXvDp9pXl+wj+eVwpGdFEYiXT3B6zcGhVVdcJJ3w1waBjUcixYyOQqRwBnQgvQ21/uOUC2tA==
+jazz-react-auth-clerk@0.13.4:
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/jazz-react-auth-clerk/-/jazz-react-auth-clerk-0.13.4.tgz#e404ca5115f0a8dde0e24730472ccc2509ae5518"
+  integrity sha512-usN79D1PcRvdDoEIl3tZqzYQyoT8OvNEsIR3pAbQp5qtp0yshThyTXrQn9jOOa7unw/8HZ5Iy+VKSWk1j4ON+A==
   dependencies:
     cojson "0.13.2"
-    jazz-auth-clerk "0.13.3"
-    jazz-browser "0.13.3"
-    jazz-react "0.13.3"
-    jazz-tools "0.13.3"
+    jazz-auth-clerk "0.13.4"
+    jazz-browser "0.13.4"
+    jazz-react "0.13.4"
+    jazz-tools "0.13.4"
 
-jazz-react-core@0.13.3:
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/jazz-react-core/-/jazz-react-core-0.13.3.tgz#76bbd1db5119cb3f32094af1974c951e7a93b1de"
-  integrity sha512-JYFBJmtykc1vemMuii5zCs3dQ4rg+QTJX5oOrXYbWTgNv6mDkL7nBI3FW8D0XpMbyykSunflJVbqB2jZ02riSA==
+jazz-react-core@0.13.4:
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/jazz-react-core/-/jazz-react-core-0.13.4.tgz#aa122e2bb6c466b634a4096caff45be070e7a31c"
+  integrity sha512-PfQLmwJGHB/eQhJvF3xgKT47UtqUpUy3Rh05xN5o9Yt6M163Vl3+YdpQNhl1IGaL6HPKdqMY6lmvzAYQ4wcYLQ==
   dependencies:
     cojson "0.13.2"
-    jazz-tools "0.13.3"
+    jazz-tools "0.13.4"
 
-jazz-react@0.13.3:
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/jazz-react/-/jazz-react-0.13.3.tgz#10a05d6ca73371169e27a1dc8fe51bea28f939ef"
-  integrity sha512-+Ue1dC18xvK5b2I5gC//8Sh7/GQ7vN6SfHMSrZITtFXWCWYD1yDymB0NeskggIakn+wM06nIcYyDl0DXBJaRvA==
+jazz-react@0.13.4:
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/jazz-react/-/jazz-react-0.13.4.tgz#dc20f35a111e12991433b7e7678fad71e41b6bd9"
+  integrity sha512-bdvH8cG1CeF3tilFPPuAIc/1T4ehvxigFIu7+wz8aCEepXrYAWAGK94CYx3/bFJ6IP+r+Hnqyu3LMRsIJC1oPw==
   dependencies:
     "@scure/bip39" "^1.3.0"
     cojson "0.13.2"
-    jazz-browser "0.13.3"
-    jazz-browser-media-images "0.13.3"
-    jazz-react-core "0.13.3"
-    jazz-tools "0.13.3"
+    jazz-browser "0.13.4"
+    jazz-browser-media-images "0.13.4"
+    jazz-react-core "0.13.4"
+    jazz-tools "0.13.4"
 
-jazz-tools@0.13.3:
-  version "0.13.3"
-  resolved "https://registry.yarnpkg.com/jazz-tools/-/jazz-tools-0.13.3.tgz#b9a73fa342f5f5729f5bade5d162db2821f97e39"
-  integrity sha512-3ZLY2K49BmK5CSGyDEyJCoMi09EfMa6W34oU3GVF36aHrKIysg5gO8Sz/EO93nMVfLNYuDVdcp23JYFWR/uB7w==
+jazz-tools@0.13.4:
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/jazz-tools/-/jazz-tools-0.13.4.tgz#1109e9c1123db15a544bcada6840b2b8d62b0c93"
+  integrity sha512-8EiGd6VkB2NGYiipvGzKN9fR7Ux3wL2UcBmF4r7gR1/8PMMEQ/JjfdguVNvL4B3PnN9MU1lXsAIMIlZdQvDQcg==
   dependencies:
     "@scure/bip39" "^1.3.0"
     cojson "0.13.2"

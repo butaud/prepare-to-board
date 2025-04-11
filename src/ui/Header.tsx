@@ -4,9 +4,10 @@ import { Link, NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
 import { LuCalendarDays, LuListChecks } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
+import { SignOutButton } from "@clerk/clerk-react";
 
 export const Header = () => {
-  const { me, logOut } = useAccount({
+  const { me } = useAccount({
     resolve: {
       root: {
         selectedOrganization: true,
@@ -17,11 +18,9 @@ export const Header = () => {
   const isAuthenticated = useIsAuthenticated();
 
   const isAdmin =
-    me?.root.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
-
-  const onLogOut = () => {
-    logOut();
-  };
+    isAuthenticated &&
+    me?.root?.selectedOrganization &&
+    me.canAdmin(me.root.selectedOrganization);
 
   return (
     <header>
@@ -70,7 +69,7 @@ export const Header = () => {
             <h3>Hello, {me?.profile?.formalName}</h3>
             <OrganizationSelector />
             <Link to="/settings">Settings</Link>
-            <a onClick={onLogOut}>Log out</a>
+            <SignOutButton>Log out</SignOutButton>
           </>
         )}
       </div>

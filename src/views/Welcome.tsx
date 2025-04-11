@@ -1,4 +1,5 @@
-import { PasskeyAuthBasicUI } from "jazz-react";
+import { SignInButton } from "@clerk/clerk-react";
+// import { PasskeyAuthBasicUI } from "jazz-react";
 
 export const Welcome = () => {
   return (
@@ -9,7 +10,7 @@ export const Welcome = () => {
         along during the board meeting. Create an account or sign in to get
         started.
       </p>
-      <PasskeyAuthBasicUI appName="Prepare to Board" />
+      <SignInButton />
     </>
   );
 };

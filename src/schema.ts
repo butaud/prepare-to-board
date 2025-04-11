@@ -98,8 +98,20 @@ export class UserAccount extends Account {
   async migrate(this: UserAccount, creationProps?: { name: string }) {
     if (this.root === undefined) {
       this.root = UserAccountRoot.create({
+        selectedOrganization: undefined,
         organizations: ListOfOrganizations.create([]),
       });
+    } else {
+        const { root} = await this.ensureLoaded({
+          resolve: {
+            root: {
+                organizations: true
+            }
+          },
+        });
+        if (root.organizations === undefined) {
+          root.organizations = ListOfOrganizations.create([]);
+        }    
     }
 
     if (this.profile === undefined) {

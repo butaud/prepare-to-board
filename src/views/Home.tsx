@@ -17,7 +17,7 @@ export const Home = () => {
     return <h2>Loading...</h2>;
   }
 
-  if (me.root.organizations.length === 0) {
+  if (me.root?.organizations.length === 0) {
     return (
       <>
         <h2>Welcome to Prepare to Board!</h2>
@@ -32,7 +32,7 @@ export const Home = () => {
     );
   }
 
-  if (!me.root.selectedOrganization) {
+  if (!me.root?.selectedOrganization) {
     return <h2>Please select one of your organizations at the top right.</h2>;
   }
 

@@ -25,7 +25,9 @@ function App() {
   });
 
   const isAdmin =
-    me?.root.selectedOrganization && me.canAdmin(me.root.selectedOrganization);
+    isAuthenticated &&
+    me?.root?.selectedOrganization &&
+    me.canAdmin(me.root.selectedOrganization);
   return (
     <BrowserRouter>
       <Routes>

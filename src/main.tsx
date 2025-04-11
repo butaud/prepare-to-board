@@ -2,10 +2,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
-// import { JazzProviderWithClerk } from "jazz-react-auth-clerk";
-import { JazzProvider as BaseJazzProvider } from "jazz-react";
-import { ClerkProvider } from "@clerk/clerk-react";
+import { ClerkProvider, useClerk } from "@clerk/clerk-react";
 import { UserAccount } from "./schema.ts";
+import { JazzProviderWithClerk } from "jazz-react-auth-clerk";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const JAZZ_API_KEY = import.meta.env.VITE_JAZZ_API_KEY;
@@ -20,26 +19,17 @@ if (!JAZZ_API_KEY) {
 
 // eslint-disable-next-line react-refresh/only-export-components
 const JazzProvider = ({ children }: { children: React.ReactNode }) => {
-  // const clerk = useClerk();
-  // return (
-  //   <JazzProviderWithClerk
-  //     clerk={clerk}
-  //     sync={{
-  //       peer: `wss://cloud.jazz.tools/?key=${JAZZ_API_KEY}`,
-  //     }}
-  //   >
-  //     {children}
-  //   </JazzProviderWithClerk>
-  // );
+  const clerk = useClerk();
   return (
-    <BaseJazzProvider
+    <JazzProviderWithClerk
+      clerk={clerk}
+      AccountSchema={UserAccount}
       sync={{
         peer: `wss://cloud.jazz.tools/?key=${JAZZ_API_KEY}`,
       }}
-      AccountSchema={UserAccount}
     >
       {children}
-    </BaseJazzProvider>
+    </JazzProviderWithClerk>
   );
 };
 
