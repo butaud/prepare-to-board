@@ -27,7 +27,7 @@ export const Header = () => {
       <div className="start">
         <div className="brand">
           <NavLink to="/">
-            <img src="/logo.png" alt="Logo" />
+            <img src={import.meta.env.BASE_URL + "logo.png"} alt="Logo" />
           </NavLink>
           <h3>
             <NavLink to="/">Prepare To Board</NavLink>
