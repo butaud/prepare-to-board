@@ -29,7 +29,7 @@ function App() {
     me?.root?.selectedOrganization &&
     me.canAdmin(me.root.selectedOrganization);
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Layout />}>
           {!isAuthenticated && <Route index element={<Welcome />} />}
