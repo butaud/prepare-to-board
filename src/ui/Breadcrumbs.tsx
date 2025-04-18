@@ -14,13 +14,14 @@ const constantTitles: Record<string, string> = {
   "/calendar": "Annual Calendar",
   "/settings": "Settings",
   "/manage": "Manage",
+  "/members": "Members",
 };
 
 export const Breadcrumbs: FC<BreadcrumbsProps> = ({ dynamicTitle }) => {
   const location = useLocation();
   const parts = location.pathname.split("/").filter((part) => part !== "");
   return (
-    <div className="breadcrumbs">
+    <h5 className="breadcrumbs">
       {parts.map((part, index) => {
         const path = `/${parts.slice(0, index + 1).join("/")}`;
         const title = constantTitles[path] ?? part;
@@ -35,6 +36,6 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ dynamicTitle }) => {
           </span>
         );
       })}
-    </div>
+    </h5>
   );
 };

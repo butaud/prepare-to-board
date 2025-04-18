@@ -1,7 +1,9 @@
 .breadcrumbs {
-    span {
-        color: var(--font-color);
-        font-size: 1em;
-        font-weight: 600;
-    }
+  margin: 0;
+  font-size: 16px;
+  span {
+    color: var(--font-color);
+    font-size: 1em;
+    font-weight: 600;
+  }
 }

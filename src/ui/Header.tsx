@@ -49,18 +49,18 @@ export const Header = () => {
               <LuCalendarDays />
               <span className="name">Annual Calendar</span>
             </NavLink>
+            {isAdmin ? (
+              <NavLink to="/manage">
+                <LiaUsersCogSolid />
+                <span className="name">Manage</span>
+              </NavLink>
+            ) : (
+              <NavLink to="/members">
+                <LiaUsersSolid />
+                <span className="name">Members</span>
+              </NavLink>
+            )}
           </>
-        )}
-        {isAdmin ? (
-          <NavLink to="/manage">
-            <LiaUsersCogSolid />
-            <span className="name">Manage</span>
-          </NavLink>
-        ) : (
-          <NavLink to="/members">
-            <LiaUsersSolid />
-            <span className="name">Members</span>
-          </NavLink>
         )}
       </nav>
       <div className="end">
@@ -108,7 +108,7 @@ const OrganizationSelector = () => {
         onChange={handleOrganizationChange}
       >
         {organizations.map((org) => (
-          <option key={org?.id} value={org?.id}>
+          <option key={org?.id ?? "<empty>"} value={org?.id}>
             {org?.name}
           </option>
         ))}

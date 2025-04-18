@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Home } from "./views/Home";
 import { useAccount, useIsAuthenticated } from "jazz-react";
 import { Welcome } from "./views/Welcome";
@@ -29,30 +29,28 @@ function App() {
     me?.root?.selectedOrganization &&
     me.canAdmin(me.root.selectedOrganization);
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          {!isAuthenticated && <Route index element={<Welcome />} />}
-          {isAuthenticated && (
-            <>
-              <Route index element={<Home />} />
-              <Route path="meetings" element={<MeetingList />} />
-              <Route path="action-items" element={<ActionItems />} />
-              <Route path="calendar" element={<Calendar />} />
-              <Route path="settings" element={<Settings />} />
-              {isAdmin && <Route path="manage" element={<Manage />} />}
-              <Route path="members" element={<Manage />} />
-              <Route path="meetings/:meetingId" element={<MeetingShared />}>
-                <Route index element={<MeetingView />} />
-                <Route path="present" element={<MeetingPresent />} />
-                <Route path="record" element={<MeetingRecord />} />
-              </Route>
-            </>
-          )}
-          <Route path="invite" element={<Invite />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        {!isAuthenticated && <Route index element={<Welcome />} />}
+        {isAuthenticated && (
+          <>
+            <Route index element={<Home />} />
+            <Route path="meetings" element={<MeetingList />} />
+            <Route path="action-items" element={<ActionItems />} />
+            <Route path="calendar" element={<Calendar />} />
+            <Route path="settings" element={<Settings />} />
+            {isAdmin && <Route path="manage" element={<Manage />} />}
+            <Route path="members" element={<Manage />} />
+            <Route path="meetings/:meetingId" element={<MeetingShared />}>
+              <Route index element={<MeetingView />} />
+              <Route path="present" element={<MeetingPresent />} />
+              <Route path="record" element={<MeetingRecord />} />
+            </Route>
+          </>
+        )}
+        <Route path="invite" element={<Invite />} />
+      </Route>
+    </Routes>
   );
 }
 

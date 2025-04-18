@@ -5,6 +5,7 @@ import App from "./App.tsx";
 import { ClerkProvider, useClerk } from "@clerk/clerk-react";
 import { UserAccount } from "./schema.ts";
 import { JazzProviderWithClerk } from "jazz-react-auth-clerk";
+import { BrowserRouter } from "react-router-dom";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const JAZZ_API_KEY = import.meta.env.VITE_JAZZ_API_KEY;
@@ -43,7 +44,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} afterSignOutUrl={"/"}>
       <JazzProvider>
-        <App />
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <App />
+        </BrowserRouter>
       </JazzProvider>
     </ClerkProvider>
   </StrictMode>
