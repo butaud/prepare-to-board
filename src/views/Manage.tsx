@@ -52,8 +52,12 @@ export const Manage = () => {
           organization={me.root.selectedOrganization}
         />
       )}
-      <h3>Organization Details</h3>
-      <EditOrganization id={me.root.selectedOrganization.id} />
+      {isAdmin && (
+        <>
+          <h3>Organization Details</h3>
+          <EditOrganization id={me.root.selectedOrganization.id} />
+        </>
+      )}
       <h3>Organization Members</h3>
       <table>
         <thead>
