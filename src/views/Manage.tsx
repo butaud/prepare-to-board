@@ -192,8 +192,8 @@ type AccountRole = "admin" | "writer" | "reader";
 const roles: AccountRole[] = ["admin", "writer", "reader"];
 const roleNames: Record<AccountRole, string> = {
   admin: "Admin",
-  writer: "Writer",
-  reader: "Reader",
+  writer: "Officer",
+  reader: "Member",
 };
 type RolePickerProps = {
   role: AccountRole;

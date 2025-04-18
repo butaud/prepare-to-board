@@ -43,13 +43,13 @@ describe("Members", () => {
       within(membersList[1]).getByText("Admin");
 
       within(membersList[2]).getByText("Test User (me)");
-      within(membersList[2]).getByText("Reader");
+      within(membersList[2]).getByText("Member");
 
       within(membersList[3]).getByText("Test User 2");
-      within(membersList[3]).getByText("Writer");
+      within(membersList[3]).getByText("Officer");
 
       within(membersList[4]).getByText("Test User 3");
-      within(membersList[4]).getByText("Reader");
+      within(membersList[4]).getByText("Member");
     });
   });
 });

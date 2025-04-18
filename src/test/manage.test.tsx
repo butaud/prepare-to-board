@@ -63,14 +63,14 @@ describe("Manage", () => {
       within(membersList[3]).getByText("Test User 2");
       expect(
         within(membersList[3]).getByRole<HTMLOptionElement>("option", {
-          name: "Writer",
+          name: "Officer",
         }).selected
       ).toBe(true);
 
       within(membersList[4]).getByText("Test User 3");
       expect(
         within(membersList[4]).getByRole<HTMLOptionElement>("option", {
-          name: "Reader",
+          name: "Member",
         }).selected
       ).toBe(true);
     });
@@ -82,7 +82,7 @@ describe("Manage", () => {
         "combobox",
         { name: "Role" }
       );
-      await userEvent.selectOptions(roleSelector, "Writer");
+      await userEvent.selectOptions(roleSelector, "Officer");
       expect(roleSelector.value).toBe("writer");
     });
 
