@@ -85,7 +85,7 @@ dialog {
   }
 }
 
-button,
+button:not(.cl-button),
 input[type="button"],
 input[type="submit"] {
   display: inline-flex;

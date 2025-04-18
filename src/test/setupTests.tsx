@@ -4,27 +4,7 @@ import "@clerk/clerk-react";
 
 vi.mock("@clerk/clerk-react", async (importActual) => {
   const actual = await importActual<typeof import("@clerk/clerk-react")>();
-  const UserButton = ({ children }: { children: React.ReactNode }) => {
-    return <div data-testid="mock-clerk-user-button">{children}</div>;
-  };
-  UserButton.MenuItems = ({ children }: { children: React.ReactNode }) => {
-    return children;
-  };
-  UserButton.Action = ({
-    label,
-    labelIcon,
-    onClick,
-  }: {
-    label: string;
-    labelIcon: React.ReactNode;
-    onClick: () => void;
-  }) => {
-    return (
-      <button onClick={onClick} data-testid="mock-clerk-custom-button">
-        {labelIcon} {label}
-      </button>
-    );
-  };
+  const { MockUserButton } = await import("./mocks/MockUserButton");
 
   return {
     ...actual,
@@ -34,7 +14,7 @@ vi.mock("@clerk/clerk-react", async (importActual) => {
     SignOutButton: ({ children }: { children: React.ReactNode }) => {
       return <button>{children}</button>;
     },
-    UserButton,
+    UserButton: MockUserButton,
   };
 });
 
