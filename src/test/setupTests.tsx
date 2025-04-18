@@ -2,6 +2,8 @@ import "@testing-library/jest-dom";
 import { vi } from "vitest";
 import "@clerk/clerk-react";
 
+import.meta.env.BASE_URL = "/";
+
 vi.mock("@clerk/clerk-react", async (importActual) => {
   const actual = await importActual<typeof import("@clerk/clerk-react")>();
   return {
