@@ -97,7 +97,6 @@ input[type="submit"] {
   cursor: pointer;
   padding: 0px 12px;
   border-radius: 2px;
-  min-width: 80px;
   height: var(--button-height);
   background-color: var(--primary-color);
   color: var(--button-foreground);

@@ -39,7 +39,7 @@ describe("Organization", () => {
     const button = screen.getByRole("button", { name: "Save" });
     await userEvent.click(button);
 
-    await userEvent.click(screen.getByRole("link", { name: "Settings" }));
+    await userEvent.click(screen.getByTestId("mock-clerk-custom-button"));
 
     const listItem = await screen.findByRole("listitem");
     expect(listItem).toHaveTextContent("Test Organization");
