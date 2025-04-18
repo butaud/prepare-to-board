@@ -1,10 +1,11 @@
 import { useAccount, useIsAuthenticated } from "jazz-react";
 import "./Header.css";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
 import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 import { SignInButton, UserButton } from "@clerk/clerk-react";
+import { Settings } from "../views/Settings";
 
 export const Header = () => {
   const { me } = useAccount({
@@ -16,8 +17,6 @@ export const Header = () => {
   });
 
   const isAuthenticated = useIsAuthenticated();
-
-  const navigate = useNavigate();
 
   const isAdmin =
     isAuthenticated &&
@@ -70,13 +69,15 @@ export const Header = () => {
           <>
             <OrganizationSelector />
             <UserButton>
-              <UserButton.MenuItems>
-                <UserButton.Action
-                  label="App Settings"
-                  labelIcon={<LuSettings2 />}
-                  onClick={() => navigate("/settings")}
-                />
-              </UserButton.MenuItems>
+              <UserButton.UserProfilePage
+                label="App Settings"
+                labelIcon={<LuSettings2 />}
+                url="/settings"
+              >
+                <Settings />
+              </UserButton.UserProfilePage>
+              <UserButton.UserProfilePage label="account" />
+              <UserButton.UserProfilePage label="security" />
             </UserButton>
           </>
         ) : (

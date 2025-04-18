@@ -3,7 +3,6 @@ import { Home } from "./views/Home";
 import { useAccount, useIsAuthenticated } from "jazz-react";
 import { Welcome } from "./views/Welcome";
 import { Layout } from "./views/Layout";
-import { Settings } from "./views/Settings";
 import { ActionItems } from "./views/ActionItems";
 import { Calendar } from "./views/Calendar";
 import { MeetingView } from "./views/meeting/MeetingView";
@@ -38,7 +37,6 @@ function App() {
             <Route path="meetings" element={<MeetingList />} />
             <Route path="action-items" element={<ActionItems />} />
             <Route path="calendar" element={<Calendar />} />
-            <Route path="settings" element={<Settings />} />
             {isAdmin && <Route path="manage" element={<Manage />} />}
             <Route path="members" element={<Manage />} />
             <Route path="meetings/:meetingId" element={<MeetingShared />}>

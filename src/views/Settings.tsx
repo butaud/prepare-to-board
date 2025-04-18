@@ -9,8 +9,37 @@ export const Settings = () => {
   return (
     <div className="settings">
       <Breadcrumbs />
+      <h3>User Profile</h3>
+      <ManageProfile />
       <h3>Organizations</h3>
       <ManageOrganizations />
+    </div>
+  );
+};
+
+export const ManageProfile = () => {
+  const { me } = useAccount({
+    resolve: {
+      profile: true,
+    },
+  });
+  if (!me) {
+    return null;
+  }
+
+  return (
+    <div className="profile">
+      <div className="profile-field">
+        <label htmlFor="name">Name</label>
+        <input
+          type="text"
+          id="firstName"
+          value={me.profile.name}
+          onChange={(e) => {
+            me.profile.name = e.target.value;
+          }}
+        />
+      </div>
     </div>
   );
 };
