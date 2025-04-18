@@ -71,6 +71,18 @@ vi.mock("react-icons/sl", async (importActual) => {
 });
 
 // Fix dialogs which are not supported in jsdom
-HTMLDialogElement.prototype.showModal = vi.fn();
-HTMLDialogElement.prototype.close = vi.fn();
-HTMLDialogElement.prototype.show = vi.fn();
+HTMLDialogElement.prototype.showModal = vi
+  .fn()
+  .mockImplementation(function (this: HTMLDialogElement) {
+    this.open = true;
+  });
+HTMLDialogElement.prototype.close = vi
+  .fn()
+  .mockImplementation(function (this: HTMLDialogElement) {
+    this.open = false;
+  });
+HTMLDialogElement.prototype.show = vi
+  .fn()
+  .mockImplementation(function (this: HTMLDialogElement) {
+    this.open = true;
+  });

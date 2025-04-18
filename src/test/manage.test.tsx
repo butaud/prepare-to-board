@@ -187,8 +187,11 @@ describe("Manage", () => {
 
       await userEvent.click(inviteLinkButton);
 
-      const inviteLinkInput = await screen.findByLabelText<HTMLInputElement>(
-        "Invite link"
+      const inviteLinkInput = await screen.findByRole<HTMLInputElement>(
+        "textbox",
+        {
+          name: "Invite link",
+        }
       );
       expect(inviteLinkInput.value).toContain("invite#/invite");
     });
