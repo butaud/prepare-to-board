@@ -80,5 +80,9 @@ header {
     flex-direction: row;
     align-items: center;
     gap: 5px;
+
+    select {
+      max-width: 100px;
+    }
   }
 }
