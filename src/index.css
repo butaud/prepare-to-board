@@ -16,6 +16,7 @@
 
   --danger-color: hsl(0, 83%, 82%);
   --danger-color-strong: hsl(0, 83%, 70%);
+  --danger-color-subtle: hsl(0, 83%, 97%);
 
   --shadow-color: rgba(0, 0, 0, 0.1);
   --shadow-color-strong: rgba(0, 0, 0, 0.3);
@@ -42,6 +43,7 @@
 
     --danger-color: hsl(0, 83%, 35%);
     --danger-color-strong: hsl(0, 83%, 30%);
+    --danger-color-subtle: hsl(0, 83%, 10%);
 
     --shadow-color: rgba(0, 0, 0, 0.1);
     --shadow-color-strong: rgba(0, 0, 0, 0.3);
@@ -141,10 +143,18 @@ input[type="submit"].danger {
   border: 2px solid var(--danger-color-strong);
   box-shadow: 0 4px 8px var(--shadow-color);
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: var(--danger-color-strong);
     border: 2px solid var(--danger-color);
     box-shadow: 0 4px 8px var(--shadow-color-strong);
+  }
+
+  &:disabled {
+    background-color: var(--danger-color-subtle);
+    color: var(--font-color);
+    border: 2px solid var(--danger-color-subtle);
+    box-shadow: none;
+    cursor: default;
   }
 }
 

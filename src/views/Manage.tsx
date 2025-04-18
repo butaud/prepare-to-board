@@ -56,6 +56,12 @@ export const Manage = () => {
       <EditOrganization id={me.root.selectedOrganization.id} />
       <h3>Organization Members</h3>
       <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+          </tr>
+        </thead>
         <tbody>
           {organizationGroup.members.length === 0 && (
             <tr>
@@ -132,6 +138,15 @@ const MemberNode = ({
 
   const handleRoleChange = (newRole: AccountRole) => {
     if (startingRole !== newRole) {
+      if (newRole === "admin") {
+        if (
+          !confirm(
+            "Are you sure you want to make this user an admin? You will not be able to change their role back."
+          )
+        ) {
+          return;
+        }
+      }
       organizationGroup.addMember(account, newRole);
     }
   };
@@ -141,47 +156,68 @@ const MemberNode = ({
       <td className={isSelf ? "me" : ""}>
         {account?.profile.name + (isSelf ? " (me)" : "")}{" "}
       </td>
+      <td>
+        <RolePicker
+          role={startingRole as AccountRole}
+          onChange={handleRoleChange}
+          amIAdmin={isAdmin}
+          isSelf={isSelf}
+          isMemberAdmin={startingRole === "admin"}
+        />
+      </td>
       {isAdmin && !isSelf && (
-        <>
-          <td>
-            <RolePicker role={startingRole} onChange={handleRoleChange} />
-          </td>
-          <td>
-            <button
-              className="danger"
-              onClick={handleRemoveClick}
-              disabled={startingRole === "admin"}
-              title={
-                startingRole === "admin"
-                  ? "Admins cannot be removed"
-                  : undefined
-              }
-            >
-              <SlBan />
-              Remove
-            </button>
-          </td>
-        </>
+        <td>
+          <button
+            className="danger"
+            onClick={handleRemoveClick}
+            disabled={startingRole === "admin"}
+            title={
+              startingRole === "admin" ? "Admins cannot be removed" : undefined
+            }
+          >
+            <SlBan />
+            Remove
+          </button>
+        </td>
       )}
     </tr>
   );
 };
 
 type AccountRole = "admin" | "writer" | "reader";
-type RolePickerProps = {
-  role: string;
-  onChange: (role: AccountRole) => void;
+const roles: AccountRole[] = ["admin", "writer", "reader"];
+const roleNames: Record<AccountRole, string> = {
+  admin: "Admin",
+  writer: "Writer",
+  reader: "Reader",
 };
-const RolePicker = ({ role, onChange }: RolePickerProps) => {
-  const roles: AccountRole[] = ["admin", "writer", "reader"];
+type RolePickerProps = {
+  role: AccountRole;
+  onChange: (role: AccountRole) => void;
+  amIAdmin: boolean;
+  isSelf: boolean;
+  isMemberAdmin: boolean;
+};
+const RolePicker = ({
+  role,
+  onChange,
+  amIAdmin,
+  isSelf,
+  isMemberAdmin,
+}: RolePickerProps) => {
+  const roleDisplay = roleNames[role];
+  if (!amIAdmin || isSelf || isMemberAdmin) {
+    return roleDisplay;
+  }
   return (
     <select
       value={role}
       onChange={(e) => onChange(e.target.value as AccountRole)}
+      aria-label="Role"
     >
       {roles.map((r) => (
         <option key={r} value={r}>
-          {r}
+          {roleNames[r]}
         </option>
       ))}
     </select>

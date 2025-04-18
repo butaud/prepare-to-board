@@ -39,6 +39,7 @@ export const InviteUserDialog: FC<InviteUserDialogProps> = ({
         value={inviteLink}
         readOnly
         onFocus={(e) => e.target.select()}
+        aria-label="Invite link"
       />
     </Dialog>
   );

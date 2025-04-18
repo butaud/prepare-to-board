@@ -1,5 +1,9 @@
 form.organization {
-    input {
-        margin-left: 20px;
-    }
+  input {
+    margin-left: 20px;
+
+    max-width: 300px;
+    min-width: 200px;
+    field-sizing: content;
+  }
 }

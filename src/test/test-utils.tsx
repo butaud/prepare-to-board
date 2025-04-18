@@ -74,6 +74,28 @@ export const addTestOrganization = async (
   organizations.push(org);
 };
 
+export const addMemberToTestOrganization = async (
+  name: string,
+  role: "admin" | "writer" | "reader"
+) => {
+  if (!testAccount) {
+    throw new Error("Test account not set up. Call setupTestAccount first.");
+  }
+
+  const newMember = await createJazzTestAccount({
+    AccountSchema: UserAccount,
+    isCurrentActiveAccount: false,
+    creationProps: { name },
+  });
+
+  linkAccounts(testAccount, newMember);
+  await newMember.waitForSync();
+
+  const owningGroup = organizations[0]._owner.castAs(Group);
+  owningGroup.addMember(newMember, role);
+  await owningGroup.waitForSync();
+};
+
 const customRender = async (ui: ReactElement, options: RenderOptions = {}) => {
   const tempAccount = await createJazzTestAccount({
     AccountSchema: UserAccount,

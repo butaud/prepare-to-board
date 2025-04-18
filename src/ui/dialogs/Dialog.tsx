@@ -26,7 +26,12 @@ export const Dialog: React.FC<DialogProps> = ({
   }, []);
 
   return (
-    <dialog ref={dialogRef} className={className} onCancel={closeDialog}>
+    <dialog
+      ref={dialogRef}
+      className={className}
+      onCancel={closeDialog}
+      aria-label={title}
+    >
       <div className="dialog-header">
         <h3>{title}</h3>
         <button className="subtle close" onClick={closeDialog} title="Close">

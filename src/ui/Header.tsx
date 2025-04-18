@@ -114,6 +114,7 @@ const OrganizationSelector = () => {
   return (
     <div className="organization-selector">
       <select
+        aria-label="Organization"
         id="organization-select"
         value={selectedOrganization?.id || ""}
         onChange={handleOrganizationChange}

@@ -10,6 +10,10 @@
   table {
     border-collapse: separate;
     border-spacing: 10px;
+
+    tr.member {
+      font-size: 0.9em;
+    }
     td {
       height: calc(var(--button-height) + 2px);
     }
