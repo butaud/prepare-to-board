@@ -1,12 +1,21 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { render, screen } from "./test-utils";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  addTestOrganization,
+  render,
+  resetTestAccount,
+  screen,
+  setupTestAccount,
+} from "./test-utils";
 import App from "../App";
 import userEvent from "@testing-library/user-event";
 
 describe("Navigation", () => {
+  afterEach(() => {
+    resetTestAccount();
+  });
   describe("unsigned in", () => {
     it("should not show any nav links when not signed in", async () => {
-      await render(<App />, { isSignedIn: false });
+      await render(<App />);
 
       await screen.findByRole("heading", { name: "Welcome!" });
       expect(
@@ -17,10 +26,9 @@ describe("Navigation", () => {
 
   describe("signed in non-admin", () => {
     beforeEach(async () => {
-      await render(<App />, {
-        isSignedIn: true,
-        organization: { name: "Test Org", isAdmin: false },
-      });
+      await setupTestAccount("Test User");
+      await addTestOrganization("Test Org", "reader");
+      await render(<App />);
     });
 
     it("should not show manage link", async () => {
@@ -76,10 +84,9 @@ describe("Navigation", () => {
 
   describe("signed in admin", () => {
     beforeEach(async () => {
-      await render(<App />, {
-        isSignedIn: true,
-        organization: { name: "Test Org", isAdmin: true },
-      });
+      await setupTestAccount("Test User");
+      await addTestOrganization("Test Org", "admin");
+      await render(<App />);
     });
 
     it("should not show members link", async () => {
