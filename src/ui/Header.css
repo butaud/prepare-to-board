@@ -67,7 +67,7 @@ header {
         margin-right: 5px;
       }
 
-      @media screen and (max-width: 960px) {
+      @media screen and (max-width: 925px) {
         .name {
           display: none;
         }

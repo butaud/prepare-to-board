@@ -48,7 +48,7 @@ export const Header = () => {
             </NavLink>
             <NavLink to="/calendar">
               <LuCalendarDays />
-              <span className="name">Annual Calendar</span>
+              <span className="name">Calendar</span>
             </NavLink>
             {isAdmin ? (
               <NavLink to="/manage">

@@ -71,13 +71,13 @@ describe("Navigation", () => {
 
     it("should have working calendar link", async () => {
       const calendarLink = screen.getByRole("link", {
-        name: "Annual Calendar",
+        name: "Calendar",
       });
       expect(calendarLink).toBeInTheDocument();
 
       await userEvent.click(calendarLink);
       expect(
-        await screen.findByRole("heading", { name: "Annual Calendar" })
+        await screen.findByRole("heading", { name: "Calendar" })
       ).toBeInTheDocument();
     });
   });
@@ -129,13 +129,13 @@ describe("Navigation", () => {
 
     it("should have working calendar link", async () => {
       const calendarLink = screen.getByRole("link", {
-        name: "Annual Calendar",
+        name: "Calendar",
       });
       expect(calendarLink).toBeInTheDocument();
 
       await userEvent.click(calendarLink);
       expect(
-        await screen.findByRole("heading", { name: "Annual Calendar" })
+        await screen.findByRole("heading", { name: "Calendar" })
       ).toBeInTheDocument();
     });
   });
