@@ -46,6 +46,7 @@ export const MeetingList = () => {
             </Link>
           </li>
         ))}
+        {meetings.length === 0 && <li>No meetings have been scheduled yet.</li>}
       </ul>
     </div>
   );

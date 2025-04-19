@@ -1,45 +1,9 @@
-import { FC, FormEvent, useEffect, useState } from "react";
-import {
-  DraftMeeting,
-  ListOfMinutes,
-  ListOfTopics,
-  Meeting,
-} from "../../schema";
-import { useAccount, useCoState } from "jazz-react";
-import { ID } from "jazz-tools";
+import { FC, useState } from "react";
+import { ListOfMinutes, ListOfTopics, Meeting } from "../../schema";
+import { useAccount } from "jazz-react";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
-
-type MeetingFormProps = {
-  meeting: Meeting | DraftMeeting;
-  onSave?: (e: FormEvent<HTMLFormElement>) => void;
-};
-
-const MeetingForm: FC<MeetingFormProps> = ({ meeting, onSave }) => {
-  return (
-    <form className="organization" onSubmit={onSave}>
-      <div>
-        <label>
-          Meeting time
-          <DatePicker
-            selected={meeting.date}
-            onChange={(date) => (meeting.date = date ?? undefined)}
-            dateFormat="yyyy/MM/dd h:mm aa"
-            placeholderText="Meeting date and time"
-            showTimeSelect
-            timeFormat="h:mm aa"
-            popperProps={{
-              placement: "bottom",
-              strategy: "fixed",
-            }}
-          />
-        </label>
-      </div>
-      {onSave && <button type="submit">Save</button>}
-    </form>
-  );
-};
 
 export type CreateMeetingProps = {
   onCreated?: (meeting: Meeting) => void;
@@ -53,12 +17,8 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
       },
     },
   });
-  const [draft, setDraft] = useState<DraftMeeting>();
-  const [errors, setErrors] = useState<string[]>([]);
-
-  useEffect(() => {
-    setDraft(DraftMeeting.create({}));
-  }, [me?.id]);
+  const [date, setDate] = useState<Date | null>(null);
+  const [time, setTime] = useState<Date | null>(null);
 
   if (!me || !me.root.selectedOrganization) {
     return null;
@@ -68,17 +28,17 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
 
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!draft) return;
-    const validationErrors = draft.validate();
-    if (validationErrors.length > 0) {
-      setErrors(validationErrors);
+
+    if (!date || !time) {
       return;
     }
-    setErrors([]);
+
+    const fullDate = new Date(date);
+    fullDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
 
     const newMeeting = Meeting.create(
       {
-        date: draft.date!,
+        date: fullDate,
         plannedAgenda: ListOfTopics.create([], selectedOrganization._owner),
         liveAgenda: ListOfTopics.create([], selectedOrganization._owner),
         minutes: ListOfMinutes.create([], selectedOrganization._owner),
@@ -90,34 +50,54 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
     if (selectedOrganization) {
       selectedOrganization.meetings.push(newMeeting);
     }
-    setDraft(undefined);
     if (onCreated) {
       onCreated(newMeeting);
     }
   };
 
+  const handleDateChange = (date: Date | null) => {
+    setDate(date);
+  };
+  const handleTimeChange = (time: Date | null) => {
+    setTime(time);
+  };
+
   return (
-    <div>
-      {errors.length > 0 && (
-        <div className="error">
-          <ul>
-            {errors.map((error, index) => (
-              <li key={index}>{error}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {draft && <MeetingForm meeting={draft} onSave={handleSave} />}
-    </div>
+    <form className="organization" onSubmit={handleSave}>
+      <div>
+        <label>
+          Meeting date
+          <DatePicker
+            selected={date}
+            onSelect={handleDateChange}
+            dateFormat="M/d/yyyy"
+            popperProps={{
+              placement: "bottom",
+              strategy: "fixed",
+            }}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          Meeting time
+          <DatePicker
+            selected={time}
+            onChange={handleTimeChange}
+            showTimeSelect
+            showTimeSelectOnly
+            timeIntervals={15}
+            dateFormat="h:mm aa"
+            popperProps={{
+              placement: "bottom",
+              strategy: "fixed",
+            }}
+          />
+        </label>
+      </div>
+      <button type="submit" disabled={!date || !time}>
+        Save
+      </button>
+    </form>
   );
-};
-
-export const EditMeeting: FC<{ id: ID<Meeting> }> = ({ id }) => {
-  const meeting = useCoState(Meeting, id);
-
-  if (!meeting) {
-    return null;
-  }
-
-  return <MeetingForm meeting={meeting} />;
 };

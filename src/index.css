@@ -112,9 +112,17 @@ input[type="submit"] {
     margin-right: 5px;
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: var(--primary-color-light);
     box-shadow: 0 4px 8px var(--shadow-color-strong);
+  }
+
+  &:disabled {
+    background-color: var(--primary-color-subtle);
+    color: var(--font-color);
+    border: 2px solid var(--primary-color-subtle);
+    box-shadow: none;
+    cursor: default;
   }
 }
 

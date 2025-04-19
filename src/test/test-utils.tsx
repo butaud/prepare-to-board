@@ -1,7 +1,14 @@
 import { act, render, RenderOptions } from "@testing-library/react";
 import { createJazzTestAccount, linkAccounts } from "jazz-tools/testing";
 import { ReactElement } from "react";
-import { ListOfMeetings, Organization, UserAccount } from "../schema";
+import {
+  ListOfMeetings,
+  ListOfMinutes,
+  ListOfTopics,
+  Meeting,
+  Organization,
+  UserAccount,
+} from "../schema";
 import { JazzTestProvider } from "jazz-react/testing";
 import { Group } from "jazz-tools";
 import { MemoryRouter } from "react-router-dom";
@@ -96,12 +103,47 @@ export const addMemberToTestOrganization = async (
   await owningGroup.waitForSync();
 };
 
-const customRender = async (ui: ReactElement, options: RenderOptions = {}) => {
+export const addTestMeeting = async (date: Date) => {
+  if (!testAccount) {
+    throw new Error("Test account not set up. Call setupTestAccount first.");
+  }
+
+  const org = organizations[0];
+
+  if (!org) {
+    throw new Error(
+      "No test organization found. Call addTestOrganization first."
+    );
+  }
+
+  const owningGroup = org._owner.castAs(Group);
+  const meeting = Meeting.create(
+    {
+      date,
+      plannedAgenda: ListOfTopics.create([], owningGroup),
+      liveAgenda: ListOfTopics.create([], owningGroup),
+      minutes: ListOfMinutes.create([], owningGroup),
+    },
+    owningGroup
+  );
+  org.meetings?.push(meeting);
+  await org.waitForSync();
+  await meeting.waitForSync();
+};
+
+export type CustomRenderProps = {
+  startingPath?: string;
+};
+const customRender = async (
+  ui: ReactElement,
+  options: RenderOptions & CustomRenderProps = {}
+) => {
   const tempAccount = await createJazzTestAccount({
     AccountSchema: UserAccount,
     isCurrentActiveAccount: false,
     creationProps: { name: "Temp Account" },
   });
+  const { startingPath, ...renderOptions } = options;
   return act(() =>
     render(ui, {
       wrapper: ({ children }) => (
@@ -109,10 +151,14 @@ const customRender = async (ui: ReactElement, options: RenderOptions = {}) => {
           account={testAccount ?? tempAccount}
           isAuthenticated={testAccount !== null}
         >
-          <MemoryRouter>{children}</MemoryRouter>
+          <MemoryRouter
+            initialEntries={startingPath ? [startingPath] : undefined}
+          >
+            {children}
+          </MemoryRouter>
         </JazzTestProvider>
       ),
-      ...options,
+      ...renderOptions,
     })
   );
 };
