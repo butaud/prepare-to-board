@@ -1,8 +1,19 @@
 import { Account, co, CoList, CoMap, Group, Profile } from "jazz-tools";
 
+export class Note extends CoMap {
+
+}
+
+export class ListOfNotes extends CoList.Of(co.ref(Note)) {}
+
+export class TextNote extends Note {
+  text = co.string;
+}
+
+export class ListOfTextNotes extends CoList.Of(co.ref(TextNote)) {}
+
 export class Topic extends CoMap {
   title = co.string;
-  isDraft = co.optional.boolean;
   outcome = co.optional.string;
   durationMinutes = co.optional.number;
   plannedTopic = co.optional.ref(Topic);
@@ -10,6 +21,13 @@ export class Topic extends CoMap {
 }
 
 export class ListOfTopics extends CoList.Of(co.ref(Topic)) {}
+
+export class DraftTopic extends Topic {
+  anchor = co.optional.ref(Topic);
+  anchorIndex = co.optional.number;
+}
+
+export class ListOfDraftTopics extends CoList.Of(co.ref(DraftTopic)) {}
 
 export class Minute extends CoMap {
   topic = co.ref(Topic);
@@ -26,6 +44,16 @@ export class Meeting extends CoMap {
   minutes = co.ref(ListOfMinutes);
 }
 
+export class ListOfMeetings extends CoList.Of(co.ref(Meeting)) {}
+
+export class MeetingShadow extends CoMap {
+  meeting = co.ref(Meeting);
+  notes = co.ref(ListOfTextNotes);
+  draftTopics = co.ref(ListOfDraftTopics);
+}
+
+export class ListOfMeetingShadows extends CoList.Of(co.ref(MeetingShadow)) {}
+
 export class DraftMeeting extends CoMap {
   date = co.optional.Date;
 
@@ -37,8 +65,6 @@ export class DraftMeeting extends CoMap {
     return errors;
   }
 }
-
-export class ListOfMeetings extends CoList.Of(co.ref(Meeting)) {}
 
 export class Organization extends CoMap {
   name = co.string;
@@ -63,6 +89,7 @@ export class ListOfOrganizations extends CoList.Of(co.ref(Organization)) {}
 export class UserAccountRoot extends CoMap {
   organizations = co.ref(ListOfOrganizations);
   selectedOrganization = co.optional.ref(Organization);
+  meetingShadows = co.ref(ListOfMeetingShadows);
 }
 
 export class UserProfile extends Profile {
@@ -100,18 +127,23 @@ export class UserAccount extends Account {
       this.root = UserAccountRoot.create({
         selectedOrganization: undefined,
         organizations: ListOfOrganizations.create([]),
+        meetingShadows: ListOfMeetingShadows.create([]),
       });
     } else {
         const { root} = await this.ensureLoaded({
           resolve: {
             root: {
-                organizations: true
+                organizations: true,
+                meetingShadows: true
             }
           },
         });
         if (root.organizations === undefined) {
           root.organizations = ListOfOrganizations.create([]);
         }    
+        if (root.meetingShadows === undefined) {
+          root.meetingShadows = ListOfMeetingShadows.create([]);
+        }
     }
 
     if (this.profile === undefined) {

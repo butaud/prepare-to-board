@@ -1,8 +1,14 @@
 import { useAccount } from "jazz-react";
-import { ListOfTopics, Topic } from "../../schema";
+import { DraftTopic, ListOfTopics, Meeting, Topic } from "../../schema";
 import { FC } from "react";
 import { TopicNode } from "../../ui/doc/TopicNode";
 import { Resolved } from "jazz-tools";
+import {
+  createDraftTopic,
+  deleteDraftTopic,
+  getTopicListWithDrafts,
+  publishDraftTopic,
+} from "../../util/data";
 
 export type TopicListProps = {
   topicList: Resolved<
@@ -11,10 +17,32 @@ export type TopicListProps = {
       $each: true;
     }
   >;
+  meeting: Meeting;
+  useDrafts?: boolean;
 };
 
-export const TopicList: FC<TopicListProps> = ({ topicList }) => {
-  const { me } = useAccount();
+export const TopicList: FC<TopicListProps> = ({
+  topicList,
+  meeting,
+  useDrafts,
+}) => {
+  const { me } = useAccount({
+    resolve: {
+      root: {
+        meetingShadows: {
+          $each: {
+            meeting: true,
+            notes: true,
+            draftTopics: { $each: { anchor: true } },
+          },
+        },
+      },
+    },
+  });
+
+  if (!me) {
+    return <p>Loading...</p>;
+  }
   const isOfficer = me?.canWrite(topicList);
 
   const handleDeleteClick = (topic: Topic) => {
@@ -23,34 +51,59 @@ export const TopicList: FC<TopicListProps> = ({ topicList }) => {
       topicList.splice(index, 1);
     }
   };
+
+  const handlePublishClick = (topic: DraftTopic) => {
+    publishDraftTopic(me, meeting, topic);
+  };
+
+  const handleCancelDraftTopic = (topic: DraftTopic) => {
+    deleteDraftTopic(me, meeting, topic);
+  };
+
+  const topicListWithDrafts = useDrafts
+    ? getTopicListWithDrafts(topicList, meeting, me.root.meetingShadows)
+    : topicList;
+
+  const lastTopicIndex = topicList.length - 1;
+  const lastTopic = topicList[lastTopicIndex];
   return (
     <div className="topic-list">
       <h4>Topics</h4>
       <ul>
-        {topicList
-          .filter((topic) => isOfficer || !topic.isDraft)
-          .map((topic) => (
-            <li key={topic.id}>
-              <TopicNode
-                topic={topic}
-                onDelete={
-                  isOfficer ? () => handleDeleteClick(topic) : undefined
-                }
-              />
-            </li>
-          ))}
+        {topicListWithDrafts.map((topic) => (
+          <li key={topic.id}>
+            <TopicNode
+              topic={topic}
+              onDelete={isOfficer ? () => handleDeleteClick(topic) : undefined}
+              onPublish={
+                topic instanceof DraftTopic
+                  ? () => handlePublishClick(topic)
+                  : undefined
+              }
+              onCancel={
+                topic instanceof DraftTopic
+                  ? () => handleCancelDraftTopic(topic)
+                  : undefined
+              }
+            />
+          </li>
+        ))}
         {isOfficer && (
           <li>
             <button
               onClick={() => {
-                const newTopic = Topic.create(
-                  {
-                    title: "New Topic",
-                    isDraft: true,
-                  },
-                  topicList._owner
+                createDraftTopic(
+                  me,
+                  meeting,
+                  lastTopic
+                    ? {
+                        topic: lastTopic,
+                        index: topicList.findIndex(
+                          (t) => t.id === lastTopic.id
+                        ),
+                      }
+                    : undefined
                 );
-                topicList.push(newTopic);
               }}
             >
               Add Topic

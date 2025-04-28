@@ -49,7 +49,11 @@ export const MeetingView = () => {
           Delete Meeting
         </button>
       )}
-      <TopicList topicList={meeting.plannedAgenda} />
+      <TopicList
+        topicList={meeting.plannedAgenda}
+        meeting={meeting}
+        useDrafts
+      />
     </>
   );
 };
