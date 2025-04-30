@@ -58,6 +58,6 @@ describe("Organization", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     await userEvent.click(screen.getByRole("button", { name: "Remove" }));
 
-    expect(await screen.queryByRole("listitem")).not.toBeInTheDocument();
+    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
   });
 });

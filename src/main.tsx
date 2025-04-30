@@ -7,8 +7,9 @@ import { UserAccount } from "./schema.ts";
 import { JazzProviderWithClerk } from "jazz-react-auth-clerk";
 import { BrowserRouter } from "react-router-dom";
 
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const JAZZ_API_KEY = import.meta.env.VITE_JAZZ_API_KEY;
+const CLERK_PUBLISHABLE_KEY = import.meta.env
+  .VITE_CLERK_PUBLISHABLE_KEY as string;
+const JAZZ_API_KEY = import.meta.env.VITE_JAZZ_API_KEY as string;
 
 if (!CLERK_PUBLISHABLE_KEY) {
   throw new Error("Add your Clerk Publishable Key to the .env file");

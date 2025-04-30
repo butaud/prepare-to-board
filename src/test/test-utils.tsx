@@ -49,7 +49,7 @@ export const addTestOrganization = async (
       });
 
   if (owningAccount !== testAccount) {
-    linkAccounts(testAccount, owningAccount);
+    await linkAccounts(testAccount, owningAccount);
   }
   await owningAccount.waitForSync();
   const owningGroup = Group.create(owningAccount);
@@ -58,7 +58,7 @@ export const addTestOrganization = async (
     owningGroup.addMember(testAccount, role);
   }
 
-  const org = await Organization.create(
+  const org = Organization.create(
     {
       name,
       meetings: ListOfMeetings.create([], owningGroup),
@@ -95,7 +95,7 @@ export const addMemberToTestOrganization = async (
     creationProps: { name },
   });
 
-  linkAccounts(testAccount, newMember);
+  await linkAccounts(testAccount, newMember);
   await newMember.waitForSync();
 
   const owningGroup = organizations[0]._owner.castAs(Group);

@@ -98,7 +98,7 @@ describe("Meeting List", () => {
       });
       await userEvent.click(createMeetingButton);
 
-      const meetingDateInput = await screen.getByRole("textbox", {
+      const meetingDateInput = screen.getByRole("textbox", {
         name: "Meeting date",
       });
       await userEvent.clear(meetingDateInput);
@@ -107,7 +107,7 @@ describe("Meeting List", () => {
       // we also click on the corresponding date in the calendar
       await userEvent.click(await screen.findByText(10));
 
-      const meetingTimeInput = await screen.getByRole("textbox", {
+      const meetingTimeInput = screen.getByRole("textbox", {
         name: "Meeting time",
       });
       await userEvent.type(meetingTimeInput, "12:00 PM");

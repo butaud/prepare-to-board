@@ -1,8 +1,6 @@
 import { Account, co, CoList, CoMap, Group, Profile } from "jazz-tools";
 
-export class Note extends CoMap {
-
-}
+export class Note extends CoMap {}
 
 export class ListOfNotes extends CoList.Of(co.ref(Note)) {}
 
@@ -111,7 +109,7 @@ export class UserProfile extends Profile {
     return `${this.title} ${this.lastName}`;
   }
 
-  async migrate(this: UserProfile) {
+  migrate(this: UserProfile) {
     if (this.title === undefined || this.title === "") {
       this.title = "Mr.";
     }
@@ -122,6 +120,7 @@ export class UserAccount extends Account {
   root = co.ref(UserAccountRoot);
   profile = co.ref(UserProfile);
 
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   async migrate(this: UserAccount, creationProps?: { name: string }) {
     if (this.root === undefined) {
       this.root = UserAccountRoot.create({
@@ -130,20 +129,20 @@ export class UserAccount extends Account {
         meetingShadows: ListOfMeetingShadows.create([]),
       });
     } else {
-        const { root} = await this.ensureLoaded({
-          resolve: {
-            root: {
-                organizations: true,
-                meetingShadows: true
-            }
+      const { root } = await this.ensureLoaded({
+        resolve: {
+          root: {
+            organizations: true,
+            meetingShadows: true,
           },
-        });
-        if (root.organizations === undefined) {
-          root.organizations = ListOfOrganizations.create([]);
-        }    
-        if (root.meetingShadows === undefined) {
-          root.meetingShadows = ListOfMeetingShadows.create([]);
-        }
+        },
+      });
+      if (root.organizations === undefined) {
+        root.organizations = ListOfOrganizations.create([]);
+      }
+      if (root.meetingShadows === undefined) {
+        root.meetingShadows = ListOfMeetingShadows.create([]);
+      }
     }
 
     if (this.profile === undefined) {
@@ -164,7 +163,7 @@ export class UserAccount extends Account {
         },
       });
       if (profile) {
-        await profile.migrate();
+        profile.migrate();
       }
     }
   }

@@ -8,6 +8,7 @@ export const Invite = () => {
 
   useAcceptInvite({
     invitedObjectSchema: Organization,
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onAccept: async (organizationId: ID<Organization>) => {
       const me = await UserAccount.getMe().ensureLoaded({
         resolve: {
@@ -34,7 +35,7 @@ export const Invite = () => {
         me.root.organizations.push(organization);
       }
 
-      navigate("/");
+      await navigate("/");
     },
   });
   return (

@@ -39,7 +39,7 @@ export const MeetingView = () => {
       ),
       1
     );
-    navigate("/meetings");
+    void navigate("/meetings");
   };
   return (
     <>

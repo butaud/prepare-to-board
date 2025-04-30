@@ -154,7 +154,7 @@ describe("Manage", () => {
         "Are you sure you want to remove this member from the organization?"
       );
 
-      expect(await screen.queryByText("Test User 3")).not.toBeInTheDocument();
+      expect(screen.queryByText("Test User 3")).not.toBeInTheDocument();
     });
 
     it("should not allow removing admin members from the organization", async () => {
@@ -168,7 +168,7 @@ describe("Manage", () => {
       expect(window.confirm).not.toHaveBeenCalledWith(
         "Are you sure you want to remove this member from the organization?"
       );
-      expect(await screen.queryByText("Test User 2")).toBeInTheDocument();
+      expect(screen.queryByText("Test User 2")).toBeInTheDocument();
     });
 
     it("should not allow removing self from the organization", async () => {

@@ -136,7 +136,7 @@ const MemberNode = ({
         "Are you sure you want to remove this member from the organization?"
       )
     ) {
-      organizationGroup.removeMember(account);
+      void organizationGroup.removeMember(account);
     }
   };
 

@@ -31,7 +31,7 @@ describe("Navigation", () => {
       await render(<App />);
     });
 
-    it("should not show manage link", async () => {
+    it("should not show manage link", () => {
       expect(
         screen.queryByRole("link", { name: "Manage" })
       ).not.toBeInTheDocument();
@@ -89,7 +89,7 @@ describe("Navigation", () => {
       await render(<App />);
     });
 
-    it("should not show members link", async () => {
+    it("should not show members link", () => {
       expect(
         screen.queryByRole("link", { name: "Members" })
       ).not.toBeInTheDocument();
