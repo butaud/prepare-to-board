@@ -7,6 +7,7 @@ import {
   ListOfTopics,
   Meeting,
   Organization,
+  Topic,
   UserAccount,
 } from "../schema";
 import { JazzTestProvider } from "jazz-react/testing";
@@ -129,6 +130,28 @@ export const addTestMeeting = async (date: Date) => {
   org.meetings?.push(meeting);
   await org.waitForSync();
   await meeting.waitForSync();
+  return meeting;
+};
+
+export const addTestTopic = async (meeting: Meeting, title: string) => {
+  if (!testAccount) {
+    throw new Error("Test account not set up. Call setupTestAccount first.");
+  }
+
+  const org = organizations[0];
+
+  if (!org) {
+    throw new Error(
+      "No test organization found. Call addTestOrganization first."
+    );
+  }
+
+  const owningGroup = org._owner.castAs(Group);
+  const topic = Topic.create({ title }, owningGroup);
+  meeting.plannedAgenda?.push(topic);
+  await meeting.waitForSync();
+  await topic.waitForSync();
+  return topic;
 };
 
 export type CustomRenderProps = {

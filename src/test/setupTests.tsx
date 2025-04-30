@@ -1,6 +1,20 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { expect, vi } from "vitest";
 import "@clerk/clerk-react";
+
+expect.extend({
+  toPrecede(received: HTMLElement, expected: HTMLElement) {
+    const comparison = received.compareDocumentPosition(expected);
+    const pass = !!(comparison & Node.DOCUMENT_POSITION_FOLLOWING);
+    return {
+      pass,
+      message: () =>
+        this.isNot
+          ? `expected ${received.outerHTML} not to precede ${expected.outerHTML}`
+          : `expected ${received.outerHTML} to precede ${expected.outerHTML}`,
+    };
+  },
+});
 
 vi.mock("@clerk/clerk-react", async (importActual) => {
   const actual = await importActual<typeof import("@clerk/clerk-react")>();

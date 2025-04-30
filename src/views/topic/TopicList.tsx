@@ -110,6 +110,7 @@ export const TopicList: FC<TopicListProps> = ({
             </button>
           </li>
         )}
+        {topicList.length === 0 && <li>No topics have been scheduled yet.</li>}
       </ul>
     </div>
   );

@@ -39,6 +39,7 @@ export const TopicNode: FC<TopicNodeProps> = ({
         onCancel={onCancel}
         canEdit={canEdit}
         editingByDefault={isDraft}
+        label="Topic"
       />
     </div>
   );

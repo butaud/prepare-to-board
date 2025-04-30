@@ -11,6 +11,7 @@ export type EditableTextProps = {
   onDelete?: () => void;
   onCancel?: () => void;
   editingByDefault?: boolean;
+  label?: string;
 };
 
 export const EditableText: FC<EditableTextProps> = ({
@@ -22,6 +23,7 @@ export const EditableText: FC<EditableTextProps> = ({
   onDelete,
   onCancel,
   editingByDefault,
+  label,
 }) => {
   const [isEditing, setIsEditing] = useState(editingByDefault ?? false);
   const [draftText, setDraftText] = useState(text);
@@ -60,10 +62,13 @@ export const EditableText: FC<EditableTextProps> = ({
           autoFocus
           type="text"
           value={draftText}
+          onFocus={(e) => e.currentTarget.select()}
           onChange={(e) => setDraftText(e.currentTarget.value)}
           onBlur={onSubmit}
           onKeyDown={(e) => e.key === "Escape" && onCancelInternal()}
           className={className}
+          aria-label={label}
+          title={label}
         />
       </form>
     );
@@ -86,11 +91,20 @@ export const EditableText: FC<EditableTextProps> = ({
         },
         <>
           {onDelete && (
-            <button className="delete" onClick={onDelete}>
+            <button
+              className="delete"
+              onClick={onDelete}
+              aria-label={`Delete ${label}`}
+            >
               <MdDelete />
             </button>
           )}
-          <button autoFocus className="edit" onClick={onStartEditing}>
+          <button
+            autoFocus
+            className="edit"
+            onClick={onStartEditing}
+            aria-label={`Edit ${label}`}
+          >
             <MdEdit />
           </button>
           <span>{text}</span>
