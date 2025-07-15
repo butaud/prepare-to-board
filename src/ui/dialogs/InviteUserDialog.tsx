@@ -1,6 +1,6 @@
 import { FC, useMemo } from "react";
 import { Dialog } from "./Dialog";
-import { createInviteLink } from "jazz-react";
+import { createInviteLink } from "jazz-tools/react";
 import { Organization } from "../../schema";
 
 import "./InviteUserDialog.css";

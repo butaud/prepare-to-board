@@ -1,12 +1,12 @@
-import { useCoState } from "jazz-react";
+import { useCoState } from "jazz-tools/react";
 import { Outlet, useParams } from "react-router-dom";
-import { Meeting } from "../../schema";
+import { Meeting, Schema } from "../../schema";
 import { ID } from "jazz-tools";
 import { Breadcrumbs } from "../../ui/Breadcrumbs";
 
 export const MeetingShared = () => {
   const { meetingId } = useParams();
-  const meeting = useCoState(Meeting, meetingId as ID<Meeting>, {
+  const meeting = useCoState(Schema.Meeting, meetingId as ID<Meeting>, {
     resolve: {
       plannedAgenda: { $each: true },
     },

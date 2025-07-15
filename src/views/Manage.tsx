@@ -1,7 +1,7 @@
-import { useAccount, useCoState } from "jazz-react";
+import { useAccount, useCoState } from "jazz-tools/react";
 import { EditOrganization } from "../ui/forms/Organization";
 import { Group, ID } from "jazz-tools";
-import { UserAccount } from "../schema";
+import { Schema, UserAccount } from "../schema";
 import { useState } from "react";
 import { InviteUserDialog } from "../ui/dialogs/InviteUserDialog";
 import { SlPlus, SlBan } from "react-icons/sl";
@@ -10,7 +10,7 @@ import "./Manage.css";
 import { Breadcrumbs } from "../ui/Breadcrumbs";
 
 export const Manage = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: true,
@@ -115,7 +115,7 @@ const MemberNode = ({
   isSelf,
   isAdmin,
 }: MemberNodeProps) => {
-  const account = useCoState(UserAccount, id, {
+  const account = useCoState(Schema.UserAccount, id, {
     resolve: {
       profile: true,
     },

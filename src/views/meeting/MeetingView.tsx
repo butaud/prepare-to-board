@@ -1,12 +1,12 @@
-import { useAccount } from "jazz-react";
+import { useAccount } from "jazz-tools/react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { Meeting } from "../../schema";
+import { Meeting, Schema } from "../../schema";
 import { SlTrash } from "react-icons/sl";
 import { TopicList } from "../topic/TopicList";
 import { Resolved } from "jazz-tools";
 
 export const MeetingView = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: {

@@ -1,5 +1,5 @@
-import { useAccount } from "jazz-react";
-import { Organization } from "../schema";
+import { useAccount } from "jazz-tools/react";
+import { Schema, Organization } from "../schema";
 import { FC } from "react";
 import "./Settings.css";
 import { Breadcrumbs } from "../ui/Breadcrumbs";
@@ -18,7 +18,7 @@ export const Settings = () => {
 };
 
 export const ManageProfile = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       profile: true,
     },
@@ -45,7 +45,7 @@ export const ManageProfile = () => {
 };
 
 export const ManageOrganizations = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         organizations: {

@@ -1,12 +1,13 @@
-import { useAccount } from "jazz-react";
+import { useAccount } from "jazz-tools/react";
 import { useState } from "react";
 import { CreateMeetingDialog } from "../../ui/dialogs/CreateMeetingDialog";
 import { Link } from "react-router-dom";
 import { Breadcrumbs } from "../../ui/Breadcrumbs";
 import { SlPlus } from "react-icons/sl";
+import { Schema } from "../../schema";
 
 export const MeetingList = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: {

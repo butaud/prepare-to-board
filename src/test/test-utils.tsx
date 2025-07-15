@@ -1,16 +1,8 @@
 import { act, render, RenderOptions } from "@testing-library/react";
 import { createJazzTestAccount, linkAccounts } from "jazz-tools/testing";
 import { ReactElement } from "react";
-import {
-  ListOfMeetings,
-  ListOfMinutes,
-  ListOfTopics,
-  Meeting,
-  Organization,
-  Topic,
-  UserAccount,
-} from "../schema";
-import { JazzTestProvider } from "jazz-react/testing";
+import { Schema, Meeting, Organization, UserAccount } from "../schema";
+import { JazzTestProvider } from "jazz-tools/react/testing";
 import { Group } from "jazz-tools";
 import { MemoryRouter } from "react-router-dom";
 
@@ -24,7 +16,7 @@ export const resetTestAccount = () => {
 
 export const setupTestAccount = async (name: string) => {
   const account = await createJazzTestAccount({
-    AccountSchema: UserAccount,
+    AccountSchema: Schema.UserAccount,
     isCurrentActiveAccount: true,
     creationProps: { name },
   });
@@ -44,7 +36,7 @@ export const addTestOrganization = async (
   const owningAccount = isAdmin
     ? testAccount
     : await createJazzTestAccount({
-        AccountSchema: UserAccount,
+        AccountSchema: Schema.UserAccount,
         isCurrentActiveAccount: false,
         creationProps: { name: "Other Account" },
       });
@@ -59,10 +51,10 @@ export const addTestOrganization = async (
     owningGroup.addMember(testAccount, role);
   }
 
-  const org = Organization.create(
+  const org = Schema.Organization.create(
     {
       name,
-      meetings: ListOfMeetings.create([], owningGroup),
+      meetings: Schema.ListOfMeetings.create([], owningGroup),
     },
     owningGroup
   );
@@ -91,7 +83,7 @@ export const addMemberToTestOrganization = async (
   }
 
   const newMember = await createJazzTestAccount({
-    AccountSchema: UserAccount,
+    AccountSchema: Schema.UserAccount,
     isCurrentActiveAccount: false,
     creationProps: { name },
   });
@@ -118,12 +110,12 @@ export const addTestMeeting = async (date: Date) => {
   }
 
   const owningGroup = org._owner.castAs(Group);
-  const meeting = Meeting.create(
+  const meeting = Schema.Meeting.create(
     {
       date,
-      plannedAgenda: ListOfTopics.create([], owningGroup),
-      liveAgenda: ListOfTopics.create([], owningGroup),
-      minutes: ListOfMinutes.create([], owningGroup),
+      plannedAgenda: Schema.ListOfTopics.create([], owningGroup),
+      liveAgenda: Schema.ListOfTopics.create([], owningGroup),
+      minutes: Schema.ListOfMinutes.create([], owningGroup),
     },
     owningGroup
   );
@@ -147,7 +139,7 @@ export const addTestTopic = async (meeting: Meeting, title: string) => {
   }
 
   const owningGroup = org._owner.castAs(Group);
-  const topic = Topic.create({ title }, owningGroup);
+  const topic = Schema.Topic.create({ title }, owningGroup);
   meeting.plannedAgenda?.push(topic);
   await meeting.waitForSync();
   await topic.waitForSync();
@@ -162,7 +154,7 @@ const customRender = async (
   options: RenderOptions & CustomRenderProps = {}
 ) => {
   const tempAccount = await createJazzTestAccount({
-    AccountSchema: UserAccount,
+    AccountSchema: Schema.UserAccount,
     isCurrentActiveAccount: false,
     creationProps: { name: "Temp Account" },
   });

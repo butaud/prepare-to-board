@@ -1,170 +1,206 @@
-import { Account, co, CoList, CoMap, Group, Profile } from "jazz-tools";
+import { co, Group, z } from "jazz-tools";
 
-export class Note extends CoMap {}
+const TextNote = co.map({
+  type: z.literal("text"),
+  text: z.string(),
+});
+export type TextNote = co.loaded<typeof TextNote>;
 
-export class ListOfNotes extends CoList.Of(co.ref(Note)) {}
+const Note = z.discriminatedUnion("type", [TextNote]);
+export type Note = co.loaded<typeof Note>;
 
-export class TextNote extends Note {
-  text = co.string;
-}
+const ListOfNotes = co.list(Note);
+export type ListOfNotes = co.loaded<typeof ListOfNotes>;
 
-export class ListOfTextNotes extends CoList.Of(co.ref(TextNote)) {}
+const Topic = co.map({
+  title: z.string(),
+  outcome: z.optional(z.string()),
+  durationMinutes: z.optional(z.number()),
+  get plannedTopic(): z.ZodOptional<typeof Topic> {
+    return z.optional(Topic);
+  },
+  cancelled: z.optional(z.boolean()),
+});
+export type Topic = co.loaded<typeof Topic>;
 
-export class Topic extends CoMap {
-  title = co.string;
-  outcome = co.optional.string;
-  durationMinutes = co.optional.number;
-  plannedTopic = co.optional.ref(Topic);
-  cancelled = co.optional.boolean;
-}
+const ListOfTopics = co.list(Topic);
+export type ListOfTopics = co.loaded<typeof ListOfTopics>;
 
-export class ListOfTopics extends CoList.Of(co.ref(Topic)) {}
+const DraftTopic = co.map({
+  ...Topic.def.shape,
+  isDraft: z.literal(true),
+  anchor: z.optional(Topic),
+  anchorIndex: z.optional(z.number()),
+});
+export type DraftTopic = co.loaded<typeof DraftTopic>;
+export const topicIsDraft = (
+  topic: Topic | DraftTopic
+): topic is DraftTopic => {
+  return (topic as DraftTopic).isDraft !== undefined;
+};
 
-export class DraftTopic extends Topic {
-  anchor = co.optional.ref(Topic);
-  anchorIndex = co.optional.number;
-}
+const ListOfDraftTopics = co.list(DraftTopic);
+export type ListOfDraftTopics = co.loaded<typeof ListOfDraftTopics>;
 
-export class ListOfDraftTopics extends CoList.Of(co.ref(DraftTopic)) {}
+const Minute = co.map({
+  topic: Topic,
+  durationMinutes: z.number(),
+});
+export type Minute = co.loaded<typeof Minute>;
 
-export class Minute extends CoMap {
-  topic = co.ref(Topic);
-  durationMinutes = co.number;
-}
+const ListOfMinutes = co.list(Minute);
+export type ListOfMinutes = co.loaded<typeof ListOfMinutes>;
 
-export class ListOfMinutes extends CoList.Of(co.ref(Minute)) {}
+const Meeting = co.map({
+  date: z.date(),
+  status: z.optional(z.literal(["draft", "published", "live", "completed"])),
+  plannedAgenda: z.optional(ListOfTopics),
+  liveAgenda: z.optional(ListOfTopics),
+  minutes: z.optional(ListOfMinutes),
+});
+export type Meeting = co.loaded<typeof Meeting>;
 
-export class Meeting extends CoMap {
-  date = co.Date;
-  status = co.optional.literal("draft", "published", "live", "completed");
-  plannedAgenda = co.ref(ListOfTopics);
-  liveAgenda = co.ref(ListOfTopics);
-  minutes = co.ref(ListOfMinutes);
-}
+const ListOfMeetings = co.list(Meeting);
+export type ListOfMeetings = co.loaded<typeof ListOfMeetings>;
 
-export class ListOfMeetings extends CoList.Of(co.ref(Meeting)) {}
+const MeetingShadow = co.map({
+  meeting: Meeting,
+  notes: ListOfNotes,
+  draftTopics: ListOfDraftTopics,
+});
+export type MeetingShadow = co.loaded<typeof MeetingShadow>;
 
-export class MeetingShadow extends CoMap {
-  meeting = co.ref(Meeting);
-  notes = co.ref(ListOfTextNotes);
-  draftTopics = co.ref(ListOfDraftTopics);
-}
+const ListOfMeetingShadows = co.list(MeetingShadow);
+export type ListOfMeetingShadows = co.loaded<typeof ListOfMeetingShadows>;
 
-export class ListOfMeetingShadows extends CoList.Of(co.ref(MeetingShadow)) {}
+const DraftMeeting = co.map({
+  date: z.optional(z.date()),
+});
+export type DraftMeeting = co.loaded<typeof DraftMeeting>;
+export const validateDraftMeeting = (draft: DraftMeeting): string[] => {
+  const errors: string[] = [];
+  if (draft.date === undefined) {
+    errors.push("Date is required");
+  }
+  return errors;
+};
 
-export class DraftMeeting extends CoMap {
-  date = co.optional.Date;
+const Organization = co.map({
+  name: z.string(),
+  meetings: ListOfMeetings,
+});
+export type Organization = co.loaded<typeof Organization>;
 
-  validate() {
-    const errors: string[] = [];
-    if (this.date === undefined) {
-      errors.push("Date is required");
+const DraftOrganization = co.map({
+  name: z.optional(z.string()),
+});
+export type DraftOrganization = co.loaded<typeof DraftOrganization>;
+export const validateDraftOrganization = (
+  draft: DraftOrganization
+): string[] => {
+  const errors: string[] = [];
+  if (draft.name === undefined || draft.name === "") {
+    errors.push("Name is required");
+  }
+  return errors;
+};
+
+const ListOfOrganizations = co.list(Organization);
+export type ListOfOrganizations = co.loaded<typeof ListOfOrganizations>;
+
+const UserAccountRoot = co.map({
+  organizations: ListOfOrganizations,
+  selectedOrganization: z.optional(Organization),
+  meetingShadows: ListOfMeetingShadows,
+});
+export type UserAccountRoot = co.loaded<typeof UserAccountRoot>;
+
+const UserProfile = co
+  .profile({
+    title: z.string(),
+  })
+  .withMigration((profile) => {
+    if (profile.title === undefined || profile.title === "") {
+      profile.title = "Mr.";
     }
-    return errors;
-  }
-}
+  });
+export type UserProfile = co.loaded<typeof UserProfile>;
 
-export class Organization extends CoMap {
-  name = co.string;
+export const getUserProfileFirstName = (
+  profile: UserProfile | undefined
+): string | undefined => {
+  return profile?.name.split(" ")[0];
+};
+export const getUserProfileLastName = (
+  profile: UserProfile | undefined
+): string | undefined => {
+  return profile?.name.split(" ")[1];
+};
+export const getUserProfileInitials = (
+  profile: UserProfile | undefined
+): string | undefined => {
+  const first = getUserProfileFirstName(profile)?.charAt(0);
+  const last = getUserProfileLastName(profile)?.charAt(0);
+  if (first && last) return first + last;
+  return undefined;
+};
+export const getUserProfileFormalName = (
+  profile: UserProfile | undefined
+): string | undefined => {
+  if (!profile) return undefined;
+  const lastName = getUserProfileLastName(profile);
+  if (!lastName) return undefined;
+  return `${profile.title} ${lastName}`;
+};
 
-  meetings = co.ref(ListOfMeetings);
-}
-
-export class DraftOrganization extends CoMap {
-  name = co.optional.string;
-
-  validate() {
-    const errors: string[] = [];
-    if (this.name === undefined || this.name === "") {
-      errors.push("Name is required");
-    }
-    return errors;
-  }
-}
-
-export class ListOfOrganizations extends CoList.Of(co.ref(Organization)) {}
-
-export class UserAccountRoot extends CoMap {
-  organizations = co.ref(ListOfOrganizations);
-  selectedOrganization = co.optional.ref(Organization);
-  meetingShadows = co.ref(ListOfMeetingShadows);
-}
-
-export class UserProfile extends Profile {
-  title = co.string;
-
-  get firstName() {
-    return this.name.split(" ")[0];
-  }
-
-  get lastName() {
-    return this.name.split(" ")[1];
-  }
-
-  get initials() {
-    return this.firstName.charAt(0) + this.lastName.charAt(0);
-  }
-
-  get formalName() {
-    return `${this.title} ${this.lastName}`;
-  }
-
-  migrate(this: UserProfile) {
-    if (this.title === undefined || this.title === "") {
-      this.title = "Mr.";
-    }
-  }
-}
-
-export class UserAccount extends Account {
-  root = co.ref(UserAccountRoot);
-  profile = co.ref(UserProfile);
-
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  async migrate(this: UserAccount, creationProps?: { name: string }) {
-    if (this.root === undefined) {
-      this.root = UserAccountRoot.create({
+const UserAccount = co
+  .account({
+    root: UserAccountRoot,
+    profile: UserProfile,
+  })
+  .withMigration((account, creationProps?: { name: string }) => {
+    if (account.root === undefined) {
+      account.root = UserAccountRoot.create({
         selectedOrganization: undefined,
         organizations: ListOfOrganizations.create([]),
         meetingShadows: ListOfMeetingShadows.create([]),
       });
-    } else {
-      const { root } = await this.ensureLoaded({
-        resolve: {
-          root: {
-            organizations: true,
-            meetingShadows: true,
-          },
-        },
-      });
-      if (root.organizations === undefined) {
-        root.organizations = ListOfOrganizations.create([]);
-      }
-      if (root.meetingShadows === undefined) {
-        root.meetingShadows = ListOfMeetingShadows.create([]);
-      }
     }
 
-    if (this.profile === undefined) {
+    if (account.profile === undefined) {
       const profileGroup = Group.create();
-      profileGroup.addMember("everyone", "reader");
+      profileGroup.makePublic();
 
-      this.profile = UserProfile.create(
+      account.profile = UserProfile.create(
         {
-          name: creationProps?.name ?? "John Doe",
+          name: creationProps?.name || "John Doe",
           title: "Mr.",
         },
         profileGroup
       );
-    } else {
-      const { profile } = await this.ensureLoaded({
-        resolve: {
-          profile: true,
-        },
-      });
-      if (profile) {
-        profile.migrate();
-      }
     }
-  }
-}
+  });
+export type UserAccount = co.loaded<typeof UserAccount>;
+
+export const Schema = {
+  TextNote,
+  Note,
+  ListOfNotes,
+  Topic,
+  ListOfTopics,
+  DraftTopic,
+  ListOfDraftTopics,
+  Minute,
+  ListOfMinutes,
+  Meeting,
+  ListOfMeetings,
+  MeetingShadow,
+  ListOfMeetingShadows,
+  DraftMeeting,
+  Organization,
+  DraftOrganization,
+  ListOfOrganizations,
+  UserAccountRoot,
+  UserProfile,
+  UserAccount,
+};

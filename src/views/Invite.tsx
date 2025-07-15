@@ -1,16 +1,16 @@
-import { useAcceptInvite } from "jazz-react";
+import { useAcceptInvite } from "jazz-tools/react";
 import { useNavigate } from "react-router-dom";
-import { Organization, UserAccount } from "../schema";
+import { Organization, Schema } from "../schema";
 import { ID } from "jazz-tools";
 
 export const Invite = () => {
   const navigate = useNavigate();
 
   useAcceptInvite({
-    invitedObjectSchema: Organization,
+    invitedObjectSchema: Schema.Organization,
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onAccept: async (organizationId: ID<Organization>) => {
-      const me = await UserAccount.getMe().ensureLoaded({
+      const me = await Schema.UserAccount.getMe().ensureLoaded({
         resolve: {
           root: {
             organizations: {
@@ -20,7 +20,7 @@ export const Invite = () => {
         },
       });
 
-      const organization = await Organization.load(organizationId, {});
+      const organization = await Schema.Organization.load(organizationId, {});
 
       if (!organization) {
         console.error("Organization not found");

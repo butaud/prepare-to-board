@@ -1,6 +1,11 @@
 import { FC, useEffect, useState } from "react";
-import { DraftOrganization, ListOfMeetings, Organization } from "../../schema";
-import { useAccount, useCoState } from "jazz-react";
+import {
+  Schema,
+  DraftOrganization,
+  Organization,
+  validateDraftOrganization,
+} from "../../schema";
+import { useAccount, useCoState } from "jazz-tools/react";
 import { Group, ID } from "jazz-tools";
 
 import "./Organization.css";
@@ -31,7 +36,7 @@ const OrganizationForm: FC<OrganizationFormProps> = ({
 };
 
 export const CreateOrganization = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: true,
@@ -45,7 +50,7 @@ export const CreateOrganization = () => {
   const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    setDraft(DraftOrganization.create({}));
+    setDraft(Schema.DraftOrganization.create({}));
   }, [me?.id]);
 
   if (!me) {
@@ -55,7 +60,7 @@ export const CreateOrganization = () => {
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!draft) return;
-    const validationErrors = draft.validate();
+    const validationErrors = validateDraftOrganization(draft);
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
@@ -63,10 +68,10 @@ export const CreateOrganization = () => {
     setErrors([]);
 
     const organizationGroup = Group.create();
-    const newOrganization = Organization.create(
+    const newOrganization = Schema.Organization.create(
       {
         name: draft.name!,
-        meetings: ListOfMeetings.create([], organizationGroup),
+        meetings: Schema.ListOfMeetings.create([], organizationGroup),
       },
       organizationGroup
     );
@@ -95,7 +100,7 @@ export const CreateOrganization = () => {
 };
 
 export const EditOrganization: FC<{ id: ID<Organization> }> = ({ id }) => {
-  const organization = useCoState(Organization, id);
+  const organization = useCoState(Schema.Organization, id);
 
   if (!organization) {
     return null;

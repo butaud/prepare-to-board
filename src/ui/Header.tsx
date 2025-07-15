@@ -1,4 +1,4 @@
-import { useAccount, useIsAuthenticated } from "jazz-react";
+import { useAccount, useIsAuthenticated } from "jazz-tools/react";
 import "./Header.css";
 import { NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
@@ -6,9 +6,10 @@ import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 import { SignInButton, UserButton } from "@clerk/clerk-react";
 import { Settings } from "../views/Settings";
+import { Schema } from "../schema";
 
 export const Header = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: true,
@@ -89,7 +90,7 @@ export const Header = () => {
 };
 
 const OrganizationSelector = () => {
-  const { me } = useAccount();
+  const { me } = useAccount(Schema.UserAccount);
   const organizations = me?.root?.organizations;
   const selectedOrganization = me?.root?.selectedOrganization;
 

@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { Home } from "./views/Home";
-import { useAccount, useIsAuthenticated } from "jazz-react";
+import { useAccount, useIsAuthenticated } from "jazz-tools/react";
 import { Welcome } from "./views/Welcome";
 import { Layout } from "./views/Layout";
 import { ActionItems } from "./views/ActionItems";
@@ -12,10 +12,11 @@ import { MeetingShared } from "./views/meeting/MeetingShared";
 import { Manage } from "./views/Manage";
 import { Invite } from "./views/Invite";
 import { MeetingList } from "./views/meeting/MeetingList";
+import { Schema } from "./schema";
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: true,

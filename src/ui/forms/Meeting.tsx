@@ -1,6 +1,6 @@
 import { FC, useState } from "react";
-import { ListOfMinutes, ListOfTopics, Meeting } from "../../schema";
-import { useAccount } from "jazz-react";
+import { Schema, Meeting } from "../../schema";
+import { useAccount } from "jazz-tools/react";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
@@ -10,7 +10,7 @@ export type CreateMeetingProps = {
 };
 
 export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: { meetings: true },
@@ -36,12 +36,15 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
     const fullDate = new Date(date);
     fullDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
 
-    const newMeeting = Meeting.create(
+    const newMeeting = Schema.Meeting.create(
       {
         date: fullDate,
-        plannedAgenda: ListOfTopics.create([], selectedOrganization._owner),
-        liveAgenda: ListOfTopics.create([], selectedOrganization._owner),
-        minutes: ListOfMinutes.create([], selectedOrganization._owner),
+        plannedAgenda: Schema.ListOfTopics.create(
+          [],
+          selectedOrganization._owner
+        ),
+        liveAgenda: Schema.ListOfTopics.create([], selectedOrganization._owner),
+        minutes: Schema.ListOfMinutes.create([], selectedOrganization._owner),
         status: "draft",
       },
       selectedOrganization._owner

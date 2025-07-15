@@ -1,8 +1,9 @@
-import { useAccount } from "jazz-react";
+import { useAccount } from "jazz-tools/react";
 import { CreateOrganization } from "../ui/forms/Organization";
+import { getUserProfileFormalName, Schema } from "../schema";
 
 export const Home = () => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         selectedOrganization: true,
@@ -38,7 +39,7 @@ export const Home = () => {
 
   return (
     <div>
-      <h2>Welcome, {me.profile?.formalName}</h2>
+      <h2>Welcome, {getUserProfileFormalName(me.profile ?? undefined)}</h2>
       <p>
         This is your home page. You can view your calendar and action items
         here.

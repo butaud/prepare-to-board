@@ -1,5 +1,12 @@
-import { useAccount } from "jazz-react";
-import { DraftTopic, ListOfTopics, Meeting, Topic } from "../../schema";
+import { useAccount } from "jazz-tools/react";
+import {
+  DraftTopic,
+  ListOfTopics,
+  Meeting,
+  Topic,
+  Schema,
+  topicIsDraft,
+} from "../../schema";
 import { FC } from "react";
 import { TopicNode } from "../../ui/doc/TopicNode";
 import { Resolved } from "jazz-tools";
@@ -26,7 +33,7 @@ export const TopicList: FC<TopicListProps> = ({
   meeting,
   useDrafts,
 }) => {
-  const { me } = useAccount({
+  const { me } = useAccount(Schema.UserAccount, {
     resolve: {
       root: {
         meetingShadows: {
@@ -76,12 +83,12 @@ export const TopicList: FC<TopicListProps> = ({
               topic={topic}
               onDelete={isOfficer ? () => handleDeleteClick(topic) : undefined}
               onPublish={
-                topic instanceof DraftTopic
+                topicIsDraft(topic)
                   ? () => handlePublishClick(topic)
                   : undefined
               }
               onCancel={
-                topic instanceof DraftTopic
+                topicIsDraft(topic)
                   ? () => handleCancelDraftTopic(topic)
                   : undefined
               }
