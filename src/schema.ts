@@ -1,82 +1,82 @@
 import { co, Group, z } from "jazz-tools";
 
-const TextNote = co.map({
+const JTextNote = co.map({
   type: z.literal("text"),
   text: z.string(),
 });
-export type TextNote = co.loaded<typeof TextNote>;
+export type TextNote = co.loaded<typeof JTextNote>;
 
-const Note = co.discriminatedUnion("type", [TextNote]);
-export type Note = co.loaded<typeof Note>;
+const JNote = co.discriminatedUnion("type", [JTextNote]);
+export type Note = co.loaded<typeof JNote>;
 
-const ListOfNotes = co.list(Note);
-export type ListOfNotes = co.loaded<typeof ListOfNotes>;
+const JListOfNotes = co.list(JNote);
+export type ListOfNotes = co.loaded<typeof JListOfNotes>;
 
-const Topic = co.map({
+const JTopic = co.map({
   title: z.string(),
   outcome: z.optional(z.string()),
   durationMinutes: z.optional(z.number()),
-  get plannedTopic(): z.ZodOptional<typeof Topic> {
-    return co.optional(Topic);
+  get plannedTopic(): z.ZodOptional<typeof JTopic> {
+    return co.optional(JTopic);
   },
   cancelled: z.optional(z.boolean()),
 });
-export type Topic = co.loaded<typeof Topic>;
+export type Topic = co.loaded<typeof JTopic>;
 
-const ListOfTopics = co.list(Topic);
-export type ListOfTopics = co.loaded<typeof ListOfTopics>;
+const JListOfTopics = co.list(JTopic);
+export type ListOfTopics = co.loaded<typeof JListOfTopics>;
 
-const DraftTopic = co.map({
-  ...Topic.def.shape,
+const JDraftTopic = co.map({
+  ...JTopic.def.shape,
   isDraft: z.literal(true),
-  anchor: co.optional(Topic),
+  anchor: co.optional(JTopic),
   anchorIndex: z.optional(z.number()),
 });
-export type DraftTopic = co.loaded<typeof DraftTopic>;
+export type DraftTopic = co.loaded<typeof JDraftTopic>;
 export const topicIsDraft = (
   topic: Topic | DraftTopic
 ): topic is DraftTopic => {
   return (topic as DraftTopic).isDraft !== undefined;
 };
 
-const ListOfDraftTopics = co.list(DraftTopic);
-export type ListOfDraftTopics = co.loaded<typeof ListOfDraftTopics>;
+const JListOfDraftTopics = co.list(JDraftTopic);
+export type ListOfDraftTopics = co.loaded<typeof JListOfDraftTopics>;
 
-const Minute = co.map({
-  topic: Topic,
+const JMinute = co.map({
+  topic: JTopic,
   durationMinutes: z.number(),
 });
-export type Minute = co.loaded<typeof Minute>;
+export type Minute = co.loaded<typeof JMinute>;
 
-const ListOfMinutes = co.list(Minute);
-export type ListOfMinutes = co.loaded<typeof ListOfMinutes>;
+const JListOfMinutes = co.list(JMinute);
+export type ListOfMinutes = co.loaded<typeof JListOfMinutes>;
 
-const Meeting = co.map({
+const JMeeting = co.map({
   date: z.date(),
   status: z.optional(z.literal(["draft", "published", "live", "completed"])),
-  plannedAgenda: z.optional(ListOfTopics),
-  liveAgenda: z.optional(ListOfTopics),
-  minutes: z.optional(ListOfMinutes),
+  plannedAgenda: z.optional(JListOfTopics),
+  liveAgenda: z.optional(JListOfTopics),
+  minutes: z.optional(JListOfMinutes),
 });
-export type Meeting = co.loaded<typeof Meeting>;
+export type Meeting = co.loaded<typeof JMeeting>;
 
-const ListOfMeetings = co.list(Meeting);
-export type ListOfMeetings = co.loaded<typeof ListOfMeetings>;
+const JListOfMeetings = co.list(JMeeting);
+export type ListOfMeetings = co.loaded<typeof JListOfMeetings>;
 
-const MeetingShadow = co.map({
-  meeting: Meeting,
-  notes: ListOfNotes,
-  draftTopics: ListOfDraftTopics,
+const JMeetingShadow = co.map({
+  meeting: JMeeting,
+  notes: JListOfNotes,
+  draftTopics: JListOfDraftTopics,
 });
-export type MeetingShadow = co.loaded<typeof MeetingShadow>;
+export type MeetingShadow = co.loaded<typeof JMeetingShadow>;
 
-const ListOfMeetingShadows = co.list(MeetingShadow);
-export type ListOfMeetingShadows = co.loaded<typeof ListOfMeetingShadows>;
+const JListOfMeetingShadows = co.list(JMeetingShadow);
+export type ListOfMeetingShadows = co.loaded<typeof JListOfMeetingShadows>;
 
-const DraftMeeting = co.map({
+const JDraftMeeting = co.map({
   date: z.optional(z.date()),
 });
-export type DraftMeeting = co.loaded<typeof DraftMeeting>;
+export type DraftMeeting = co.loaded<typeof JDraftMeeting>;
 export const validateDraftMeeting = (draft: DraftMeeting): string[] => {
   const errors: string[] = [];
   if (draft.date === undefined) {
@@ -85,16 +85,16 @@ export const validateDraftMeeting = (draft: DraftMeeting): string[] => {
   return errors;
 };
 
-const Organization = co.map({
+const JOrganization = co.map({
   name: z.string(),
-  meetings: ListOfMeetings,
+  meetings: JListOfMeetings,
 });
-export type Organization = co.loaded<typeof Organization>;
+export type Organization = co.loaded<typeof JOrganization>;
 
-const DraftOrganization = co.map({
+const JDraftOrganization = co.map({
   name: z.optional(z.string()),
 });
-export type DraftOrganization = co.loaded<typeof DraftOrganization>;
+export type DraftOrganization = co.loaded<typeof JDraftOrganization>;
 export const validateDraftOrganization = (
   draft: DraftOrganization
 ): string[] => {
@@ -105,17 +105,17 @@ export const validateDraftOrganization = (
   return errors;
 };
 
-const ListOfOrganizations = co.list(Organization);
-export type ListOfOrganizations = co.loaded<typeof ListOfOrganizations>;
+const JListOfOrganizations = co.list(JOrganization);
+export type ListOfOrganizations = co.loaded<typeof JListOfOrganizations>;
 
-const UserAccountRoot = co.map({
-  organizations: ListOfOrganizations,
-  selectedOrganization: co.optional(Organization),
-  meetingShadows: ListOfMeetingShadows,
+const JUserAccountRoot = co.map({
+  organizations: JListOfOrganizations,
+  selectedOrganization: co.optional(JOrganization),
+  meetingShadows: JListOfMeetingShadows,
 });
-export type UserAccountRoot = co.loaded<typeof UserAccountRoot>;
+export type UserAccountRoot = co.loaded<typeof JUserAccountRoot>;
 
-const UserProfile = co
+const JUserProfile = co
   .profile({
     title: z.string(),
   })
@@ -124,7 +124,7 @@ const UserProfile = co
       profile.title = "Mr.";
     }
   });
-export type UserProfile = co.loaded<typeof UserProfile>;
+export type UserProfile = co.loaded<typeof JUserProfile>;
 
 export const getUserProfileFirstName = (
   profile: UserProfile | undefined
@@ -153,17 +153,17 @@ export const getUserProfileFormalName = (
   return `${profile.title} ${lastName}`;
 };
 
-const UserAccount = co
+const JUserAccount = co
   .account({
-    root: UserAccountRoot,
-    profile: UserProfile,
+    root: JUserAccountRoot,
+    profile: JUserProfile,
   })
   .withMigration((account, creationProps?: { name: string }) => {
     if (account.root === undefined) {
-      account.root = UserAccountRoot.create({
+      account.root = JUserAccountRoot.create({
         selectedOrganization: undefined,
-        organizations: ListOfOrganizations.create([]),
-        meetingShadows: ListOfMeetingShadows.create([]),
+        organizations: JListOfOrganizations.create([]),
+        meetingShadows: JListOfMeetingShadows.create([]),
       });
     }
 
@@ -171,7 +171,7 @@ const UserAccount = co
       const profileGroup = Group.create();
       profileGroup.makePublic();
 
-      account.profile = UserProfile.create(
+      account.profile = JUserProfile.create(
         {
           name: creationProps?.name || "John Doe",
           title: "Mr.",
@@ -180,27 +180,27 @@ const UserAccount = co
       );
     }
   });
-export type UserAccount = co.loaded<typeof UserAccount>;
+export type UserAccount = co.loaded<typeof JUserAccount>;
 
 export const Schema = {
-  TextNote,
-  Note,
-  ListOfNotes,
-  Topic,
-  ListOfTopics,
-  DraftTopic,
-  ListOfDraftTopics,
-  Minute,
-  ListOfMinutes,
-  Meeting,
-  ListOfMeetings,
-  MeetingShadow,
-  ListOfMeetingShadows,
-  DraftMeeting,
-  Organization,
-  DraftOrganization,
-  ListOfOrganizations,
-  UserAccountRoot,
-  UserProfile,
-  UserAccount,
+  TextNote: JTextNote,
+  Note: JNote,
+  ListOfNotes: JListOfNotes,
+  Topic: JTopic,
+  ListOfTopics: JListOfTopics,
+  DraftTopic: JDraftTopic,
+  ListOfDraftTopics: JListOfDraftTopics,
+  Minute: JMinute,
+  ListOfMinutes: JListOfMinutes,
+  Meeting: JMeeting,
+  ListOfMeetings: JListOfMeetings,
+  MeetingShadow: JMeetingShadow,
+  ListOfMeetingShadows: JListOfMeetingShadows,
+  DraftMeeting: JDraftMeeting,
+  Organization: JOrganization,
+  DraftOrganization: JDraftOrganization,
+  ListOfOrganizations: JListOfOrganizations,
+  UserAccountRoot: JUserAccountRoot,
+  UserProfile: JUserProfile,
+  UserAccount: JUserAccount,
 };
