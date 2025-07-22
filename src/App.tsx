@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { Home } from "./views/Home";
-import { useAccount, useIsAuthenticated } from "jazz-tools/react";
+import { useIsAuthenticated } from "jazz-tools/react";
 import { Welcome } from "./views/Welcome";
 import { Layout } from "./views/Layout";
 import { ActionItems } from "./views/ActionItems";
@@ -12,17 +12,12 @@ import { MeetingShared } from "./views/meeting/MeetingShared";
 import { Manage } from "./views/Manage";
 import { Invite } from "./views/Invite";
 import { MeetingList } from "./views/meeting/MeetingList";
-import { Schema } from "./schema";
+import { AuthenticatedShared } from "./views/AuthenticatedShared";
+import { useLoadAccount } from "./hooks/Account";
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        selectedOrganization: true,
-      },
-    },
-  });
+  const { me } = useLoadAccount();
 
   const isAdmin =
     isAuthenticated &&
@@ -33,7 +28,7 @@ function App() {
       <Route path="/" element={<Layout />}>
         {!isAuthenticated && <Route index element={<Welcome />} />}
         {isAuthenticated && (
-          <>
+          <Route element={<AuthenticatedShared />}>
             <Route index element={<Home />} />
             <Route path="meetings" element={<MeetingList />} />
             <Route path="action-items" element={<ActionItems />} />
@@ -45,7 +40,7 @@ function App() {
               <Route path="present" element={<MeetingPresent />} />
               <Route path="record" element={<MeetingRecord />} />
             </Route>
-          </>
+          </Route>
         )}
         <Route path="invite" element={<Invite />} />
       </Route>

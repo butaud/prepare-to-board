@@ -1,26 +1,16 @@
-import { useAccount } from "jazz-tools/react";
-import { useNavigate, useOutletContext } from "react-router-dom";
-import { Meeting, Schema } from "../../schema";
+import { useNavigate } from "react-router-dom";
 import { SlTrash } from "react-icons/sl";
 import { TopicList } from "../topic/TopicList";
-import { Resolved } from "jazz-tools";
+import { useMeeting } from "../../hooks/Meeting";
+import { useLoadedAccount } from "../../hooks/Account";
 
 export const MeetingView = () => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        selectedOrganization: {
-          meetings: true,
-        },
-      },
-    },
-  });
-  const meeting =
-    useOutletContext<Resolved<Meeting, { plannedAgenda: { $each: true } }>>();
+  const me = useLoadedAccount();
+  const meeting = useMeeting();
   const navigate = useNavigate();
 
-  if (!meeting || !me || !me.root.selectedOrganization) {
-    return <p>Loading...</p>;
+  if (!me.root.selectedOrganization) {
+    return <p>No organization selected</p>;
   }
 
   if (!meeting.plannedAgenda) {

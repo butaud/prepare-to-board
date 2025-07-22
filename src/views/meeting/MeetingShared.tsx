@@ -1,20 +1,18 @@
-import { useCoState } from "jazz-tools/react";
-import { Outlet, useParams } from "react-router-dom";
-import { Meeting, Schema } from "../../schema";
-import { ID } from "jazz-tools";
 import { Breadcrumbs } from "../../ui/Breadcrumbs";
+import { useLoadMeetingFromParams } from "../../hooks/Meeting";
 
 export const MeetingShared = () => {
-  const { meetingId } = useParams();
-  const meeting = useCoState(Schema.Meeting, meetingId as ID<Meeting>, {
-    resolve: {
-      plannedAgenda: { $each: true },
-    },
-  });
+  const { meeting, outlet } = useLoadMeetingFromParams();
+  if (meeting === undefined) {
+    return <p>Loading...</p>;
+  }
+  if (meeting === null) {
+    return <p>Meeting not found</p>;
+  }
   return (
     <div>
       <Breadcrumbs dynamicTitle={meeting?.date?.toLocaleDateString()} />
-      <Outlet context={meeting} />
+      {outlet}
     </div>
   );
 };

@@ -58,7 +58,10 @@ const JMeeting = co.map({
   liveAgenda: z.optional(JListOfTopics),
   minutes: z.optional(JListOfMinutes),
 });
-export type Meeting = co.loaded<typeof JMeeting>;
+export type Meeting = co.loaded<
+  typeof JMeeting,
+  { plannedAgenda: { $each: { plannedTopic: true } } }
+>;
 
 const JListOfMeetings = co.list(JMeeting);
 export type ListOfMeetings = co.loaded<typeof JListOfMeetings>;
@@ -68,7 +71,12 @@ const JMeetingShadow = co.map({
   notes: JListOfNotes,
   draftTopics: JListOfDraftTopics,
 });
-export type MeetingShadow = co.loaded<typeof JMeetingShadow>;
+export type MeetingShadow = co.loaded<
+  typeof JMeetingShadow,
+  {
+    draftTopics: true;
+  }
+>;
 
 const JListOfMeetingShadows = co.list(JMeetingShadow);
 export type ListOfMeetingShadows = co.loaded<typeof JListOfMeetingShadows>;

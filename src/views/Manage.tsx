@@ -1,4 +1,4 @@
-import { useAccount, useCoState } from "jazz-tools/react";
+import { useCoState } from "jazz-tools/react";
 import { EditOrganization } from "../ui/forms/Organization";
 import { Group, ID } from "jazz-tools";
 import { Schema, UserAccount } from "../schema";
@@ -8,15 +8,10 @@ import { SlPlus, SlBan } from "react-icons/sl";
 
 import "./Manage.css";
 import { Breadcrumbs } from "../ui/Breadcrumbs";
+import { useLoadedAccount } from "../hooks/Account";
 
 export const Manage = () => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        selectedOrganization: true,
-      },
-    },
-  });
+  const me = useLoadedAccount();
   const [isInviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   if (!me) {

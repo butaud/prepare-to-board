@@ -1,23 +1,8 @@
 import { co } from "jazz-tools";
-import { DraftTopic, Meeting, Schema, Topic } from "../schema";
+import { DraftTopic, Meeting, MeetingShadow, Schema, Topic } from "../schema";
 
-type AccountWithMeetingShadows = co.loaded<
-  typeof Schema.UserAccount,
-  {
-    root: {
-      meetingShadows: {
-        $each: {
-          meeting: true;
-          notes: true;
-          draftTopics: true;
-        };
-      };
-    };
-  }
->;
 export const createDraftTopic = (
-  me: AccountWithMeetingShadows,
-  meeting: Meeting,
+  meetingShadow: MeetingShadow,
   anchor?: { topic: Topic; index: number }
 ) => {
   const draftTopic = Schema.DraftTopic.create({
@@ -26,33 +11,14 @@ export const createDraftTopic = (
     anchor: anchor?.topic,
     anchorIndex: anchor?.index,
   });
-
-  let meetingShadow = me.root.meetingShadows.find(
-    (shadow) => shadow.meeting.id === meeting.id
-  );
-  if (!meetingShadow) {
-    meetingShadow = Schema.MeetingShadow.create({
-      meeting: meeting,
-      notes: Schema.ListOfNotes.create([]),
-      draftTopics: Schema.ListOfDraftTopics.create([]),
-    }) as AccountWithMeetingShadows["root"]["meetingShadows"][0];
-    me.root.meetingShadows.push(meetingShadow);
-  }
   meetingShadow.draftTopics.push(draftTopic);
   return draftTopic;
 };
 
 export const deleteDraftTopic = (
-  me: AccountWithMeetingShadows,
-  meeting: Meeting,
-  draftTopic: DraftTopic
+  draftTopic: DraftTopic,
+  meetingShadow: MeetingShadow
 ) => {
-  const meetingShadow = me.root.meetingShadows.find(
-    (shadow) => shadow.meeting.id === meeting.id
-  );
-  if (!meetingShadow) {
-    return;
-  }
   const draftTopicIndex = meetingShadow.draftTopics.findIndex(
     (topic) => topic?.id === draftTopic.id
   );
@@ -62,17 +28,11 @@ export const deleteDraftTopic = (
 };
 
 export const publishDraftTopic = (
-  me: AccountWithMeetingShadows,
   meeting: Meeting,
-  draftTopic: DraftTopic
+  draftTopic: DraftTopic,
+  meetingShadow: MeetingShadow
 ) => {
-  const meetingShadow = me.root.meetingShadows.find(
-    (shadow) => shadow.meeting.id === meeting.id
-  );
-  if (!meetingShadow) {
-    return;
-  }
-  deleteDraftTopic(me, meeting, draftTopic);
+  deleteDraftTopic(draftTopic, meetingShadow);
   const topic = Schema.Topic.create(
     {
       title: draftTopic.title,
@@ -81,7 +41,7 @@ export const publishDraftTopic = (
       outcome: draftTopic.outcome,
       cancelled: draftTopic.cancelled,
     },
-    meetingShadow.meeting._owner
+    meeting._owner
   );
 
   const currentAnchorIndex =
@@ -98,30 +58,11 @@ export const publishDraftTopic = (
   meeting.plannedAgenda?.splice(insertIndex, 0, topic);
 };
 
-type ResolvedMeetingShadowList = co.loaded<
-  typeof Schema.ListOfMeetingShadows,
-  {
-    $each: {
-      meeting: true;
-      notes: true;
-      draftTopics: { $each: { anchor: true } };
-    };
-  }
->;
-
 export const getTopicListWithDrafts = (
   topicList: co.loaded<typeof Schema.ListOfTopics, { $each: true }>,
-  meeting: Meeting,
-  meetingShadows: ResolvedMeetingShadowList
+  meetingShadow: MeetingShadow
 ) => {
-  const meetingShadow = meetingShadows.find(
-    (shadow) => shadow.meeting.id === meeting.id
-  );
-  if (
-    !meetingShadow ||
-    !meetingShadow.draftTopics ||
-    meetingShadow.draftTopics.length === 0
-  ) {
+  if (!meetingShadow.draftTopics || meetingShadow.draftTopics.length === 0) {
     return topicList;
   }
   const draftTopics = meetingShadow.draftTopics as DraftTopic[];

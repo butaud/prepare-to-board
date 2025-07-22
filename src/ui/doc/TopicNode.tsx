@@ -1,9 +1,9 @@
 import { FC } from "react";
-import { Schema, Topic, topicIsDraft } from "../../schema";
+import { Topic, topicIsDraft } from "../../schema";
 import { EditableText } from "./EditableText";
-import { useAccount } from "jazz-tools/react";
 
 import "./TopicNode.css";
+import { useLoadedAccount } from "../../hooks/Account";
 
 export type TopicNodeProps = {
   topic: Topic;
@@ -18,8 +18,8 @@ export const TopicNode: FC<TopicNodeProps> = ({
   onDelete,
   onPublish,
 }) => {
-  const { me } = useAccount(Schema.UserAccount);
-  const canEdit = !!me?.canWrite(topic);
+  const me = useLoadedAccount();
+  const canEdit = me.canWrite(topic);
   const isDraft = topicIsDraft(topic);
   return (
     <div className="topic-node">

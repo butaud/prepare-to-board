@@ -1,4 +1,4 @@
-import { useAccount, useIsAuthenticated } from "jazz-tools/react";
+import { useIsAuthenticated } from "jazz-tools/react";
 import "./Header.css";
 import { NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
@@ -6,22 +6,24 @@ import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 import { SignInButton, UserButton } from "@clerk/clerk-react";
 import { Settings } from "../views/Settings";
-import { Schema } from "../schema";
+import {
+  LoadedAccountContext,
+  useLoadAccount,
+  useLoadedAccount,
+} from "../hooks/Account";
 
 export const Header = () => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        selectedOrganization: true,
-      },
-    },
-  });
+  const { me } = useLoadAccount();
 
-  const isAuthenticated = useIsAuthenticated();
+  const isAuthenticated = useIsAuthenticated() && !!me;
+
+  if (me === undefined) {
+    return <p>Loading...</p>;
+  }
 
   const isAdmin =
     isAuthenticated &&
-    me?.root?.selectedOrganization &&
+    me.root.selectedOrganization &&
     me.canAdmin(me.root.selectedOrganization);
 
   return (
@@ -67,7 +69,7 @@ export const Header = () => {
       </nav>
       <div className="end">
         {isAuthenticated ? (
-          <>
+          <LoadedAccountContext.Provider value={me}>
             <OrganizationSelector />
             <UserButton>
               <UserButton.UserProfilePage
@@ -80,7 +82,7 @@ export const Header = () => {
               <UserButton.UserProfilePage label="account" />
               <UserButton.UserProfilePage label="security" />
             </UserButton>
-          </>
+          </LoadedAccountContext.Provider>
         ) : (
           <SignInButton />
         )}
@@ -90,26 +92,30 @@ export const Header = () => {
 };
 
 const OrganizationSelector = () => {
-  const { me } = useAccount(Schema.UserAccount);
-  const organizations = me?.root?.organizations;
-  const selectedOrganization = me?.root?.selectedOrganization;
+  const me = useLoadedAccount();
+  const organizations = me.root.organizations;
+  const selectedOrganization = me.root.selectedOrganization;
 
-  if (!me?.root || !organizations || organizations.length === 0) {
+  if (organizations.length === 0) {
     return null;
   }
 
   const handleOrganizationChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
-    if (!me.root) {
-      return;
-    }
-
-    const selectedId = event.target.value;
-    const selectedOrg = organizations.find((org) => org?.id === selectedId);
-    if (selectedOrg) {
-      me.root.selectedOrganization = selectedOrg;
-    }
+    void (async () => {
+      const selectedId = event.target.value;
+      const selectedOrg = await organizations
+        .find((org) => org?.id === selectedId)
+        ?.ensureLoaded({
+          resolve: {
+            meetings: { $each: true },
+          },
+        });
+      if (selectedOrg) {
+        me.root.selectedOrganization = selectedOrg;
+      }
+    })();
   };
 
   return (

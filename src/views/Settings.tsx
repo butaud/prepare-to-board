@@ -1,9 +1,10 @@
-import { useAccount } from "jazz-tools/react";
-import { Schema, Organization } from "../schema";
-import { FC } from "react";
+import { Organization } from "../schema";
+import { FC, useState } from "react";
 import "./Settings.css";
 import { Breadcrumbs } from "../ui/Breadcrumbs";
-import { SlBan } from "react-icons/sl";
+import { SlBan, SlPlus } from "react-icons/sl";
+import { useLoadedAccount } from "../hooks/Account";
+import { CreateOrganization } from "../ui/forms/Organization";
 
 export const Settings = () => {
   return (
@@ -18,14 +19,7 @@ export const Settings = () => {
 };
 
 export const ManageProfile = () => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      profile: true,
-    },
-  });
-  if (!me) {
-    return null;
-  }
+  const me = useLoadedAccount();
 
   return (
     <div className="profile">
@@ -45,18 +39,8 @@ export const ManageProfile = () => {
 };
 
 export const ManageOrganizations = () => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        organizations: {
-          $each: true,
-        },
-      },
-    },
-  });
-  if (!me) {
-    return null;
-  }
+  const me = useLoadedAccount();
+  const [isCreatingOrganization, setCreatingOrganization] = useState(false);
 
   const removeOrg = (organization: Organization) => {
     const index = me.root.organizations.findIndex(
@@ -68,15 +52,29 @@ export const ManageOrganizations = () => {
   };
 
   return (
-    <ul>
-      {me.root.organizations.map((organization) => (
-        <OrganizationNode
-          key={organization.id}
-          organization={organization}
-          removeOrg={removeOrg}
+    <>
+      <ul>
+        {me.root.organizations.map((organization) => (
+          <OrganizationNode
+            key={organization.id}
+            organization={organization}
+            removeOrg={removeOrg}
+          />
+        ))}
+        {!isCreatingOrganization && (
+          <li>
+            <button onClick={() => setCreatingOrganization(true)}>
+              <SlPlus /> Create Organization
+            </button>
+          </li>
+        )}
+      </ul>
+      {isCreatingOrganization && (
+        <CreateOrganization
+          onDoneCreating={() => setCreatingOrganization(false)}
         />
-      ))}
-    </ul>
+      )}
+    </>
   );
 };
 

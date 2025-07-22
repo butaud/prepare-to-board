@@ -5,18 +5,21 @@ import {
   Organization,
   validateDraftOrganization,
 } from "../../schema";
-import { useAccount, useCoState } from "jazz-tools/react";
+import { useCoState } from "jazz-tools/react";
 import { Group, ID } from "jazz-tools";
 
 import "./Organization.css";
+import { useLoadedAccount } from "../../hooks/Account";
 
 type OrganizationFormProps = {
   organization: Organization | DraftOrganization;
   onSave?: (e: React.FormEvent<HTMLFormElement>) => void;
+  onCancel?: () => void;
 };
 const OrganizationForm: FC<OrganizationFormProps> = ({
   organization,
   onSave,
+  onCancel,
 }) => {
   return (
     <form className="organization" onSubmit={onSave}>
@@ -31,21 +34,22 @@ const OrganizationForm: FC<OrganizationFormProps> = ({
         />
       </div>
       {onSave && <button type="submit">Save</button>}
+      {onCancel && (
+        <button type="button" onClick={onCancel} className="cancel-button">
+          Cancel
+        </button>
+      )}
     </form>
   );
 };
 
-export const CreateOrganization = () => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        selectedOrganization: true,
-        organizations: {
-          $each: true,
-        },
-      },
-    },
-  });
+export type CreateOrganizationProps = {
+  onDoneCreating?: () => void;
+};
+export const CreateOrganization: FC<CreateOrganizationProps> = ({
+  onDoneCreating,
+}) => {
+  const me = useLoadedAccount();
   const [draft, setDraft] = useState<DraftOrganization>();
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -81,6 +85,13 @@ export const CreateOrganization = () => {
       me.root.selectedOrganization = newOrganization;
     }
     setDraft(undefined);
+    onDoneCreating?.();
+  };
+
+  const handleCancel = () => {
+    setDraft(undefined);
+    setErrors([]);
+    onDoneCreating?.();
   };
 
   return (
@@ -94,7 +105,13 @@ export const CreateOrganization = () => {
           </ul>
         </div>
       )}
-      {draft && <OrganizationForm organization={draft} onSave={handleSave} />}
+      {draft && (
+        <OrganizationForm
+          organization={draft}
+          onSave={handleSave}
+          onCancel={onDoneCreating ? handleCancel : undefined}
+        />
+      )}
     </div>
   );
 };

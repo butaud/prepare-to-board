@@ -1,18 +1,9 @@
-import { useAccount } from "jazz-tools/react";
 import { CreateOrganization } from "../ui/forms/Organization";
-import { getUserProfileFormalName, Schema } from "../schema";
+import { getUserProfileFormalName } from "../schema";
+import { useLoadedAccount } from "../hooks/Account";
 
 export const Home = () => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        selectedOrganization: true,
-        organizations: {
-          $each: true,
-        },
-      },
-    },
-  });
+  const me = useLoadedAccount();
 
   if (!me) {
     return <h2>Loading...</h2>;

@@ -1,10 +1,8 @@
-import { useAccount } from "jazz-tools/react";
 import {
   DraftTopic,
   ListOfTopics,
   Meeting,
   Topic,
-  Schema,
   topicIsDraft,
 } from "../../schema";
 import { FC } from "react";
@@ -16,6 +14,8 @@ import {
   getTopicListWithDrafts,
   publishDraftTopic,
 } from "../../util/data";
+import { useLoadedAccount } from "../../hooks/Account";
+import { useLoadMeetingShadow } from "../../hooks/Meeting";
 
 export type TopicListProps = {
   topicList: Resolved<
@@ -33,21 +33,10 @@ export const TopicList: FC<TopicListProps> = ({
   meeting,
   useDrafts,
 }) => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        meetingShadows: {
-          $each: {
-            meeting: true,
-            notes: true,
-            draftTopics: { $each: { anchor: true } },
-          },
-        },
-      },
-    },
-  });
+  const me = useLoadedAccount();
+  const meetingShadow = useLoadMeetingShadow();
 
-  if (!me) {
+  if (!me || meetingShadow === undefined) {
     return <p>Loading...</p>;
   }
   const isOfficer = me?.canWrite(topicList);
@@ -60,15 +49,15 @@ export const TopicList: FC<TopicListProps> = ({
   };
 
   const handlePublishClick = (topic: DraftTopic) => {
-    publishDraftTopic(me, meeting, topic);
+    publishDraftTopic(meeting, topic, meetingShadow);
   };
 
   const handleCancelDraftTopic = (topic: DraftTopic) => {
-    deleteDraftTopic(me, meeting, topic);
+    deleteDraftTopic(topic, meetingShadow);
   };
 
   const topicListWithDrafts = useDrafts
-    ? getTopicListWithDrafts(topicList, meeting, me.root.meetingShadows)
+    ? getTopicListWithDrafts(topicList, meetingShadow)
     : topicList;
 
   const lastTopicIndex = topicList.length - 1;
@@ -100,8 +89,7 @@ export const TopicList: FC<TopicListProps> = ({
             <button
               onClick={() => {
                 createDraftTopic(
-                  me,
-                  meeting,
+                  meetingShadow,
                   lastTopic
                     ? {
                         topic: lastTopic,

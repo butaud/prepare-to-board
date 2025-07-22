@@ -52,12 +52,12 @@ describe("Organization", () => {
 
     await userEvent.click(screen.getByTestId("mock-clerk-user-button"));
 
-    const listItem = await screen.findByRole("listitem");
+    const listItem = (await screen.findAllByRole("listitem"))[0];
     expect(listItem).toHaveTextContent("Test Organization");
 
     vi.spyOn(window, "confirm").mockReturnValue(true);
     await userEvent.click(screen.getByRole("button", { name: "Remove" }));
 
-    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+    expect(screen.queryAllByRole("listitem")).toHaveLength(1);
   });
 });

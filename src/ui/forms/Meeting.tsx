@@ -1,22 +1,16 @@
 import { FC, useState } from "react";
 import { Schema, Meeting } from "../../schema";
-import { useAccount } from "jazz-tools/react";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
+import { useLoadedAccount } from "../../hooks/Account";
 
 export type CreateMeetingProps = {
   onCreated?: (meeting: Meeting) => void;
 };
 
 export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
-  const { me } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        selectedOrganization: { meetings: true },
-      },
-    },
-  });
+  const me = useLoadedAccount();
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<Date | null>(null);
 
