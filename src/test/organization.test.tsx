@@ -29,7 +29,7 @@ describe("Organization", () => {
     ).toBeInTheDocument();
   });
 
-  it("should allow user to create an organization", async () => {
+  it("should allow user to create an organization from the home page", async () => {
     await screen.findByRole("textbox", { name: "Name" });
     const input = screen.getByRole("textbox", { name: "Name" });
     await userEvent.type(input, "Test Organization");
@@ -39,6 +39,28 @@ describe("Organization", () => {
     expect(
       await screen.findByRole("option", {
         name: "Test Organization",
+      })
+    ).toBeInTheDocument();
+  });
+
+  it("should allow user to create a second organization from the settings page", async () => {
+    await screen.findByRole("textbox", { name: "Name" });
+    const orgNameInput = screen.getByRole("textbox", { name: "Name" });
+    await userEvent.type(orgNameInput, "Test Organization");
+    const saveButton = screen.getByRole("button", { name: "Save" });
+    await userEvent.click(saveButton);
+
+    await userEvent.click(screen.getByTestId("mock-clerk-user-button"));
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create Organization" })
+    );
+    await userEvent.type(screen.getByLabelText("Name"), "Test Organization 2");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByRole("option", {
+        name: "Test Organization 2",
       })
     ).toBeInTheDocument();
   });
