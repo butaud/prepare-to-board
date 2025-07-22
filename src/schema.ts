@@ -6,7 +6,7 @@ const TextNote = co.map({
 });
 export type TextNote = co.loaded<typeof TextNote>;
 
-const Note = z.discriminatedUnion("type", [TextNote]);
+const Note = co.discriminatedUnion("type", [TextNote]);
 export type Note = co.loaded<typeof Note>;
 
 const ListOfNotes = co.list(Note);
@@ -17,7 +17,7 @@ const Topic = co.map({
   outcome: z.optional(z.string()),
   durationMinutes: z.optional(z.number()),
   get plannedTopic(): z.ZodOptional<typeof Topic> {
-    return z.optional(Topic);
+    return co.optional(Topic);
   },
   cancelled: z.optional(z.boolean()),
 });
@@ -29,7 +29,7 @@ export type ListOfTopics = co.loaded<typeof ListOfTopics>;
 const DraftTopic = co.map({
   ...Topic.def.shape,
   isDraft: z.literal(true),
-  anchor: z.optional(Topic),
+  anchor: co.optional(Topic),
   anchorIndex: z.optional(z.number()),
 });
 export type DraftTopic = co.loaded<typeof DraftTopic>;
@@ -110,7 +110,7 @@ export type ListOfOrganizations = co.loaded<typeof ListOfOrganizations>;
 
 const UserAccountRoot = co.map({
   organizations: ListOfOrganizations,
-  selectedOrganization: z.optional(Organization),
+  selectedOrganization: co.optional(Organization),
   meetingShadows: ListOfMeetingShadows,
 });
 export type UserAccountRoot = co.loaded<typeof UserAccountRoot>;
