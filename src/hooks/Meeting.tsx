@@ -1,8 +1,7 @@
 import { useAccount, useCoState } from "jazz-tools/react-core";
-import { Meeting, MeetingShadow, Schema } from "../schema";
+import { Meeting, Schema } from "../schema";
 import { Outlet, useParams } from "react-router-dom";
-import { createContext, useContext, useEffect, useState } from "react";
-import { useLoadedAccount } from "./Account";
+import { createContext, useContext } from "react";
 
 export const useLoadMeetingFromParams = () => {
   const { meetingId } = useParams();
