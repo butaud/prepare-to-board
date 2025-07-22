@@ -60,9 +60,10 @@
 }
 
 :root {
-  font-family: Geneva, Tahoma, Verdana, sans-serif;
+  font-family: Optima, Candara, "Noto Sans", source-sans-pro, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  font-size: 1.2em;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
