@@ -1,6 +1,9 @@
 import "@testing-library/jest-dom";
 import { expect, vi } from "vitest";
 import "@clerk/clerk-react";
+import process from "process";
+
+process.env.TZ = "UTC"; // Set timezone to UTC for consistent date handling in tests
 
 expect.extend({
   toPrecede(received: HTMLElement, expected: HTMLElement) {

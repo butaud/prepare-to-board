@@ -17,6 +17,8 @@ import {
 import { useLoadedAccount } from "../../hooks/Account";
 import { useLoadMeetingShadow } from "../../hooks/Meeting";
 
+import "./TopicList.css";
+
 export type TopicListProps = {
   topicList: Resolved<
     ListOfTopics,
@@ -62,14 +64,17 @@ export const TopicList: FC<TopicListProps> = ({
 
   const lastTopicIndex = topicList.length - 1;
   const lastTopic = topicList[lastTopicIndex];
+  let currentTopicStartTime = meeting.date;
   return (
     <div className="topic-list">
-      <h4>Topics</h4>
-      <ul>
-        {topicListWithDrafts.map((topic) => (
-          <li key={topic.id}>
+      <h3>Topics</h3>
+      <div className="topic-list-container">
+        {topicListWithDrafts.map((topic) => {
+          const node = (
             <TopicNode
+              key={topic.id}
               topic={topic}
+              startTime={new Date(currentTopicStartTime)}
               onDelete={isOfficer ? () => handleDeleteClick(topic) : undefined}
               onPublish={
                 topicIsDraft(topic)
@@ -82,10 +87,17 @@ export const TopicList: FC<TopicListProps> = ({
                   : undefined
               }
             />
-          </li>
-        ))}
+          );
+          if (topic.durationMinutes) {
+            currentTopicStartTime = new Date(
+              currentTopicStartTime.getTime() +
+                topic.durationMinutes * 60 * 1000
+            );
+          }
+          return node;
+        })}
         {isOfficer && (
-          <li>
+          <div className="add-topic">
             <button
               onClick={() => {
                 createDraftTopic(
@@ -103,10 +115,12 @@ export const TopicList: FC<TopicListProps> = ({
             >
               Add Topic
             </button>
-          </li>
+          </div>
         )}
-        {topicList.length === 0 && <li>No topics have been scheduled yet.</li>}
-      </ul>
+        {topicList.length === 0 && (
+          <div>No topics have been scheduled yet.</div>
+        )}
+      </div>
     </div>
   );
 };

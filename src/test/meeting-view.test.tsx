@@ -53,6 +53,31 @@ describe("MeetingView", () => {
         expect(topic1).toPrecede(topic2);
       });
 
+      it("should calculate topic start times based on durations", async () => {
+        if (!testMeeting) {
+          throw new Error("Test meeting not set up");
+        }
+        await act(async () => {
+          await addTestTopic(testMeeting, "Test Topic 1", 30);
+          await addTestTopic(testMeeting, "Test Topic 2", 45);
+        });
+        const topic1 = screen.getByRole("heading", { name: "Test Topic 1" });
+        const topic2 = screen.getByRole("heading", { name: "Test Topic 2" });
+        const topic1StartTime = screen.getByText((_, element) => {
+          return element?.textContent === "12:00 PM for 30 minutes";
+        });
+        const topic2StartTime = screen.getByText((_, element) => {
+          return element?.textContent === "12:30 PM for 45 minutes";
+        });
+        expect(topic1).toBeInTheDocument();
+        expect(topic2).toBeInTheDocument();
+        expect(topic1StartTime).toBeInTheDocument();
+        expect(topic2StartTime).toBeInTheDocument();
+        expect(topic1).toPrecede(topic1StartTime);
+        expect(topic1StartTime).toPrecede(topic2);
+        expect(topic2).toPrecede(topic2StartTime);
+      });
+
       it("should show empty state when there are no topics", () => {
         expect(
           screen.getByText("No topics have been scheduled yet.")
@@ -149,34 +174,32 @@ describe("MeetingView", () => {
         ).toBeInTheDocument();
       });
 
-      it("should allow editing topic titles by button click", async () => {
+      it("should allow editing topic durations", async () => {
         if (!testMeeting) {
           throw new Error("Test meeting not set up");
         }
 
         await act(async () => {
-          await addTestTopic(testMeeting, "Test Topic 1");
+          await addTestTopic(testMeeting, "Test Topic 1", 30);
         });
 
-        const topic1 = screen.getByRole("heading", { name: "Test Topic 1" });
+        const durationDisplay = screen.getByText("30");
 
-        fireEvent.contextMenu(topic1);
-        const editButton = screen.getByRole("button", {
-          name: "Edit Topic",
+        await userEvent.dblClick(durationDisplay);
+        const durationInput = screen.getByRole("spinbutton", {
+          name: "Duration",
         });
-        await userEvent.click(editButton);
 
-        const editInput = screen.getByRole("textbox", {
-          name: "Topic",
-        });
-        await userEvent.clear(editInput);
-        await userEvent.type(editInput, "Edited Topic");
-        await userEvent.keyboard("{Enter}");
+        await userEvent.clear(durationInput);
+        await userEvent.type(durationInput, "45");
+        fireEvent.blur(durationInput);
 
         expect(
-          screen.getByRole("heading", { name: "Edited Topic" })
+          screen.getByText((_, element) => {
+            return element?.textContent === "12:00 PM for 45 minutes";
+          })
         ).toBeInTheDocument();
-      });
+      }, 30000);
     });
   });
 });

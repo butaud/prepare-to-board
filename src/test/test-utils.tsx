@@ -125,7 +125,11 @@ export const addTestMeeting = async (date: Date) => {
   return meeting;
 };
 
-export const addTestTopic = async (meeting: Meeting, title: string) => {
+export const addTestTopic = async (
+  meeting: Meeting,
+  title: string,
+  durationMinutes?: number
+) => {
   if (!testAccount) {
     throw new Error("Test account not set up. Call setupTestAccount first.");
   }
@@ -139,7 +143,7 @@ export const addTestTopic = async (meeting: Meeting, title: string) => {
   }
 
   const owningGroup = org._owner.castAs(Group);
-  const topic = Schema.Topic.create({ title }, owningGroup);
+  const topic = Schema.Topic.create({ title, durationMinutes }, owningGroup);
   meeting.plannedAgenda?.push(topic);
   await meeting.waitForSync();
   await topic.waitForSync();

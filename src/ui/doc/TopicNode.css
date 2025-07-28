@@ -1,6 +1,39 @@
 .topic-node {
-  h4 {
-    margin: 0;
-    font-size: 1.2em;
+  .topic-header {
+    border: 1px solid var(--secondary-color);
+    background-color: var(--primary-color-subtle);
+    box-shadow: 0 2px 4px var(--shadow-color);
+    padding: 10px;
+    margin: 10px 0;
+    position: relative;
+    h4 {
+      margin: 0;
+      font-size: 1.2em;
+    }
+
+    .duration-display {
+      color: var(--primary-color);
+    }
+
+    form.duration-display {
+      display: inline;
+
+      input[type="number"] {
+        width: 60px;
+      }
+    }
+
+    .topic-actions {
+      position: absolute;
+      display: flex;
+      gap: 5px;
+      right: 10px;
+      top: 10px;
+    }
+  }
+
+  .topic-header.draft {
+    border-color: var(--secondary-color-light);
+    border-style: dashed;
   }
 }
