@@ -1,5 +1,17 @@
 .topic-node {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--secondary-color);
+    visibility: hidden;
+  }
+
   .topic-header {
+    flex: 1;
     border: 1px solid var(--secondary-color);
     background-color: var(--primary-color-subtle);
     box-shadow: 0 2px 4px var(--shadow-color);
@@ -35,5 +47,18 @@
   .topic-header.draft {
     border-color: var(--secondary-color-light);
     border-style: dashed;
+  }
+}
+/* Ensure the drag handle is visible on hover or on mobile */
+.topic-node:hover .drag-handle,
+.topic-node:focus-within .drag-handle,
+.topic-node:active .drag-handle,
+.topic-node:focus .drag-handle {
+  visibility: inherit;
+}
+
+@media (hover: none) {
+  .topic-node .drag-handle {
+    visibility: inherit;
   }
 }

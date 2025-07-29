@@ -39,6 +39,7 @@ export const MeetingView = () => {
           Delete Meeting
         </button>
       )}
+      <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
       <TopicList
         topicList={meeting.plannedAgenda}
         meeting={meeting}
