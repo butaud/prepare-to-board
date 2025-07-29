@@ -51,17 +51,30 @@ export type Minute = co.loaded<typeof JMinute>;
 const JListOfMinutes = co.list(JMinute);
 export type ListOfMinutes = co.loaded<typeof JListOfMinutes>;
 
-const JMeeting = co.map({
-  date: z.date(),
-  status: z.optional(z.literal(["draft", "published", "live", "completed"])),
-  plannedAgenda: z.optional(JListOfTopics),
-  liveAgenda: z.optional(JListOfTopics),
-  minutes: z.optional(JListOfMinutes),
-});
+const JMeeting = co
+  .map({
+    date: z.date(),
+    status: z.literal(["draft", "published", "live", "completed"]),
+    plannedAgenda: z.optional(JListOfTopics),
+    liveAgenda: z.optional(JListOfTopics),
+    minutes: z.optional(JListOfMinutes),
+  })
+  .withMigration((meeting) => {
+    if (meeting.status === undefined) {
+      meeting.status = "draft";
+    }
+  });
 export type Meeting = co.loaded<
   typeof JMeeting,
   { plannedAgenda: { $each: { plannedTopic: true } } }
 >;
+export const getMeetingDisplayStatus = (meeting: Meeting) => {
+  if (meeting.status === "draft") return "Draft";
+  if (meeting.status === "published") return "Published";
+  if (meeting.status === "live") return "Live";
+  if (meeting.status === "completed") return "Completed";
+  return "Unknown" as never;
+};
 
 const JListOfMeetings = co.list(JMeeting);
 export type ListOfMeetings = co.loaded<typeof JListOfMeetings>;

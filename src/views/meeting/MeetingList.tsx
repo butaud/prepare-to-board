@@ -12,10 +12,15 @@ export const MeetingList = () => {
   if (!me.root.selectedOrganization) {
     return <p>No organization selected</p>;
   }
-  const myMeetings = me.root.selectedOrganization.meetings;
 
   const isOfficer =
     me?.root.selectedOrganization && me.canWrite(me.root.selectedOrganization);
+
+  const myMeetings = isOfficer
+    ? me.root.selectedOrganization.meetings
+    : me.root.selectedOrganization.meetings.filter(
+        (meeting) => meeting.status !== "draft"
+      );
 
   return (
     <div>

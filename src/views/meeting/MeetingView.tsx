@@ -5,6 +5,7 @@ import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 
 import "./MeetingView.css";
+import { MdPublish } from "react-icons/md";
 
 export const MeetingView = () => {
   const me = useLoadedAccount();
@@ -21,6 +22,10 @@ export const MeetingView = () => {
 
   const isOfficer = me?.canWrite(me.root.selectedOrganization);
 
+  const onPublishClick = () => {
+    meeting.status = "published";
+  };
+
   const onDeleteClick = () => {
     if (!confirm("Are you sure you want to delete this meeting?")) {
       return;
@@ -36,10 +41,18 @@ export const MeetingView = () => {
   return (
     <>
       {isOfficer && (
-        <button className="danger" onClick={onDeleteClick}>
-          <SlTrash />
-          Delete Meeting
-        </button>
+        <div className="meeting-view-actions">
+          {meeting.status === "draft" && (
+            <button onClick={onPublishClick}>
+              <MdPublish />
+              Publish Meeting
+            </button>
+          )}
+          <button className="danger" onClick={onDeleteClick}>
+            <SlTrash />
+            Delete Meeting
+          </button>
+        </div>
       )}
       <div className="meeting-view-content">
         <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>

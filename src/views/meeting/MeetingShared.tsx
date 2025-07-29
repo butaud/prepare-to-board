@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../../ui/Breadcrumbs";
 import { useLoadMeetingFromParams } from "../../hooks/Meeting";
+import { getMeetingDisplayStatus } from "../../schema";
 
 export const MeetingShared = () => {
   const { meeting, outlet } = useLoadMeetingFromParams();
@@ -9,9 +10,12 @@ export const MeetingShared = () => {
   if (meeting === null) {
     return <p>Meeting not found</p>;
   }
+  const breadcrumbTitle = `${meeting.date.toLocaleDateString()} (${getMeetingDisplayStatus(
+    meeting
+  )})`;
   return (
     <div>
-      <Breadcrumbs dynamicTitle={meeting?.date?.toLocaleDateString()} />
+      <Breadcrumbs dynamicTitle={breadcrumbTitle} />
       {outlet}
     </div>
   );

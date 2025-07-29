@@ -29,7 +29,7 @@ export const TopicNode: FC<TopicNodeProps> = ({
   const canEdit = me.canWrite(topic);
   const isDraft = topicIsDraft(topic);
   return (
-    <Draggable draggableId={topic.id} index={index}>
+    <Draggable draggableId={topic.id} index={index} isDragDisabled={!canEdit}>
       {(provided, snapshot) => (
         <div
           className={["topic-node", snapshot.isDragging ? "dragging" : ""].join(
@@ -38,9 +38,11 @@ export const TopicNode: FC<TopicNodeProps> = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
         >
-          <div className="drag-handle" {...provided.dragHandleProps}>
-            <span className="drag-icon">::</span>
-          </div>
+          {canEdit && (
+            <div className="drag-handle" {...provided.dragHandleProps}>
+              <span className="drag-icon">::</span>
+            </div>
+          )}
           <div
             className={["topic-header", isDraft ? "draft" : ""].join(" ")}
             onContextMenu={(e) => {

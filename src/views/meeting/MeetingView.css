@@ -1,3 +1,8 @@
+.meeting-view-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .meeting-view-content {
   max-width: 1200px;
   margin: 0 auto;

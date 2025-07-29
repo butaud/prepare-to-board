@@ -96,7 +96,10 @@ export const addMemberToTestOrganization = async (
   await owningGroup.waitForSync();
 };
 
-export const addTestMeeting = async (date: Date) => {
+export const addTestMeeting = async (
+  date: Date,
+  status?: "draft" | "published"
+) => {
   if (!testAccount) {
     throw new Error("Test account not set up. Call setupTestAccount first.");
   }
@@ -116,6 +119,7 @@ export const addTestMeeting = async (date: Date) => {
       plannedAgenda: Schema.ListOfTopics.create([], owningGroup),
       liveAgenda: Schema.ListOfTopics.create([], owningGroup),
       minutes: Schema.ListOfMinutes.create([], owningGroup),
+      status: status || "published",
     },
     owningGroup
   );
