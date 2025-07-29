@@ -4,6 +4,8 @@ import { TopicList } from "../topic/TopicList";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 
+import "./MeetingView.css";
+
 export const MeetingView = () => {
   const me = useLoadedAccount();
   const meeting = useMeeting();
@@ -39,12 +41,14 @@ export const MeetingView = () => {
           Delete Meeting
         </button>
       )}
-      <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
-      <TopicList
-        topicList={meeting.plannedAgenda}
-        meeting={meeting}
-        useDrafts
-      />
+      <div className="meeting-view-content">
+        <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
+        <TopicList
+          topicList={meeting.plannedAgenda}
+          meeting={meeting}
+          useDrafts
+        />
+      </div>
     </>
   );
 };
