@@ -5,10 +5,10 @@ import { Schema, UserAccount } from "../schema";
 import { useState } from "react";
 import { InviteUserDialog } from "../ui/dialogs/InviteUserDialog";
 import { SlPlus, SlBan } from "react-icons/sl";
+import { useLoadedAccount } from "../hooks/Account";
+import { SubHeader } from "../ui/SubHeader";
 
 import "./Manage.css";
-import { Breadcrumbs } from "../ui/Breadcrumbs";
-import { useLoadedAccount } from "../hooks/Account";
 
 export const Manage = () => {
   const me = useLoadedAccount();
@@ -40,7 +40,7 @@ export const Manage = () => {
 
   return (
     <div className="manage">
-      <Breadcrumbs />
+      <SubHeader />
       {isInviteDialogOpen && (
         <InviteUserDialog
           closeDialog={closeDialog}

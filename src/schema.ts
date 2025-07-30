@@ -70,7 +70,7 @@ export type Meeting = co.loaded<
 >;
 export const getMeetingDisplayStatus = (meeting: Meeting) => {
   if (meeting.status === "draft") return "Draft";
-  if (meeting.status === "published") return "Published";
+  if (meeting.status === "published") return "Scheduled";
   if (meeting.status === "live") return "Live";
   if (meeting.status === "completed") return "Completed";
   return "Unknown" as never;

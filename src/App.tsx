@@ -7,13 +7,13 @@ import { ActionItems } from "./views/ActionItems";
 import { Calendar } from "./views/Calendar";
 import { MeetingView } from "./views/meeting/MeetingView";
 import { MeetingPresent } from "./views/meeting/MeetingPresent";
-import { MeetingRecord } from "./views/meeting/MeetingRecord";
 import { MeetingShared } from "./views/meeting/MeetingShared";
 import { Manage } from "./views/Manage";
 import { Invite } from "./views/Invite";
 import { MeetingList } from "./views/meeting/MeetingList";
 import { AuthenticatedShared } from "./views/AuthenticatedShared";
 import { useLoadAccount } from "./hooks/Account";
+import { MeetingMinutes } from "./views/meeting/MeetingMinutes";
 
 function App() {
   const isAuthenticated = useIsAuthenticated();
@@ -38,7 +38,7 @@ function App() {
             <Route path="meetings/:meetingId" element={<MeetingShared />}>
               <Route index element={<MeetingView />} />
               <Route path="present" element={<MeetingPresent />} />
-              <Route path="record" element={<MeetingRecord />} />
+              <Route path="minutes" element={<MeetingMinutes />} />
             </Route>
           </Route>
         )}

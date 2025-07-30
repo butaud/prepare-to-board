@@ -1,15 +1,15 @@
 import { Organization } from "../schema";
 import { FC, useState } from "react";
 import "./Settings.css";
-import { Breadcrumbs } from "../ui/Breadcrumbs";
 import { SlBan, SlPlus } from "react-icons/sl";
 import { useLoadedAccount } from "../hooks/Account";
 import { CreateOrganization } from "../ui/forms/Organization";
+import { SubHeader } from "../ui/SubHeader";
 
 export const Settings = () => {
   return (
     <div className="settings">
-      <Breadcrumbs />
+      <SubHeader />
       <h3>User Profile</h3>
       <ManageProfile />
       <h3>Organizations</h3>

@@ -28,6 +28,8 @@ describe("MeetingView", () => {
       beforeEach(async () => {
         await addTestOrganization("Test Org", "reader");
         testMeeting = await addTestMeeting(new Date("2023-10-01T12:00:00Z"));
+        testMeeting.status = "published";
+        await testMeeting.waitForSync();
 
         await render(<App />, { startingPath: "/meetings" });
         await userEvent.click(screen.getByRole("link", { name: "10/1/2023" }));
@@ -51,6 +53,16 @@ describe("MeetingView", () => {
         expect(topic1).toBeInTheDocument();
         expect(topic2).toBeInTheDocument();
         expect(topic1).toPrecede(topic2);
+      });
+
+      it("should show live status when the meeting is live", async () => {
+        await act(async () => {
+          testMeeting.status = "live";
+          await testMeeting.waitForSync();
+        });
+        expect(
+          screen.getByText("(Live)", { exact: false })
+        ).toBeInTheDocument();
       });
 
       it("should calculate topic start times based on durations", async () => {
@@ -200,6 +212,56 @@ describe("MeetingView", () => {
           })
         ).toBeInTheDocument();
       }, 30000);
+    });
+
+    describe("live meeting", () => {
+      it("should default to manage agenda when meeting is live", async () => {
+        await addTestOrganization("Test Org", "writer");
+        const testMeeting = await addTestMeeting(
+          new Date("2023-10-01T12:00:00Z")
+        );
+        testMeeting.status = "live";
+        await testMeeting.waitForSync();
+        await render(<App />, { startingPath: "/meetings" });
+        await userEvent.click(screen.getByRole("link", { name: "10/1/2023" }));
+        const manageAgendaTab = screen.getByRole("button", {
+          name: "Manage Agenda",
+        });
+        expect(manageAgendaTab).toBeDisabled();
+      });
+      it("should allow selecting present mode when meeting is live", async () => {
+        await addTestOrganization("Test Org", "writer");
+        const testMeeting = await addTestMeeting(
+          new Date("2023-10-01T12:00:00Z")
+        );
+        testMeeting.status = "live";
+        await testMeeting.waitForSync();
+        await render(<App />, { startingPath: "/meetings" });
+        await userEvent.click(screen.getByRole("link", { name: "10/1/2023" }));
+        const presentTab = screen.getByRole("button", {
+          name: "Present",
+        });
+        expect(presentTab).toBeEnabled();
+        await userEvent.click(presentTab);
+        expect(presentTab).toBeDisabled();
+      });
+
+      it("should allow selecting minutes mode when meeting is live", async () => {
+        await addTestOrganization("Test Org", "writer");
+        const testMeeting = await addTestMeeting(
+          new Date("2023-10-01T12:00:00Z")
+        );
+        testMeeting.status = "live";
+        await testMeeting.waitForSync();
+        await render(<App />, { startingPath: "/meetings" });
+        await userEvent.click(screen.getByRole("link", { name: "10/1/2023" }));
+        const minutesTab = screen.getByRole("button", {
+          name: "Take Minutes",
+        });
+        expect(minutesTab).toBeEnabled();
+        await userEvent.click(minutesTab);
+        expect(minutesTab).toBeDisabled();
+      });
     });
   });
 });

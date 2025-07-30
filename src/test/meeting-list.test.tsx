@@ -156,12 +156,12 @@ describe("Meeting List", () => {
       expect(screen.getByText("(Draft)", { exact: false })).toBeInTheDocument();
 
       const publishButton = screen.getByRole("button", {
-        name: "Publish Meeting",
+        name: "Publish",
       });
       await userEvent.click(publishButton);
 
       expect(
-        screen.getByText("(Published)", { exact: false })
+        screen.getByText("(Scheduled)", { exact: false })
       ).toBeInTheDocument();
     });
 
@@ -173,11 +173,11 @@ describe("Meeting List", () => {
       await render(<App />, { startingPath: `/meetings/${meeting.id}` });
 
       expect(
-        screen.getByText("(Published)", { exact: false })
+        screen.getByText("(Scheduled)", { exact: false })
       ).toBeInTheDocument();
 
       const publishButton = screen.queryByRole("button", {
-        name: "Publish Meeting",
+        name: "Publish",
       });
       expect(publishButton).not.toBeInTheDocument();
     });

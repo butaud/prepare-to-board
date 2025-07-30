@@ -94,6 +94,7 @@ input[type="submit"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
 
   outline: 0;
   text-align: center;
@@ -108,10 +109,6 @@ input[type="submit"] {
   box-sizing: border-box;
   border: 2px solid var(--secondary-color);
   box-shadow: 0 4px 8px var(--shadow-color);
-
-  svg {
-    margin-right: 5px;
-  }
 
   &:hover:not(:disabled) {
     background-color: var(--primary-color-light);

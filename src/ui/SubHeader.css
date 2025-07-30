@@ -1,0 +1,48 @@
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 5px 0;
+
+  .first-part {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    .sub-header-tabs {
+      display: flex;
+      align-items: center;
+
+      /* make the buttons look like tabs */
+      button {
+        background-color: var(--primary-color);
+        padding: 5px 10px;
+        box-shadow: none;
+        &:disabled {
+          background-color: var(--primary-color-subtle);
+          border: 1px solid var(--secondary-color);
+          border-bottom: none;
+        }
+      }
+
+      @media screen and (max-width: 950px) {
+        .tab-label {
+          display: none;
+        }
+      }
+    }
+  }
+
+  .sub-header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    @media screen and (max-width: 950px) {
+      .action-label {
+        display: none;
+      }
+    }
+  }
+}

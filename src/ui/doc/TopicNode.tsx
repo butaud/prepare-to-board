@@ -3,7 +3,7 @@ import { Topic, topicIsDraft } from "../../schema";
 
 import "./TopicNode.css";
 import { useLoadedAccount } from "../../hooks/Account";
-import { MdDelete } from "react-icons/md";
+import { MdDelete, MdDragHandle } from "react-icons/md";
 import { EditableInteger, EditableString } from "./EditableValue";
 import { Draggable } from "@hello-pangea/dnd";
 
@@ -39,8 +39,14 @@ export const TopicNode: FC<TopicNodeProps> = ({
           {...provided.draggableProps}
         >
           {canEdit && (
-            <div className="drag-handle" {...provided.dragHandleProps}>
-              <span className="drag-icon">::</span>
+            <div
+              className="drag-handle"
+              {...provided.dragHandleProps}
+              aria-label={`Drag ${topic.title}`}
+            >
+              <span className="drag-icon">
+                <MdDragHandle />
+              </span>
             </div>
           )}
           <div
