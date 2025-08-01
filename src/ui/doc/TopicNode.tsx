@@ -105,9 +105,14 @@ export const TopicNode: FC<TopicNodeProps> = ({
                   </>
                 )}
                 {!isDraft && onDelete && (
-                  <button autoFocus className="danger" onClick={onDelete}>
+                  <button
+                    autoFocus
+                    className="danger"
+                    onClick={onDelete}
+                    aria-label="Delete Topic"
+                  >
                     <MdDelete />
-                    Delete Topic
+                    Delete
                   </button>
                 )}
               </div>
