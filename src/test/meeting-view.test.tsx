@@ -137,6 +137,37 @@ describe("MeetingView", () => {
         expect(topic2).toPrecede(newTopic);
       });
 
+      it("should allow entering duration after title when creating a topic", async () => {
+        if (!testMeeting) {
+          throw new Error("Test meeting not set up");
+        }
+
+        const addTopicButton = screen.getByRole("button", {
+          name: "Add Topic",
+        });
+        await userEvent.click(addTopicButton);
+
+        const titleInput = screen.getByRole("textbox", { name: "Topic" });
+        await userEvent.type(titleInput, "Timed Topic");
+        await userEvent.keyboard("{Tab}");
+
+        const durationInput = screen.getByRole("spinbutton", {
+          name: "Duration",
+        });
+        await userEvent.clear(durationInput);
+        await userEvent.type(durationInput, "15");
+        fireEvent.blur(durationInput);
+
+        expect(
+          screen.getByRole("heading", { name: "Timed Topic" })
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText((_, element) => {
+            return element?.textContent === "12:00 PM for 15 minutes";
+          })
+        ).toBeInTheDocument();
+      });
+
       it("should allow deleting topics", async () => {
         if (!testMeeting) {
           throw new Error("Test meeting not set up");
