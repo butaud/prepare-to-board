@@ -212,6 +212,43 @@ describe("MeetingView", () => {
           })
         ).toBeInTheDocument();
       }, 30000);
+
+      it("should allow reordering topics by drag and drop", async () => {
+        if (!testMeeting) {
+          throw new Error("Test meeting not set up");
+        }
+
+        await act(async () => {
+          await addTestTopic(testMeeting, "Test Topic 1", 30);
+          await addTestTopic(testMeeting, "Test Topic 2", 45);
+        });
+
+        const topic1Before = screen.getByRole("heading", { name: "Test Topic 1" });
+        const topic2Before = screen.getByRole("heading", { name: "Test Topic 2" });
+
+        expect(topic1Before).toPrecede(topic2Before);
+
+        const dragHandle = screen.getByLabelText("Drag Test Topic 2");
+        dragHandle.focus();
+        fireEvent.keyDown(dragHandle, { key: " ", code: "Space", keyCode: 32 });
+        fireEvent.keyDown(dragHandle, { key: "ArrowUp", code: "ArrowUp", keyCode: 38 });
+        fireEvent.keyDown(dragHandle, { key: " ", code: "Space", keyCode: 32 });
+
+        const topic1After = screen.getByRole("heading", { name: "Test Topic 1" });
+        const topic2After = screen.getByRole("heading", { name: "Test Topic 2" });
+
+        expect(topic2After).toPrecede(topic1After);
+        expect(
+          screen.getByText((_, element) => {
+            return element?.textContent === "12:00 PM for 45 minutes";
+          })
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText((_, element) => {
+            return element?.textContent === "12:45 PM for 30 minutes";
+          })
+        ).toBeInTheDocument();
+      });
     });
 
     describe("live meeting", () => {
