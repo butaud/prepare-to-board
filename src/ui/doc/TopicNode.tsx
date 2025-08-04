@@ -61,9 +61,6 @@ export const TopicNode: FC<TopicNodeProps> = ({
               value={topic.title}
               onValueChange={(newValue) => {
                 topic.title = newValue;
-                if (isDraft && onPublish) {
-                  onPublish();
-                }
                 if (topic.title === "" && isDraft && onCancel) {
                   onCancel();
                 }
@@ -82,6 +79,9 @@ export const TopicNode: FC<TopicNodeProps> = ({
                 editingByDefault={isDraft}
                 onValueChange={(newDuration) => {
                   topic.durationMinutes = newDuration;
+                  if (isDraft && onPublish) {
+                    onPublish();
+                  }
                 }}
                 autoFocus={!isDraft}
                 canEdit={canEdit}
