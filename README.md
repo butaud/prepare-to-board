@@ -1,55 +1,86 @@
 # Prepare to Board
-## React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Prepare to Board is a web application for planning and running board meetings.
+It is built with **React**, **TypeScript** and **Vite** and uses
+[Clerk](https://clerk.com) for authentication and
+[jazz-tools](https://jazz.tools) for real‑time data sync.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Manage organizations and members with role‑based access
+- Schedule meetings and build agendas
+- Present topics and record meeting minutes
+- Track upcoming meetings, personal action items and calendar events
 
-### Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- [Node.js](https://nodejs.org/) 18 or later
+- [Yarn](https://yarnpkg.com/) package manager
+
+### Installation
+
+1. Install dependencies:
+
+   ```bash
+   yarn install
+   ```
+
+2. Create a `.env` file in the project root and define the required environment
+   variables:
+
+   ```env
+   VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+   VITE_JAZZ_API_KEY=your_jazz_api_key
+   ```
+
+### Development
+
+Run the development server:
+
+```bash
+yarn dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The app is served at [http://localhost:5173](http://localhost:5173).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Testing
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+Execute the test suite with [Vitest](https://vitest.dev/):
+
+```bash
+yarn test
 ```
+
+### Linting
+
+Check code style and static analysis rules:
+
+```bash
+yarn lint
+```
+
+### Production Build
+
+Create an optimized production build and preview it locally:
+
+```bash
+yarn build
+yarn preview
+```
+
+## Project Structure
+
+```
+src/                Application source code
+public/             Static assets
+index.html          HTML entry point
+vite.config.ts      Vite configuration
+```
+
+## Contributing
+
+Issues and pull requests are welcome. Please run the tests and lint before
+submitting changes.
+
