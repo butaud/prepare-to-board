@@ -1,41 +1,87 @@
-.meeting-calendar table {
-  margin-top: 20px;
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  border: 1px solid var(--secondary-color);
-}
+.meeting-calendar {
+  table {
+    margin-top: 20px;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    border: 1px solid var(--secondary-color);
+  }
 
-.meeting-calendar th,
-.meeting-calendar td {
-  width: calc(100% / 7);
-  padding: 4px;
-  vertical-align: top;
-  border: 1px solid var(--secondary-color);
-}
+  th,
+  td {
+    width: calc(100vw / 7);
+    padding: 4px;
+    vertical-align: top;
+    border: 1px solid var(--secondary-color);
+  }
 
-.meeting-calendar th {
-  background-color: var(--primary-color-subtle);
-  color: var(--font-color);
-  text-align: center;
-}
+  th {
+    background-color: var(--primary-color-subtle);
+    color: var(--font-color);
+    text-align: center;
+  }
 
-.meeting-calendar td {
-  height: calc(60vh / 7);
-}
+  tr {
+    display: flex;
+    flex-direction: row;
+  }
 
-.meeting-calendar td.outside-month {
-  opacity: 0.5;
-}
+  td {
+    height: min(calc(60vh / 7), calc(100vw / 7));
+    position: relative;
+    overflow-x: hidden;
+  }
 
-.meeting-calendar td.today {
-  background-color: var(--primary-color);
-  color: var(--button-foreground);
-}
+  td.outside-month {
+    opacity: 0.5;
+  }
 
-.meeting-calendar .navigation {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-  align-items: center;
+  td.today {
+    background-color: var(--primary-color);
+    color: var(--button-foreground);
+  }
+
+  .navigation {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    align-items: center;
+  }
+
+  td .date {
+    position: absolute;
+    top: 0px;
+    left: 4px;
+  }
+
+  td .meetings {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-weight: bold;
+    text-wrap: nowrap;
+    font-size: min(3vw, 20px);
+  }
+
+  td button.add-meeting {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    box-shadow: none;
+  }
+
+  td button.add-meeting:hover {
+    background: none;
+    border: none;
+    box-shadow: none;
+    font-weight: bold;
+    stroke-width: 3px;
+  }
 }
