@@ -11,6 +11,7 @@ import { IoCalendarOutline } from "react-icons/io5";
 export const MeetingList = () => {
   const me = useLoadedAccount();
   const [isCreateMeetingOpen, setCreateMeetingOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [view, setView] = useState<"list" | "calendar">("list");
 
   if (!me.root.selectedOrganization) {
@@ -29,7 +30,13 @@ export const MeetingList = () => {
   return (
     <div>
       {isCreateMeetingOpen && (
-        <CreateMeetingDialog closeDialog={() => setCreateMeetingOpen(false)} />
+        <CreateMeetingDialog
+          closeDialog={() => {
+            setCreateMeetingOpen(false);
+            setSelectedDate(null);
+          }}
+          defaultDate={selectedDate}
+        />
       )}
       <SubHeader
         tabs={[
@@ -51,7 +58,10 @@ export const MeetingList = () => {
             ? [
                 {
                   label: "Create a new meeting",
-                  onClick: () => setCreateMeetingOpen(true),
+                  onClick: () => {
+                    setSelectedDate(null);
+                    setCreateMeetingOpen(true);
+                  },
                   icon: <SlPlus />,
                 },
               ]
@@ -72,7 +82,17 @@ export const MeetingList = () => {
           )}
         </ul>
       ) : (
-        <MeetingCalendar meetings={myMeetings} />
+        <MeetingCalendar
+          meetings={myMeetings}
+          onAddMeeting={
+            isOfficer
+              ? (date) => {
+                  setSelectedDate(date);
+                  setCreateMeetingOpen(true);
+                }
+              : undefined
+          }
+        />
       )}
     </div>
   );

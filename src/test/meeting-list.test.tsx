@@ -81,7 +81,7 @@ describe("Meeting List", () => {
 
       expect(
         screen.getByRole("link", {
-          name: meetingDate.toLocaleDateString(),
+          name: "12:00 PM",
         })
       ).toBeInTheDocument();
     });
@@ -127,7 +127,7 @@ describe("Meeting List", () => {
       await userEvent.click(prevButton);
       expect(
         screen.getByRole("link", {
-          name: previousMonthDate.toLocaleDateString(),
+          name: "12:00 PM",
         })
       ).toBeInTheDocument();
 
@@ -136,7 +136,7 @@ describe("Meeting List", () => {
       await userEvent.click(nextButton); // move to next month
       expect(
         screen.getByRole("link", {
-          name: nextMonthDate.toLocaleDateString(),
+          name: "12:00 PM",
         })
       ).toBeInTheDocument();
     });
@@ -193,6 +193,43 @@ describe("Meeting List", () => {
       expect(
         screen.getByRole("link", { name: "10/8/2023" })
       ).toBeInTheDocument();
+    });
+
+    it("should set date when adding meeting from calendar cell", async () => {
+      const today = new Date();
+      const meetingDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        10,
+        12,
+        0,
+        0
+      );
+      await addTestMeeting(meetingDate);
+
+      await render(<App />, { startingPath: "/meetings" });
+
+      const calendarButton = screen.getByRole("button", { name: "Calendar" });
+      await userEvent.click(calendarButton);
+
+      const targetDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        15,
+        12,
+        0,
+        0
+      );
+
+      const addButton = screen.getByRole("button", {
+        name: `Add meeting on ${targetDate.toLocaleDateString()}`,
+      });
+      await userEvent.click(addButton);
+
+      const meetingDateInput = screen.getByRole<HTMLInputElement>("textbox", {
+        name: "Meeting date",
+      });
+      expect(meetingDateInput.value).toBe(targetDate.toLocaleDateString());
     });
 
     it("should be able to create meeting", async () => {
