@@ -102,14 +102,18 @@ export const MeetingCalendar = ({
                       (isToday ? " today" : "")
                     }
                   >
-                    <div>{date.getDate()}</div>
-                    {dayMeetings.map((m) => (
-                      <div key={m.id}>
-                        <Link to={`/meetings/${m.id}`}>
-                          {m.date?.toLocaleDateString()}
-                        </Link>
+                    <div className="date">{date.getDate()}</div>
+                    {dayMeetings.length > 0 && (
+                      <div className="meetings">
+                        {dayMeetings.map((m) => (
+                          <Link to={`/meetings/${m.id}`} key={m.id}>
+                            {m.date?.toLocaleTimeString([], {
+                              timeStyle: "short",
+                            }) ?? "No time"}
+                          </Link>
+                        ))}
                       </div>
-                    ))}
+                    )}
                     {dayMeetings.length === 0 && onAddMeeting && (
                       <button
                         aria-label={`Add meeting on ${date.toLocaleDateString()}`}

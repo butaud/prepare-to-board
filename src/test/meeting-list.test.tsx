@@ -81,11 +81,10 @@ describe("Meeting List", () => {
 
       expect(
         screen.getByRole("link", {
-          name: meetingDate.toLocaleDateString(),
+          name: "12:00 PM",
         })
       ).toBeInTheDocument();
     });
-
 
     it("should navigate months in calendar view", async () => {
       const today = new Date();
@@ -128,7 +127,7 @@ describe("Meeting List", () => {
       await userEvent.click(prevButton);
       expect(
         screen.getByRole("link", {
-          name: previousMonthDate.toLocaleDateString(),
+          name: "12:00 PM",
         })
       ).toBeInTheDocument();
 
@@ -137,7 +136,7 @@ describe("Meeting List", () => {
       await userEvent.click(nextButton); // move to next month
       expect(
         screen.getByRole("link", {
-          name: nextMonthDate.toLocaleDateString(),
+          name: "12:00 PM",
         })
       ).toBeInTheDocument();
     });
