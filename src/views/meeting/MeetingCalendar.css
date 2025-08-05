@@ -51,6 +51,12 @@
     justify-content: center;
     gap: 30px;
     align-items: center;
+
+    span {
+      /* This keeps the buttons on either side in a consistent position no matter the width of the month name */
+      width: 150px;
+      text-align: center;
+    }
   }
 
   td .date {
