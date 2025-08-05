@@ -63,11 +63,22 @@ export const MeetingCalendar = ({
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
     );
 
+  const goToCurrentMonth = () => {
+    const now = new Date();
+    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+  };
+
   const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <div className="meeting-calendar">
       <div className="navigation">
+        <button
+          onClick={goToCurrentMonth}
+          disabled={currentMonth.getMonth() <= new Date().getMonth()}
+        >
+          {"<<"} Today
+        </button>
         <button onClick={prevMonth}>{"<"}</button>
         <span>
           {currentMonth.toLocaleString("default", {
@@ -76,6 +87,12 @@ export const MeetingCalendar = ({
           })}
         </span>
         <button onClick={nextMonth}>{">"}</button>
+        <button
+          onClick={goToCurrentMonth}
+          disabled={currentMonth.getMonth() >= new Date().getMonth()}
+        >
+          Today {">>"}
+        </button>
       </div>
       <table>
         <thead>

@@ -141,6 +141,60 @@ describe("Meeting List", () => {
       ).toBeInTheDocument();
     });
 
+    it("should jump to the current month in calendar view", async () => {
+      const today = new Date();
+      const previousMonthDate = new Date(
+        today.getFullYear(),
+        today.getMonth() - 1,
+        10,
+        12,
+        0,
+        0
+      );
+      const currentMonthDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        10,
+        12,
+        0,
+        0
+      );
+      await addTestMeeting(previousMonthDate);
+      await addTestMeeting(currentMonthDate);
+
+      await render(<App />, { startingPath: "/meetings" });
+
+      const calendarButton = screen.getByRole("button", { name: "Calendar" });
+      await userEvent.click(calendarButton);
+
+      const meetingTime = currentMonthDate.toLocaleTimeString([], {
+        timeStyle: "short",
+      });
+      const previousMonthLabel = previousMonthDate.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
+      const currentMonthLabel = currentMonthDate.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
+
+      const todayButton = screen.getByRole("button", { name: "Today >>" });
+      expect(todayButton).toBeDisabled();
+
+      // move to previous month
+      const prevButton = screen.getByRole("button", { name: "<" });
+      await userEvent.click(prevButton);
+      expect(screen.getByText(previousMonthLabel)).toBeInTheDocument();
+
+      expect(todayButton).not.toBeDisabled();
+      await userEvent.click(todayButton);
+      expect(screen.getByText(currentMonthLabel)).toBeInTheDocument();
+      expect(
+        await screen.findByRole("link", { name: meetingTime })
+      ).toBeInTheDocument();
+    });
+
     it("should not be able to create meeting", async () => {
       await render(<App />, { startingPath: "/meetings" });
 
