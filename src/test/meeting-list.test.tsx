@@ -62,6 +62,85 @@ describe("Meeting List", () => {
       ).toBeInTheDocument();
     });
 
+    it("should show meetings in calendar view when toggled", async () => {
+      const today = new Date();
+      const meetingDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        12,
+        0,
+        0
+      );
+      await addTestMeeting(meetingDate);
+
+      await render(<App />, { startingPath: "/meetings" });
+
+      const calendarButton = screen.getByRole("button", { name: "Calendar" });
+      await userEvent.click(calendarButton);
+
+      expect(
+        screen.getByRole("link", {
+          name: meetingDate.toLocaleDateString(),
+        })
+      ).toBeInTheDocument();
+    });
+
+    it("should navigate months in calendar view", async () => {
+      const today = new Date();
+      const previousMonthDate = new Date(
+        today.getFullYear(),
+        today.getMonth() - 1,
+        10,
+        12,
+        0,
+        0
+      );
+      const nextMonthDate = new Date(
+        today.getFullYear(),
+        today.getMonth() + 1,
+        10,
+        12,
+        0,
+        0
+      );
+      await addTestMeeting(previousMonthDate);
+      await addTestMeeting(nextMonthDate);
+
+      await render(<App />, { startingPath: "/meetings" });
+
+      const calendarButton = screen.getByRole("button", { name: "Calendar" });
+      await userEvent.click(calendarButton);
+
+      expect(
+        screen.queryByRole("link", {
+          name: previousMonthDate.toLocaleDateString(),
+        })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", {
+          name: nextMonthDate.toLocaleDateString(),
+        })
+      ).not.toBeInTheDocument();
+
+      const prevButton = screen.getByRole("button", { name: "<" });
+      await userEvent.click(prevButton);
+      expect(
+        screen.getByRole("link", {
+          name: previousMonthDate.toLocaleDateString(),
+        })
+      ).toBeInTheDocument();
+
+      const nextButton = screen.getByRole("button", { name: ">" });
+      await userEvent.click(nextButton); // back to current
+      await userEvent.click(nextButton); // move to next month
+      expect(
+        screen.getByRole("link", {
+          name: nextMonthDate.toLocaleDateString(),
+        })
+      ).toBeInTheDocument();
+    });
+
     it("should not be able to create meeting", async () => {
       await render(<App />, { startingPath: "/meetings" });
 

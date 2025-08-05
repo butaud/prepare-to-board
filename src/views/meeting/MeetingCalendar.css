@@ -1,0 +1,18 @@
+.meeting-calendar table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: 1px solid var(--secondary-color);
+}
+
+.meeting-calendar th,
+.meeting-calendar td {
+  width: calc(100% / 7);
+  padding: 4px;
+  vertical-align: top;
+  border: 1px solid var(--secondary-color);
+}
+
+.meeting-calendar td.outside-month {
+  opacity: 0.5;
+}

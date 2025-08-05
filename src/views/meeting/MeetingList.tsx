@@ -4,10 +4,12 @@ import { Link } from "react-router-dom";
 import { SlPlus } from "react-icons/sl";
 import { useLoadedAccount } from "../../hooks/Account";
 import { SubHeader } from "../../ui/SubHeader";
+import { MeetingCalendar } from "./MeetingCalendar";
 
 export const MeetingList = () => {
   const me = useLoadedAccount();
   const [isCreateMeetingOpen, setCreateMeetingOpen] = useState(false);
+  const [view, setView] = useState<"list" | "calendar">("list");
 
   if (!me.root.selectedOrganization) {
     return <p>No organization selected</p>;
@@ -28,25 +30,38 @@ export const MeetingList = () => {
         <CreateMeetingDialog closeDialog={() => setCreateMeetingOpen(false)} />
       )}
       <SubHeader />
-      <ul>
+      <div>
         {isOfficer && (
-          <li>
-            <button onClick={() => setCreateMeetingOpen(true)}>
-              <SlPlus /> Create a new meeting
-            </button>
-          </li>
+          <button onClick={() => setCreateMeetingOpen(true)}>
+            <SlPlus /> Create a new meeting
+          </button>
         )}
-        {myMeetings.map((meeting) => (
-          <li key={meeting.id}>
-            <Link to={`/meetings/${meeting.id}`}>
-              {meeting.date?.toLocaleDateString() ?? "No date"}
-            </Link>
-          </li>
-        ))}
-        {myMeetings.length === 0 && (
-          <li>No meetings have been scheduled yet.</li>
-        )}
-      </ul>
+        <button onClick={() => setView("list")} disabled={view === "list"}>
+          List
+        </button>
+        <button
+          onClick={() => setView("calendar")}
+          disabled={view === "calendar"}
+        >
+          Calendar
+        </button>
+      </div>
+      {view === "list" ? (
+        <ul>
+          {myMeetings.map((meeting) => (
+            <li key={meeting.id}>
+              <Link to={`/meetings/${meeting.id}`}>
+                {meeting.date?.toLocaleDateString() ?? "No date"}
+              </Link>
+            </li>
+          ))}
+          {myMeetings.length === 0 && (
+            <li>No meetings have been scheduled yet.</li>
+          )}
+        </ul>
+      ) : (
+        <MeetingCalendar meetings={myMeetings} />
+      )}
     </div>
   );
 };
