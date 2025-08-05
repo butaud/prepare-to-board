@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { SlPlus } from "react-icons/sl";
 import "./MeetingCalendar.css";
 
 interface Meeting {
@@ -9,6 +10,7 @@ interface Meeting {
 
 interface MeetingCalendarProps {
   meetings: Meeting[];
+  onAddMeeting?: (date: Date) => void;
 }
 
 const buildWeeks = (current: Date) => {
@@ -31,7 +33,10 @@ const buildWeeks = (current: Date) => {
   return weeks;
 };
 
-export const MeetingCalendar = ({ meetings }: MeetingCalendarProps) => {
+export const MeetingCalendar = ({
+  meetings,
+  onAddMeeting,
+}: MeetingCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -105,6 +110,15 @@ export const MeetingCalendar = ({ meetings }: MeetingCalendarProps) => {
                         </Link>
                       </div>
                     ))}
+                    {dayMeetings.length === 0 && onAddMeeting && (
+                      <button
+                        aria-label={`Add meeting on ${date.toLocaleDateString()}`}
+                        onClick={() => onAddMeeting(date)}
+                        className="add-meeting"
+                      >
+                        <SlPlus />
+                      </button>
+                    )}
                   </td>
                 );
               })}

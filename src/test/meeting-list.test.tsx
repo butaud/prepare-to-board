@@ -86,6 +86,7 @@ describe("Meeting List", () => {
       ).toBeInTheDocument();
     });
 
+
     it("should navigate months in calendar view", async () => {
       const today = new Date();
       const previousMonthDate = new Date(
@@ -193,6 +194,43 @@ describe("Meeting List", () => {
       expect(
         screen.getByRole("link", { name: "10/8/2023" })
       ).toBeInTheDocument();
+    });
+
+    it("should set date when adding meeting from calendar cell", async () => {
+      const today = new Date();
+      const meetingDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        10,
+        12,
+        0,
+        0
+      );
+      await addTestMeeting(meetingDate);
+
+      await render(<App />, { startingPath: "/meetings" });
+
+      const calendarButton = screen.getByRole("button", { name: "Calendar" });
+      await userEvent.click(calendarButton);
+
+      const targetDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        15,
+        12,
+        0,
+        0
+      );
+
+      const addButton = screen.getByRole("button", {
+        name: `Add meeting on ${targetDate.toLocaleDateString()}`,
+      });
+      await userEvent.click(addButton);
+
+      const meetingDateInput = screen.getByRole<HTMLInputElement>("textbox", {
+        name: "Meeting date",
+      });
+      expect(meetingDateInput.value).toBe(targetDate.toLocaleDateString());
     });
 
     it("should be able to create meeting", async () => {

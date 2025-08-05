@@ -39,3 +39,11 @@
   gap: 30px;
   align-items: center;
 }
+
+.meeting-calendar td .add-meeting {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+}
