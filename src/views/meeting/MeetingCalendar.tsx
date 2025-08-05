@@ -87,8 +87,16 @@ export const MeetingCalendar = ({ meetings }: MeetingCalendarProps) => {
                 const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
                 const dayMeetings = meetingsByDay.get(key) ?? [];
                 const isCurrentMonth = date.getMonth() === month;
+                const isToday =
+                  date.toDateString() === new Date().toDateString();
                 return (
-                  <td key={j} className={isCurrentMonth ? "" : "outside-month"}>
+                  <td
+                    key={j}
+                    className={
+                      (isCurrentMonth ? "" : "outside-month") +
+                      (isToday ? " today" : "")
+                    }
+                  >
                     <div>{date.getDate()}</div>
                     {dayMeetings.map((m) => (
                       <div key={m.id}>
@@ -108,4 +116,3 @@ export const MeetingCalendar = ({ meetings }: MeetingCalendarProps) => {
     </div>
   );
 };
-

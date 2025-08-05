@@ -12,12 +12,22 @@ export type SubHeaderAction = {
   danger?: boolean;
 };
 
-export type SubHeaderTab = {
+export type SubHeaderNavTab = {
   label: string;
   icon: ReactNode;
   destination: string;
   className?: string;
 };
+
+export type SubHeaderCallbackTab = {
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+  isActive: boolean;
+  className?: string;
+};
+
+export type SubHeaderTab = SubHeaderNavTab | SubHeaderCallbackTab;
 
 export type SubHeaderProps = {
   dynamicTitleParts?: Record<string, string>;
@@ -43,18 +53,31 @@ export const SubHeader = ({
         />
         {tabs && tabs.length > 0 && (
           <div className="sub-header-tabs">
-            {tabs.map((tab, index) => (
-              <button
-                key={index}
-                onClick={() => void navigate(tab.destination)}
-                disabled={location.pathname === tab.destination}
-                title={tab.label}
-                className={tab.className}
-              >
-                {tab.icon}
-                <span className="tab-label"> {tab.label}</span>
-              </button>
-            ))}
+            {tabs.map((tab, index) => {
+              const { onClick, isActive } = (() => {
+                if ("onClick" in tab) {
+                  return { onClick: tab.onClick, isActive: tab.isActive };
+                } else {
+                  return {
+                    onClick: () => navigate(tab.destination),
+                    isActive: location.pathname === tab.destination,
+                  };
+                }
+              })();
+
+              return (
+                <button
+                  key={index}
+                  onClick={onClick}
+                  disabled={isActive}
+                  title={tab.label}
+                  className={tab.className}
+                >
+                  {tab.icon}
+                  <span className="tab-label"> {tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
