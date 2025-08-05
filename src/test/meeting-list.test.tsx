@@ -179,12 +179,15 @@ describe("Meeting List", () => {
         year: "numeric",
       });
 
+      const todayButton = screen.getByRole("button", { name: "Today >>" });
+      expect(todayButton).toBeDisabled();
+
       // move to previous month
       const prevButton = screen.getByRole("button", { name: "<" });
       await userEvent.click(prevButton);
       expect(screen.getByText(previousMonthLabel)).toBeInTheDocument();
 
-      const todayButton = screen.getByRole("button", { name: "Today" });
+      expect(todayButton).not.toBeDisabled();
       await userEvent.click(todayButton);
       expect(screen.getByText(currentMonthLabel)).toBeInTheDocument();
       expect(

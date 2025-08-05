@@ -73,6 +73,12 @@ export const MeetingCalendar = ({
   return (
     <div className="meeting-calendar">
       <div className="navigation">
+        <button
+          onClick={goToCurrentMonth}
+          disabled={currentMonth.getMonth() <= new Date().getMonth()}
+        >
+          {"<<"} Today
+        </button>
         <button onClick={prevMonth}>{"<"}</button>
         <span>
           {currentMonth.toLocaleString("default", {
@@ -81,7 +87,12 @@ export const MeetingCalendar = ({
           })}
         </span>
         <button onClick={nextMonth}>{">"}</button>
-        <button onClick={goToCurrentMonth}>Today</button>
+        <button
+          onClick={goToCurrentMonth}
+          disabled={currentMonth.getMonth() >= new Date().getMonth()}
+        >
+          Today {">>"}
+        </button>
       </div>
       <table>
         <thead>

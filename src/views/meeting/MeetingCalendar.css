@@ -39,6 +39,11 @@
   td.today {
     background-color: var(--primary-color);
     color: var(--button-foreground);
+
+    a,
+    button.add-meeting {
+      color: var(--button-foreground);
+    }
   }
 
   .navigation {
@@ -75,6 +80,7 @@
     color: var(--primary-color);
     cursor: pointer;
     box-shadow: none;
+    font-size: 18px;
   }
 
   td button.add-meeting:hover {
