@@ -47,6 +47,7 @@ vi.mock("react-icons/lu", async (importActual) => {
     ...actual,
     LuCalendarDays: () => <FakeIcon name="LuCalendarDays" />,
     LuListChecks: () => <FakeIcon name="LuListChecks" />,
+    LuNotepadText: () => <FakeIcon name="LuNotepadText" />,
     LuSettings2: () => <FakeIcon name="LuSettings2" />,
   };
 });
@@ -73,8 +74,25 @@ vi.mock("react-icons/md", async (importActual) => {
   return {
     ...actual,
     MdDelete: () => <FakeIcon name="MdDelete" />,
+    MdDragHandle: () => <FakeIcon name="MdDragHandle" />,
     MdEdit: () => <FakeIcon name="MdEdit" />,
     MdFormatListBulleted: () => <FakeIcon name="MdFormatListBulleted" />,
+    MdOutlinePresentToAll: () => (
+      <FakeIcon name="MdOutlinePresentToAll" />
+    ),
+    MdPlayCircleOutline: () => (
+      <FakeIcon name="MdPlayCircleOutline" />
+    ),
+    MdPublish: () => <FakeIcon name="MdPublish" />,
+    MdStopCircle: () => <FakeIcon name="MdStopCircle" />,
+  };
+});
+
+vi.mock("react-icons/pi", async (importActual) => {
+  const actual = await importActual<typeof import("react-icons/pi")>();
+  return {
+    ...actual,
+    PiListNumbersFill: () => <FakeIcon name="PiListNumbersFill" />,
   };
 });
 
