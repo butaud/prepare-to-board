@@ -141,6 +141,50 @@ describe("Meeting List", () => {
       ).toBeInTheDocument();
     });
 
+    it("should jump to the current month in calendar view", async () => {
+      const today = new Date();
+      const previousMonthDate = new Date(
+        today.getFullYear(),
+        today.getMonth() - 1,
+        10,
+        12,
+        0,
+        0
+      );
+      const currentMonthDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        10,
+        12,
+        0,
+        0
+      );
+      await addTestMeeting(previousMonthDate);
+      await addTestMeeting(currentMonthDate);
+
+      await render(<App />, { startingPath: "/meetings" });
+
+      const calendarButton = screen.getByRole("button", { name: "Calendar" });
+      await userEvent.click(calendarButton);
+
+      // move to previous month
+      const prevButton = screen.getByRole("button", { name: "<" });
+      await userEvent.click(prevButton);
+      expect(
+        screen.queryByRole("link", {
+          name: currentMonthDate.toLocaleDateString(),
+        })
+      ).not.toBeInTheDocument();
+
+      const todayButton = screen.getByRole("button", { name: "Today" });
+      await userEvent.click(todayButton);
+      expect(
+        screen.getByRole("link", {
+          name: currentMonthDate.toLocaleDateString(),
+        })
+      ).toBeInTheDocument();
+    });
+
     it("should not be able to create meeting", async () => {
       await render(<App />, { startingPath: "/meetings" });
 

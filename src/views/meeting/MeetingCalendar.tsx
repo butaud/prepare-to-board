@@ -58,6 +58,11 @@ export const MeetingCalendar = ({ meetings }: MeetingCalendarProps) => {
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
     );
 
+  const goToCurrentMonth = () => {
+    const now = new Date();
+    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+  };
+
   const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
@@ -71,6 +76,7 @@ export const MeetingCalendar = ({ meetings }: MeetingCalendarProps) => {
           })}
         </span>
         <button onClick={nextMonth}>{">"}</button>
+        <button onClick={goToCurrentMonth}>Today</button>
       </div>
       <table>
         <thead>
