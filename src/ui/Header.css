@@ -81,9 +81,13 @@ header {
     flex-direction: row;
     align-items: center;
     gap: 5px;
+    .organization-selector {
+      flex: 0 1 200px;
+      min-width: 100px;
+    }
 
-    select {
-      max-width: 100px;
+    .organization-selector select {
+      width: 100%;
     }
   }
 }
