@@ -74,6 +74,7 @@ vi.mock("react-icons/md", async (importActual) => {
     ...actual,
     MdDelete: () => <FakeIcon name="MdDelete" />,
     MdEdit: () => <FakeIcon name="MdEdit" />,
+    MdFormatListBulleted: () => <FakeIcon name="MdFormatListBulleted" />,
   };
 });
 
@@ -84,6 +85,14 @@ vi.mock("react-icons/sl", async (importActual) => {
     SlPlus: () => <FakeIcon name="SlPlus" />,
     SlBan: () => <FakeIcon name="SlBan" />,
     SlTrash: () => <FakeIcon name="SlTrash" />,
+  };
+});
+
+vi.mock("react-icons/io5", async (importActual) => {
+  const actual = await importActual<typeof import("react-icons/io5")>();
+  return {
+    ...actual,
+    IoCalendarOutline: () => <FakeIcon name="IoCalendarOutline" />,
   };
 });
 

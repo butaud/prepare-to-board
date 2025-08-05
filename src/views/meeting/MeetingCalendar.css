@@ -1,0 +1,41 @@
+.meeting-calendar table {
+  margin-top: 20px;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: 1px solid var(--secondary-color);
+}
+
+.meeting-calendar th,
+.meeting-calendar td {
+  width: calc(100% / 7);
+  padding: 4px;
+  vertical-align: top;
+  border: 1px solid var(--secondary-color);
+}
+
+.meeting-calendar th {
+  background-color: var(--primary-color-subtle);
+  color: var(--font-color);
+  text-align: center;
+}
+
+.meeting-calendar td {
+  height: calc(60vh / 7);
+}
+
+.meeting-calendar td.outside-month {
+  opacity: 0.5;
+}
+
+.meeting-calendar td.today {
+  background-color: var(--primary-color);
+  color: var(--button-foreground);
+}
+
+.meeting-calendar .navigation {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  align-items: center;
+}
