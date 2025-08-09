@@ -9,8 +9,8 @@
   --primary-color-light: hsl(217, 65%, 65%);
   --primary-color-subtle: hsl(217, 65%, 97%);
 
-  --secondary-color: hsl(50, 77%, 50%);
-  --secondary-color-light: hsl(50, 77%, 75%);
+  --secondary-color: hsl(133, 77%, 50%);
+  --secondary-color-light: hsl(133, 77%, 75%);
 
   --completed-color: hsl(133, 34%, 60%);
 
@@ -36,8 +36,8 @@
     --primary-color-light: hsl(217, 65%, 35%);
     --primary-color-subtle: hsl(217, 65%, 3%);
 
-    --secondary-color: hsl(50, 77%, 50%);
-    --secondary-color-light: hsl(50, 77%, 25%);
+    --secondary-color: hsl(133, 77%, 50%);
+    --secondary-color-light: hsl(133, 77%, 25%);
 
     --completed-color: hsl(133, 34%, 40%);
 
