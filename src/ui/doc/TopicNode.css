@@ -4,10 +4,25 @@
   align-items: center;
   gap: 10px;
 
-  .drag-handle {
-    cursor: grab;
+  .hover-buttons {
     color: var(--secondary-color);
     visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+
+    .drag-icon {
+      cursor: move;
+    }
+
+    button.start-minute {
+      background-color: transparent;
+      color: var(--primary-color);
+      border: none;
+      box-shadow: none;
+      font-size: 20px;
+    }
   }
 
   .topic-header {
@@ -50,16 +65,16 @@
     border-style: dashed;
   }
 }
-/* Ensure the drag handle is visible on hover or on mobile */
-.topic-node:hover .drag-handle,
-.topic-node:focus-within .drag-handle,
-.topic-node:active .drag-handle,
-.topic-node:focus .drag-handle {
+/* Ensure the hover buttons are visible on hover or on mobile */
+.topic-node:hover .hover-buttons,
+.topic-node:focus-within .hover-buttons,
+.topic-node:active .hover-buttons,
+.topic-node:focus .hover-buttons {
   visibility: inherit;
 }
 
 @media (hover: none) {
-  .topic-node .drag-handle {
+  .topic-node .hover-buttons {
     visibility: inherit;
   }
 }

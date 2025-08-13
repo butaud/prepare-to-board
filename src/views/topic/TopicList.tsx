@@ -1,18 +1,12 @@
-import {
-  DraftTopic,
-  ListOfTopics,
-  Meeting,
-  Topic,
-  topicIsDraft,
-} from "../../schema";
+import { DraftTopic, Meeting, Topic, topicIsDraft } from "../../schema";
 import { FC } from "react";
 import { TopicNode } from "../../ui/doc/TopicNode";
-import { Resolved } from "jazz-tools";
 import {
   createDraftTopic,
   deleteDraftTopic,
   getTopicListWithDrafts,
   publishDraftTopic,
+  startMinuteForTopic,
 } from "../../util/data";
 import { useLoadedAccount } from "../../hooks/Account";
 import { useLoadMeetingShadow } from "../../hooks/Meeting";
@@ -25,15 +19,11 @@ import {
 } from "@hello-pangea/dnd";
 
 export type TopicListProps = {
-  topicList: Resolved<
-    ListOfTopics,
-    {
-      $each: true;
-    }
-  >;
+  topicList: Topic[];
   idsToOmit?: string[];
   meeting: Meeting;
   useDrafts?: boolean;
+  allowMinutes?: boolean;
 };
 
 export const TopicList: FC<TopicListProps> = ({
@@ -41,6 +31,7 @@ export const TopicList: FC<TopicListProps> = ({
   meeting,
   useDrafts,
   idsToOmit,
+  allowMinutes,
 }) => {
   const me = useLoadedAccount();
   const meetingShadow = useLoadMeetingShadow();
@@ -48,7 +39,7 @@ export const TopicList: FC<TopicListProps> = ({
   if (!me || meetingShadow === undefined) {
     return <p>Loading...</p>;
   }
-  const isOfficer = me?.canWrite(topicList);
+  const isOfficer = me?.canWrite(meeting);
 
   const handleDeleteClick = (topic: Topic) => {
     const index = topicList.findIndex((t) => t?.id === topic.id);
@@ -63,6 +54,10 @@ export const TopicList: FC<TopicListProps> = ({
 
   const handleCancelDraftTopic = (topic: DraftTopic) => {
     deleteDraftTopic(topic, meetingShadow);
+  };
+
+  const handleStartMinute = (topic: Topic) => {
+    startMinuteForTopic(topic, meeting);
   };
 
   const topicListWithDrafts = useDrafts
@@ -134,6 +129,11 @@ export const TopicList: FC<TopicListProps> = ({
                       onCancel={
                         topicIsDraft(topic)
                           ? () => handleCancelDraftTopic(topic)
+                          : undefined
+                      }
+                      onStartMinute={
+                        allowMinutes && !topicIsDraft(topic)
+                          ? () => handleStartMinute(topic)
                           : undefined
                       }
                     />

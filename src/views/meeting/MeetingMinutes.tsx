@@ -19,7 +19,10 @@ export const MeetingMinutes = () => {
     <div className="meeting-minutes-content">
       <div>
         <h3>Minutes</h3>
-        <p>(Minutes appear here)</p>
+        <TopicList
+          topicList={meeting.minutes?.map((minute) => minute.topic) || []}
+          meeting={meeting}
+        />
       </div>
       <div>
         <h3>Remaining Topics</h3>
@@ -27,6 +30,7 @@ export const MeetingMinutes = () => {
           topicList={meeting.liveAgenda}
           idsToOmit={meeting.minutes?.map((minute) => minute.topic.id)}
           meeting={meeting}
+          allowMinutes
         />
       </div>
     </div>

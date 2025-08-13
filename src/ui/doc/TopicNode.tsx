@@ -3,7 +3,7 @@ import { Topic, topicIsDraft } from "../../schema";
 
 import "./TopicNode.css";
 import { useLoadedAccount } from "../../hooks/Account";
-import { MdDelete, MdDragHandle } from "react-icons/md";
+import { MdDelete, MdDragHandle, MdPlayCircleOutline } from "react-icons/md";
 import { EditableInteger, EditableString } from "./EditableValue";
 import { Draggable } from "@hello-pangea/dnd";
 
@@ -14,6 +14,7 @@ export type TopicNodeProps = {
   onPublish?: () => void;
   onCancel?: () => void;
   onDelete?: () => void;
+  onStartMinute?: () => void;
 };
 
 export const TopicNode: FC<TopicNodeProps> = ({
@@ -23,6 +24,7 @@ export const TopicNode: FC<TopicNodeProps> = ({
   onCancel,
   onDelete,
   onPublish,
+  onStartMinute,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const me = useLoadedAccount();
@@ -38,15 +40,26 @@ export const TopicNode: FC<TopicNodeProps> = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
         >
-          {canEdit && (
-            <div
-              className="drag-handle"
-              {...provided.dragHandleProps}
-              aria-label={`Drag ${topic.title}`}
-            >
-              <span className="drag-icon">
-                <MdDragHandle />
-              </span>
+          {(canEdit || onStartMinute) && (
+            <div className="hover-buttons">
+              {canEdit && (
+                <span
+                  className="drag-icon"
+                  aria-label={`Drag ${topic.title}`}
+                  {...provided.dragHandleProps}
+                >
+                  <MdDragHandle />
+                </span>
+              )}
+              {onStartMinute && (
+                <button
+                  className="start-minute"
+                  onClick={onStartMinute}
+                  aria-label={`Start minute for ${topic.title}`}
+                >
+                  <MdPlayCircleOutline />
+                </button>
+              )}
             </div>
           )}
           <div

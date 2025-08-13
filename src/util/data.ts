@@ -1,4 +1,3 @@
-import { co } from "jazz-tools";
 import { DraftTopic, Meeting, MeetingShadow, Schema, Topic } from "../schema";
 
 export const createDraftTopic = (
@@ -58,8 +57,20 @@ export const publishDraftTopic = (
   meeting.plannedAgenda?.splice(insertIndex, 0, topic);
 };
 
+export const startMinuteForTopic = (topic: Topic, meeting: Meeting) => {
+  const minute = Schema.Minute.create({
+    topic: topic,
+    durationMinutes: 0,
+  });
+  if (!meeting.minutes) {
+    meeting.minutes = Schema.ListOfMinutes.create([], meeting._owner);
+  }
+  meeting.minutes.push(minute);
+  return minute;
+};
+
 export const getTopicListWithDrafts = (
-  topicList: co.loaded<typeof Schema.ListOfTopics, { $each: true }>,
+  topicList: Topic[],
   meetingShadow: MeetingShadow
 ) => {
   if (!meetingShadow.draftTopics || meetingShadow.draftTopics.length === 0) {
