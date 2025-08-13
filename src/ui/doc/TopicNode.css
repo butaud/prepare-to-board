@@ -21,6 +21,7 @@
     h4 {
       margin: 0;
       font-size: 1.2em;
+      width: max-content;
     }
 
     .duration-display {

@@ -87,3 +87,31 @@ export const getTopicListWithDrafts = (
   });
   return topicsWithDrafts;
 };
+
+export const publishMeeting = (meeting: Meeting) => {
+  if (meeting.status === "draft") {
+    meeting.status = "published";
+  }
+};
+export const startMeeting = (meeting: Meeting) => {
+  if (meeting.status === "published") {
+    // Convert planned topics to live topics, preserving the original planned topics
+    // as a snapshot.
+    meeting.liveAgenda = Schema.ListOfTopics.create(
+      meeting.plannedAgenda?.map((plannedTopic) =>
+        Schema.Topic.create(
+          {
+            title: plannedTopic.title,
+            durationMinutes: plannedTopic.durationMinutes,
+            outcome: plannedTopic.outcome,
+            cancelled: plannedTopic.cancelled,
+            plannedTopic: plannedTopic,
+          },
+          meeting._owner
+        )
+      ) ?? [],
+      meeting._owner
+    );
+    meeting.status = "live";
+  }
+};

@@ -55,9 +55,9 @@ const JMeeting = co
   .map({
     date: z.date(),
     status: z.literal(["draft", "published", "live", "completed"]),
-    plannedAgenda: z.optional(JListOfTopics),
-    liveAgenda: z.optional(JListOfTopics),
-    minutes: z.optional(JListOfMinutes),
+    plannedAgenda: co.optional(JListOfTopics),
+    liveAgenda: co.optional(JListOfTopics),
+    minutes: co.optional(JListOfMinutes),
   })
   .withMigration((meeting) => {
     if (meeting.status === undefined) {
@@ -66,7 +66,11 @@ const JMeeting = co
   });
 export type Meeting = co.loaded<
   typeof JMeeting,
-  { plannedAgenda: { $each: { plannedTopic: true } } }
+  {
+    plannedAgenda: { $each: { plannedTopic: true } };
+    liveAgenda: { $each: { plannedTopic: true } };
+    minutes: { $each: { topic: true } };
+  }
 >;
 export const getMeetingDisplayStatus = (meeting: Meeting) => {
   if (meeting.status === "draft") return "Draft";

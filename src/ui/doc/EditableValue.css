@@ -1,0 +1,4 @@
+.editable {
+  color: var(--primary-color);
+  cursor: pointer;
+}

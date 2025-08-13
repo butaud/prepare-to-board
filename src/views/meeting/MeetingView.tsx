@@ -18,6 +18,7 @@ export const MeetingView = () => {
   return (
     <div className="meeting-view-content">
       <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
+      <h3>Planned Topics</h3>
       <TopicList
         topicList={meeting.plannedAgenda}
         meeting={meeting}

@@ -14,6 +14,7 @@ import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
 
 import "./MeetingShared.css";
+import { startMeeting } from "../../util/data";
 
 export const MeetingShared = () => {
   const me = useLoadedAccount();
@@ -58,7 +59,7 @@ export const MeetingShared = () => {
       actions.push({
         label: "Start Meeting",
         onClick: () => {
-          meeting.status = "live";
+          startMeeting(meeting);
         },
         icon: <MdPlayCircleOutline />,
       });

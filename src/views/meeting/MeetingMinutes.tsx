@@ -1,8 +1,34 @@
+import { useLoadedAccount } from "../../hooks/Account";
+import { useMeeting } from "../../hooks/Meeting";
+import { TopicList } from "../topic/TopicList";
+
+import "./MeetingMinutes.css";
+
 export const MeetingMinutes = () => {
+  const me = useLoadedAccount();
+  const meeting = useMeeting();
+
+  if (!me.root.selectedOrganization) {
+    return <p>No organization selected</p>;
+  }
+
+  if (!meeting.liveAgenda) {
+    return <p>No topics</p>;
+  }
   return (
-    <>
-      <h2>Take Minutes</h2>
-      <p>This is where you can take minutes for a meeting.</p>
-    </>
+    <div className="meeting-minutes-content">
+      <div>
+        <h3>Minutes</h3>
+        <p>(Minutes appear here)</p>
+      </div>
+      <div>
+        <h3>Remaining Topics</h3>
+        <TopicList
+          topicList={meeting.liveAgenda}
+          idsToOmit={meeting.minutes?.map((minute) => minute.topic.id)}
+          meeting={meeting}
+        />
+      </div>
+    </div>
   );
 };

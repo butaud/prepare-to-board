@@ -1,5 +1,7 @@
 import { createElement, FC, FocusEvent, FormEvent, useState } from "react";
 
+import "./EditableValue.css";
+
 export type EditableValueProps<T extends string | number> = {
   value: T;
   onValueChange: (newValue: T) => void;
@@ -79,10 +81,13 @@ const EditableValueInner = <T extends string | number>({
           onDoubleClick: onStartEditing,
         }
       : {};
+    const finalClassName = canEdit
+      ? "editable " + (className ?? "")
+      : className;
     return createElement(
       as,
       {
-        className,
+        className: finalClassName,
         title: serialize(value),
         ...interactivityProps,
       },

@@ -1,0 +1,7 @@
+.meeting-minutes-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  gap: 20px;
+  padding: 20px;
+}

@@ -31,6 +31,7 @@ export type TopicListProps = {
       $each: true;
     }
   >;
+  idsToOmit?: string[];
   meeting: Meeting;
   useDrafts?: boolean;
 };
@@ -39,6 +40,7 @@ export const TopicList: FC<TopicListProps> = ({
   topicList,
   meeting,
   useDrafts,
+  idsToOmit,
 }) => {
   const me = useLoadedAccount();
   const meetingShadow = useLoadMeetingShadow();
@@ -100,7 +102,6 @@ export const TopicList: FC<TopicListProps> = ({
 
   return (
     <div className="topic-list">
-      <h3>Topics</h3>
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="topic-list">
           {(provided, snapshot) => (
@@ -112,31 +113,33 @@ export const TopicList: FC<TopicListProps> = ({
               ref={provided.innerRef}
               {...provided.droppableProps}
             >
-              {topicListWithDrafts.map((topic, index) => {
-                const currentTopicStartTime = meetingStartTimes[topic.id];
-                const node = (
-                  <TopicNode
-                    key={topic.id}
-                    topic={topic}
-                    index={index}
-                    startTime={new Date(currentTopicStartTime)}
-                    onDelete={
-                      isOfficer ? () => handleDeleteClick(topic) : undefined
-                    }
-                    onPublish={
-                      topicIsDraft(topic)
-                        ? () => handlePublishClick(topic)
-                        : undefined
-                    }
-                    onCancel={
-                      topicIsDraft(topic)
-                        ? () => handleCancelDraftTopic(topic)
-                        : undefined
-                    }
-                  />
-                );
-                return node;
-              })}
+              {topicListWithDrafts
+                .filter((topic) => !idsToOmit?.includes(topic.id))
+                .map((topic, index) => {
+                  const currentTopicStartTime = meetingStartTimes[topic.id];
+                  const node = (
+                    <TopicNode
+                      key={topic.id}
+                      topic={topic}
+                      index={index}
+                      startTime={new Date(currentTopicStartTime)}
+                      onDelete={
+                        isOfficer ? () => handleDeleteClick(topic) : undefined
+                      }
+                      onPublish={
+                        topicIsDraft(topic)
+                          ? () => handlePublishClick(topic)
+                          : undefined
+                      }
+                      onCancel={
+                        topicIsDraft(topic)
+                          ? () => handleCancelDraftTopic(topic)
+                          : undefined
+                      }
+                    />
+                  );
+                  return node;
+                })}
               {provided.placeholder}
               {isOfficer && (
                 <div className="add-topic">
