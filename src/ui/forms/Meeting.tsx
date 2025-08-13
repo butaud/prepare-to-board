@@ -7,11 +7,15 @@ import { useLoadedAccount } from "../../hooks/Account";
 
 export type CreateMeetingProps = {
   onCreated?: (meeting: Meeting) => void;
+  defaultDate?: Date | null;
 };
 
-export const CreateMeeting: FC<CreateMeetingProps> = ({ onCreated }) => {
+export const CreateMeeting: FC<CreateMeetingProps> = ({
+  onCreated,
+  defaultDate = null,
+}) => {
   const me = useLoadedAccount();
-  const [date, setDate] = useState<Date | null>(null);
+  const [date, setDate] = useState<Date | null>(defaultDate);
   const [time, setTime] = useState<Date | null>(null);
 
   if (!me || !me.root.selectedOrganization) {
