@@ -2,7 +2,6 @@ import { TopicList } from "../topic/TopicList";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 
-import "./MeetingView.css";
 
 export const MeetingView = () => {
   const me = useLoadedAccount();

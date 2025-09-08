@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 
-import "./SubHeader.css";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { useLocation, useNavigate } from "react-router-dom";
 

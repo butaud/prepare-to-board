@@ -1,6 +1,5 @@
 import { Organization } from "../schema";
 import { FC, useState } from "react";
-import "./Settings.css";
 import { SlBan, SlPlus } from "react-icons/sl";
 import { useLoadedAccount } from "../hooks/Account";
 import { CreateOrganization } from "../ui/forms/Organization";

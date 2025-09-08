@@ -13,7 +13,6 @@ import { useNavigate } from "react-router-dom";
 import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
 
-import "./MeetingShared.css";
 
 export const MeetingShared = () => {
   const me = useLoadedAccount();
