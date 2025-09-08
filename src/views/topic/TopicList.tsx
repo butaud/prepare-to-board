@@ -17,7 +17,6 @@ import {
 import { useLoadedAccount } from "../../hooks/Account";
 import { useLoadMeetingShadow } from "../../hooks/Meeting";
 
-import "./TopicList.css";
 import {
   DragDropContext,
   Droppable,

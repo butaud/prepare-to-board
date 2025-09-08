@@ -1,5 +1,4 @@
 import { useIsAuthenticated } from "jazz-tools/react";
-import "./Header.css";
 import { NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
 import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
