@@ -27,6 +27,7 @@ export const useLoadMeeting = (meetingId: string | undefined) => {
         minutes: {
           $each: {
             topic: true,
+            notes: { $each: true },
           },
         },
       },

@@ -6,7 +6,23 @@ const JTextNote = co.map({
 });
 export type TextNote = co.loaded<typeof JTextNote>;
 
-const JNote = co.discriminatedUnion("type", [JTextNote]);
+const JActionItemNote = co.map({
+  type: z.literal("action_item"),
+  text: z.string(),
+  assignee: z.optional(z.string()),
+});
+export type ActionItemNote = co.loaded<typeof JActionItemNote>;
+
+const JMotionNote = co.map({
+  type: z.literal("motion"),
+  text: z.string(),
+  mover: z.string(),
+  seconder: z.optional(z.string()),
+  status: z.literal(["proposed", "under_discussion", "passed", "failed", "tabled"]),
+});
+export type MotionNote = co.loaded<typeof JMotionNote>;
+
+const JNote = co.discriminatedUnion("type", [JTextNote, JActionItemNote, JMotionNote]);
 export type Note = co.loaded<typeof JNote>;
 
 const JListOfNotes = co.list(JNote);
@@ -46,6 +62,7 @@ export type ListOfDraftTopics = co.loaded<typeof JListOfDraftTopics>;
 const JMinute = co.map({
   topic: JTopic,
   durationMinutes: z.number(),
+  notes: co.optional(JListOfNotes),
 });
 export type Minute = co.loaded<typeof JMinute>;
 
@@ -71,7 +88,7 @@ export type Meeting = co.loaded<
   {
     plannedAgenda: { $each: { plannedTopic: true } };
     liveAgenda: { $each: { plannedTopic: true } };
-    minutes: { $each: { topic: true } };
+    minutes: { $each: { topic: true; notes: { $each: true } } };
   }
 >;
 export const getMeetingDisplayStatus = (meeting: Meeting) => {
@@ -211,6 +228,8 @@ export type UserAccount = co.loaded<typeof JUserAccount>;
 
 export const Schema = {
   TextNote: JTextNote,
+  ActionItemNote: JActionItemNote,
+  MotionNote: JMotionNote,
   Note: JNote,
   ListOfNotes: JListOfNotes,
   Topic: JTopic,

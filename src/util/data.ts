@@ -1,6 +1,12 @@
 import { co } from "jazz-tools";
 import { DraftTopic, Meeting, MeetingShadow, Schema, Topic } from "../schema";
 
+type PendingNote =
+  | { type: "text"; text: string }
+  | { type: "action_item"; text: string; assignee?: string }
+  | { type: "motion"; text: string; mover: string; seconder?: string; status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled" };
+export type { PendingNote };
+
 export const startMeeting = (meeting: Meeting) => {
   const liveTopics = (meeting.plannedAgenda ?? [])
     .filter((t) => t !== null)
@@ -31,7 +37,8 @@ export const getCurrentLiveTopic = (meeting: Meeting): Topic | null => {
 export const advanceTopic = (
   meeting: Meeting,
   actualDurationMinutes: number,
-  notes?: string
+  notes?: string,
+  pendingNotes?: PendingNote[]
 ) => {
   if (!meeting.liveAgenda || !meeting.minutes) return;
   const currentIndex = meeting.minutes.length;
@@ -47,6 +54,24 @@ export const advanceTopic = (
     },
     meeting._owner
   );
+  if (pendingNotes && pendingNotes.length > 0) {
+    const noteObjects = pendingNotes.map((pn) => {
+      if (pn.type === "text") {
+        return Schema.TextNote.create({ type: "text", text: pn.text }, meeting._owner);
+      } else if (pn.type === "action_item") {
+        return Schema.ActionItemNote.create(
+          { type: "action_item", text: pn.text, assignee: pn.assignee },
+          meeting._owner
+        );
+      } else {
+        return Schema.MotionNote.create(
+          { type: "motion", text: pn.text, mover: pn.mover, seconder: pn.seconder, status: pn.status },
+          meeting._owner
+        );
+      }
+    });
+    minute.notes = Schema.ListOfNotes.create(noteObjects, meeting._owner);
+  }
   meeting.minutes.push(minute);
 };
 

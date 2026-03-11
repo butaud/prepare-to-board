@@ -8,7 +8,8 @@ import {
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { advanceTopic, addLiveTopic, skipTopic, deferCurrentAndActivate } from "../../util/data";
-import { Topic } from "../../schema";
+import { PendingNote } from "../../util/data";
+import { Topic, Note, Schema } from "../../schema";
 
 import "./MeetingMinutes.css";
 
@@ -23,6 +24,371 @@ const formatDuration = (totalSeconds: number): string => {
   }
   return `${sign}${m}m ${s}s`;
 };
+
+// --- Markdown renderer (React-node approach, no dangerouslySetInnerHTML) ---
+
+type ReactNode = React.ReactNode;
+
+function renderMarkdown(text: string): ReactNode[] {
+  // Parse the string into React nodes handling **bold**, *italic*, _italic_, [text](url)
+  const nodes: ReactNode[] = [];
+  let remaining = text;
+  let keyIdx = 0;
+
+  while (remaining.length > 0) {
+    // Try bold: **text**
+    const boldMatch = remaining.match(/^([\s\S]*?)\*\*(.+?)\*\*/);
+    // Try italic: *text* (not **)
+    const italicStarMatch = remaining.match(/^([\s\S]*?)(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
+    // Try italic: _text_
+    const italicUnderMatch = remaining.match(/^([\s\S]*?)_(.+?)_/);
+    // Try link: [text](url)
+    const linkMatch = remaining.match(/^([\s\S]*?)\[(.+?)\]\((https?:\/\/[^)]+)\)/);
+
+    // Find which match comes first (shortest prefix group)
+    const candidates: Array<{ prefixLen: number; type: string; match: RegExpMatchArray }> = [];
+    if (boldMatch) candidates.push({ prefixLen: boldMatch[1].length, type: "bold", match: boldMatch });
+    if (italicStarMatch) candidates.push({ prefixLen: italicStarMatch[1].length, type: "italic-star", match: italicStarMatch });
+    if (italicUnderMatch) candidates.push({ prefixLen: italicUnderMatch[1].length, type: "italic-under", match: italicUnderMatch });
+    if (linkMatch) candidates.push({ prefixLen: linkMatch[1].length, type: "link", match: linkMatch });
+
+    if (candidates.length === 0) {
+      // No more patterns, emit remainder as text
+      nodes.push(remaining);
+      break;
+    }
+
+    // Pick the candidate with the smallest prefix (earliest occurrence)
+    candidates.sort((a, b) => a.prefixLen - b.prefixLen);
+    const winner = candidates[0];
+    const { prefixLen, type, match } = winner;
+
+    // Emit prefix text
+    if (prefixLen > 0) {
+      nodes.push(match[1]);
+    }
+
+    if (type === "bold") {
+      nodes.push(<strong key={keyIdx++}>{match[2]}</strong>);
+      remaining = remaining.slice(prefixLen + match[2].length + 4); // 4 = "**" + "**"
+    } else if (type === "italic-star") {
+      nodes.push(<em key={keyIdx++}>{match[2]}</em>);
+      remaining = remaining.slice(prefixLen + match[2].length + 2); // 2 = "*" + "*"
+    } else if (type === "italic-under") {
+      nodes.push(<em key={keyIdx++}>{match[2]}</em>);
+      remaining = remaining.slice(prefixLen + match[2].length + 2); // 2 = "_" + "_"
+    } else if (type === "link") {
+      const url = match[3];
+      const linkText = match[2];
+      nodes.push(
+        <a key={keyIdx++} href={url} target="_blank" rel="noopener noreferrer">
+          {linkText}
+        </a>
+      );
+      // full match: [text](url)
+      remaining = remaining.slice(prefixLen + 1 + linkText.length + 2 + url.length + 1);
+    }
+  }
+
+  return nodes;
+}
+
+// --- NoteDisplay ---
+
+const motionStatusLabel: Record<string, string> = {
+  proposed: "Proposed",
+  under_discussion: "Under Discussion",
+  passed: "Passed",
+  failed: "Failed",
+  tabled: "Tabled",
+};
+
+interface NoteDisplayProps {
+  note: Note | PendingNote;
+}
+
+const NoteDisplay = ({ note }: NoteDisplayProps) => {
+  if (note.type === "text") {
+    return (
+      <div className="note-text">
+        {renderMarkdown(note.text)}
+      </div>
+    );
+  }
+  if (note.type === "action_item") {
+    return (
+      <div className="note-action-item">
+        <span className="note-action-checkbox">☐</span>
+        {note.assignee && <span className="note-action-assignee">{note.assignee}:</span>}
+        <span>{note.text}</span>
+      </div>
+    );
+  }
+  if (note.type === "motion") {
+    const status = note.status;
+    return (
+      <div className="note-motion">
+        <span>
+          {note.mover} moves {note.text}.
+          {note.seconder && ` Seconded by ${note.seconder}.`}
+        </span>
+        {" "}
+        <span className={`motion-status motion-status-${status}`}>
+          Status: {motionStatusLabel[status] ?? status}
+        </span>
+      </div>
+    );
+  }
+  return null;
+};
+
+// --- Note Forms ---
+
+interface TextNoteFormProps {
+  onAdd: (note: PendingNote) => void;
+  onCancel: () => void;
+}
+
+const TextNoteForm = ({ onAdd, onCancel }: TextNoteFormProps) => {
+  const [text, setText] = useState("");
+  return (
+    <div className="note-form">
+      <h5 className="note-form-title">Text Note</h5>
+      <div className="minutes-form-row">
+        <label>Text (supports **bold**, *italic*, [link](url)):</label>
+        <textarea
+          rows={3}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Enter note text..."
+          autoFocus
+        />
+      </div>
+      <div className="minutes-actions">
+        <button
+          className="btn-primary"
+          onClick={() => {
+            if (!text.trim()) return;
+            onAdd({ type: "text", text: text.trim() });
+          }}
+        >
+          Add
+        </button>
+        <button className="btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface ActionItemFormProps {
+  onAdd: (note: PendingNote) => void;
+  onCancel: () => void;
+}
+
+const ActionItemForm = ({ onAdd, onCancel }: ActionItemFormProps) => {
+  const [text, setText] = useState("");
+  const [assignee, setAssignee] = useState("");
+  return (
+    <div className="note-form">
+      <h5 className="note-form-title">Action Item</h5>
+      <div className="minutes-form-row">
+        <label>Action:</label>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="What needs to be done?"
+          autoFocus
+          style={{ width: "100%", maxWidth: 500 }}
+        />
+      </div>
+      <div className="minutes-form-row">
+        <label>Assignee (optional):</label>
+        <input
+          type="text"
+          value={assignee}
+          onChange={(e) => setAssignee(e.target.value)}
+          placeholder="Who is responsible?"
+          style={{ width: "100%", maxWidth: 300 }}
+        />
+      </div>
+      <div className="minutes-actions">
+        <button
+          className="btn-primary"
+          onClick={() => {
+            if (!text.trim()) return;
+            onAdd({ type: "action_item", text: text.trim(), assignee: assignee.trim() || undefined });
+          }}
+        >
+          Add
+        </button>
+        <button className="btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface MotionFormProps {
+  onAdd: (note: PendingNote) => void;
+  onCancel: () => void;
+}
+
+const MotionForm = ({ onAdd, onCancel }: MotionFormProps) => {
+  const [text, setText] = useState("");
+  const [mover, setMover] = useState("");
+  const [seconder, setSeconder] = useState("");
+  const [status, setStatus] = useState<"proposed" | "under_discussion" | "passed" | "failed" | "tabled">("proposed");
+  return (
+    <div className="note-form">
+      <h5 className="note-form-title">Motion</h5>
+      <div className="minutes-form-row">
+        <label>Motion text (after "moves that..."):</label>
+        <textarea
+          rows={2}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="e.g. the board approves the budget"
+          autoFocus
+        />
+      </div>
+      <div className="minutes-form-row">
+        <label>Mover:</label>
+        <input
+          type="text"
+          value={mover}
+          onChange={(e) => setMover(e.target.value)}
+          placeholder="Who moved the motion?"
+          style={{ width: "100%", maxWidth: 300 }}
+        />
+      </div>
+      <div className="minutes-form-row">
+        <label>Seconder (optional):</label>
+        <input
+          type="text"
+          value={seconder}
+          onChange={(e) => setSeconder(e.target.value)}
+          placeholder="Who seconded?"
+          style={{ width: "100%", maxWidth: 300 }}
+        />
+      </div>
+      <div className="minutes-form-row">
+        <label>Status:</label>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as typeof status)}
+          style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid var(--color-border, #ddd)" }}
+        >
+          <option value="proposed">Proposed</option>
+          <option value="under_discussion">Under Discussion</option>
+          <option value="passed">Passed</option>
+          <option value="failed">Failed</option>
+          <option value="tabled">Tabled</option>
+        </select>
+      </div>
+      <div className="minutes-actions">
+        <button
+          className="btn-primary"
+          onClick={() => {
+            if (!text.trim() || !mover.trim()) return;
+            onAdd({
+              type: "motion",
+              text: text.trim(),
+              mover: mover.trim(),
+              seconder: seconder.trim() || undefined,
+              status,
+            });
+          }}
+        >
+          Add
+        </button>
+        <button className="btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// --- CompletedMinuteNotes — for adding notes to already-completed minutes ---
+
+interface CompletedMinuteNotesProps {
+  minute: NonNullable<NonNullable<ReturnType<typeof useMeeting>["minutes"]>[number]>;
+  meeting: ReturnType<typeof useMeeting>;
+}
+
+const CompletedMinuteNotes = ({ minute, meeting }: CompletedMinuteNotesProps) => {
+  const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
+
+  const addNoteToMinute = (pn: PendingNote) => {
+    let noteObj;
+    if (pn.type === "text") {
+      noteObj = Schema.TextNote.create({ type: "text", text: pn.text }, meeting._owner);
+    } else if (pn.type === "action_item") {
+      noteObj = Schema.ActionItemNote.create(
+        { type: "action_item", text: pn.text, assignee: pn.assignee },
+        meeting._owner
+      );
+    } else {
+      noteObj = Schema.MotionNote.create(
+        { type: "motion", text: pn.text, mover: pn.mover, seconder: pn.seconder, status: pn.status },
+        meeting._owner
+      );
+    }
+    if (!minute.notes) {
+      minute.notes = Schema.ListOfNotes.create([noteObj], meeting._owner);
+    } else {
+      minute.notes.push(noteObj);
+    }
+    setNoteFormType(null);
+  };
+
+  const existingNotes = minute.notes ? minute.notes.filter((n) => n !== null) as Note[] : [];
+
+  return (
+    <div className="minutes-notes-section">
+      {existingNotes.map((note, i) => (
+        <div key={i} className="minutes-note-item">
+          <NoteDisplay note={note} />
+          <button
+            className="note-delete-btn"
+            title="Remove note"
+            onClick={() => {
+              if (!minute.notes) return;
+              const idx = minute.notes.findIndex((_, j) => j === i);
+              if (idx !== -1) minute.notes.splice(idx, 1);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+
+      {!noteFormType && (
+        <div className="minutes-note-add-buttons">
+          <button className="btn-small btn-secondary" onClick={() => setNoteFormType("text")}>+ Text</button>
+          <button className="btn-small btn-secondary" onClick={() => setNoteFormType("action_item")}>+ Action Item</button>
+          <button className="btn-small btn-secondary" onClick={() => setNoteFormType("motion")}>+ Motion</button>
+        </div>
+      )}
+
+      {noteFormType === "text" && (
+        <TextNoteForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} />
+      )}
+      {noteFormType === "action_item" && (
+        <ActionItemForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} />
+      )}
+      {noteFormType === "motion" && (
+        <MotionForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} />
+      )}
+    </div>
+  );
+};
+
+// --- PostMeetingMinutes ---
 
 const PostMeetingMinutes = () => {
   const meeting = useMeeting();
@@ -67,6 +433,7 @@ const PostMeetingMinutes = () => {
                 topic?.plannedTopic?.durationMinutes ?? topic?.durationMinutes;
               const actual = minute.durationMinutes;
               const diff = planned !== undefined ? actual - planned : null;
+              const notes = minute.notes ? minute.notes.filter((n) => n !== null) as Note[] : [];
               return (
                 <li key={idx} className="minutes-item">
                   <div className="minutes-item-header">
@@ -87,6 +454,13 @@ const PostMeetingMinutes = () => {
                   </div>
                   {topic?.outcome && (
                     <div className="minutes-item-notes">{topic.outcome}</div>
+                  )}
+                  {notes.length > 0 && (
+                    <div className="minutes-item-structured-notes">
+                      {notes.map((note, ni) => (
+                        <NoteDisplay key={ni} note={note} />
+                      ))}
+                    </div>
                   )}
                 </li>
               );
@@ -200,6 +574,8 @@ export const MeetingMinutes = () => {
   const [showAddTopic, setShowAddTopic] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
+  const [pendingNotes, setPendingNotes] = useState<PendingNote[]>([]);
+  const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -214,6 +590,8 @@ export const MeetingMinutes = () => {
 
   useEffect(() => {
     setNotes("");
+    setPendingNotes([]);
+    setNoteFormType(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTopicId]);
 
@@ -251,13 +629,17 @@ export const MeetingMinutes = () => {
 
   const handleCompleteTopic = () => {
     const actualDuration = Math.round(currentTopicActiveSeconds / 60);
-    advanceTopic(meeting, actualDuration, notes || undefined);
+    advanceTopic(meeting, actualDuration, notes || undefined, pendingNotes.length > 0 ? pendingNotes : undefined);
     setNotes("");
+    setPendingNotes([]);
+    setNoteFormType(null);
   };
 
   const handleSkipTopic = () => {
     skipTopic(meeting);
     setNotes("");
+    setPendingNotes([]);
+    setNoteFormType(null);
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -370,6 +752,51 @@ export const MeetingMinutes = () => {
               <button className="btn-secondary" onClick={handleSkipTopic}>
                 Skip Topic
               </button>
+            </div>
+
+            {/* Notes section */}
+            <div className="minutes-notes-section">
+              <h4>Notes for this topic</h4>
+
+              {pendingNotes.map((note, i) => (
+                <div key={i} className="minutes-note-item">
+                  <NoteDisplay note={note} />
+                  <button
+                    className="note-delete-btn"
+                    title="Remove note"
+                    onClick={() => setPendingNotes((prev) => prev.filter((_, j) => j !== i))}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {!noteFormType && (
+                <div className="minutes-note-add-buttons">
+                  <button className="btn-small btn-secondary" onClick={() => setNoteFormType("text")}>+ Text</button>
+                  <button className="btn-small btn-secondary" onClick={() => setNoteFormType("action_item")}>+ Action Item</button>
+                  <button className="btn-small btn-secondary" onClick={() => setNoteFormType("motion")}>+ Motion</button>
+                </div>
+              )}
+
+              {noteFormType === "text" && (
+                <TextNoteForm
+                  onAdd={(note) => { setPendingNotes((prev) => [...prev, note]); setNoteFormType(null); }}
+                  onCancel={() => setNoteFormType(null)}
+                />
+              )}
+              {noteFormType === "action_item" && (
+                <ActionItemForm
+                  onAdd={(note) => { setPendingNotes((prev) => [...prev, note]); setNoteFormType(null); }}
+                  onCancel={() => setNoteFormType(null)}
+                />
+              )}
+              {noteFormType === "motion" && (
+                <MotionForm
+                  onAdd={(note) => { setPendingNotes((prev) => [...prev, note]); setNoteFormType(null); }}
+                  onCancel={() => setNoteFormType(null)}
+                />
+              )}
             </div>
           </div>
         ) : (
@@ -563,6 +990,7 @@ export const MeetingMinutes = () => {
                   {topic?.outcome && (
                     <div className="minutes-item-notes">{topic.outcome}</div>
                   )}
+                  <CompletedMinuteNotes minute={minute} meeting={meeting} />
                 </li>
               );
             })}

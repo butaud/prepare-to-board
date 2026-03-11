@@ -351,3 +351,153 @@
   border-radius: 4px;
   text-align: right;
 }
+
+/* Notes section */
+.minutes-notes-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border, #e0e0e0);
+}
+
+.minutes-notes-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-muted, #555);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.minutes-note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  background: var(--color-bg, #fff);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e8e8e8);
+}
+
+.minutes-note-item > :first-child {
+  flex: 1;
+}
+
+.note-delete-btn {
+  background: none;
+  border: none;
+  color: var(--color-muted, #aaa);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.note-delete-btn:hover {
+  color: var(--color-danger, #d32f2f);
+  background: var(--color-danger-light, #fdecea);
+}
+
+.minutes-note-add-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+/* Note type displays */
+.note-text {
+  font-size: 0.9rem;
+  color: var(--color-text, #222);
+  line-height: 1.5;
+}
+
+.note-action-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--color-text, #222);
+}
+
+.note-action-checkbox {
+  font-size: 1rem;
+  color: var(--color-muted, #888);
+  flex-shrink: 0;
+}
+
+.note-action-assignee {
+  font-weight: 600;
+  color: var(--color-primary, #1a73e8);
+  flex-shrink: 0;
+}
+
+.note-motion {
+  font-size: 0.9rem;
+  color: var(--color-text, #222);
+  line-height: 1.5;
+}
+
+.motion-status {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-left: 4px;
+}
+
+.motion-status-proposed {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.motion-status-under_discussion {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.motion-status-passed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.motion-status-failed {
+  background: var(--color-danger-light, #fdecea);
+  color: var(--color-danger, #c62828);
+}
+
+.motion-status-tabled {
+  background: #f5f5f5;
+  color: #616161;
+}
+
+/* Note form */
+.note-form {
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+
+.note-form-title {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted, #555);
+}
+
+/* Structured notes in completed minute list */
+.minutes-item-structured-notes {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 4px;
+  border-left: 2px solid var(--color-border, #ddd);
+}
