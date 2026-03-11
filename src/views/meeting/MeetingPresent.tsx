@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { useMeeting } from "../../hooks/Meeting";
+import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
 import { Topic } from "../../schema";
 
@@ -22,12 +24,17 @@ const formatTime = (date: Date): string =>
 
 export const MeetingPresent = () => {
   const meeting = useMeeting();
+  const me = useLoadedAccount();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  if (!me.canWrite(meeting)) {
+    return <Navigate to=".." replace />;
+  }
 
   if (meeting.status !== "live" && meeting.status !== "completed") {
     return <p>Meeting is not currently live.</p>;

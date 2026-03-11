@@ -1,4 +1,10 @@
 import { useEffect, useState } from "react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from "@hello-pangea/dnd";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { advanceTopic, addLiveTopic, skipTopic, deferCurrentAndActivate } from "../../util/data";
@@ -192,6 +198,8 @@ export const MeetingMinutes = () => {
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicDuration, setNewTopicDuration] = useState<number>(5);
   const [showAddTopic, setShowAddTopic] = useState(false);
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [editingDuration, setEditingDuration] = useState("");
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -252,6 +260,20 @@ export const MeetingMinutes = () => {
     setNotes("");
   };
 
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const srcIdx = result.source.index;
+    const destIdx = result.destination.index;
+    if (srcIdx === destIdx) return;
+    const topic = remainingTopics[srcIdx];
+    const liveSrcIdx = liveAgenda.findIndex((t) => t?.id === topic.id);
+    const liveDestIdx = liveAgenda.findIndex(
+      (t) => t?.id === remainingTopics[destIdx].id
+    );
+    liveAgenda.splice(liveSrcIdx, 1);
+    liveAgenda.splice(liveDestIdx, 0, topic);
+  };
+
   const handleAddTopic = () => {
     if (!newTopicTitle.trim()) return;
     addLiveTopic(meeting, newTopicTitle.trim(), newTopicDuration);
@@ -289,7 +311,38 @@ export const MeetingMinutes = () => {
           <div className="minutes-current-topic">
             <h3>{currentTopic.title}</h3>
             <div className="minutes-current-meta">
-              <span>Planned: {currentTopic.durationMinutes ?? "?"} min</span>
+              <span>
+                Planned:{" "}
+                {editingTopicId === currentTopic.id ? (
+                  <input
+                    className="inline-duration-input"
+                    type="number"
+                    min={1}
+                    value={editingDuration}
+                    ref={(el) => el?.select()}
+                    onChange={(e) => setEditingDuration(e.target.value)}
+                    onBlur={() => {
+                      const v = parseInt(editingDuration);
+                      if (!isNaN(v) && v > 0) currentTopic.durationMinutes = v;
+                      setEditingTopicId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                      if (e.key === "Escape") setEditingTopicId(null);
+                    }}
+                  />
+                ) : (
+                  <span
+                    onDoubleClick={() => {
+                      setEditingTopicId(currentTopic.id);
+                      setEditingDuration(String(currentTopic.durationMinutes ?? ""));
+                    }}
+                    title="Double-click to edit"
+                  >
+                    {currentTopic.durationMinutes ?? "?"} min
+                  </span>
+                )}
+              </span>
               <span className="minutes-timer">
                 Active:{" "}
                 {formatDurationOvertime(
@@ -330,29 +383,77 @@ export const MeetingMinutes = () => {
         {remainingTopics.length === 0 ? (
           <p>No remaining topics.</p>
         ) : (
-          <ul className="minutes-remaining-list">
-            {remainingTopics.map((topic) => (
-              <li key={topic.id} className="minutes-remaining-item">
-                <span className="minutes-remaining-title">{topic.title}</span>
-                <span className="minutes-remaining-duration">
-                  {topic.durationMinutes ?? "?"} min
-                </span>
-                <button
-                  className="btn-small btn-primary"
-                  onClick={() => deferCurrentAndActivate(meeting, topic)}
-                  disabled={!currentTopic}
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="minutes-remaining">
+              {(provided) => (
+                <ul
+                  className="minutes-remaining-list"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
                 >
-                  Make Active
-                </button>
-                <button
-                  className="btn-small btn-danger"
-                  onClick={() => { topic.deferred = true; }}
-                >
-                  Skip
-                </button>
-              </li>
-            ))}
-          </ul>
+                  {remainingTopics.map((topic, index) => (
+                    <Draggable key={topic.id} draggableId={topic.id} index={index}>
+                      {(provided, snapshot) => (
+                        <li
+                          className={`minutes-remaining-item${snapshot.isDragging ? " dragging" : ""}`}
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                        >
+                          <span className="drag-handle" {...provided.dragHandleProps}>⠿</span>
+                          <span className="minutes-remaining-title">{topic.title}</span>
+                          <span className="minutes-remaining-duration">
+                            {editingTopicId === topic.id ? (
+                              <input
+                                className="inline-duration-input"
+                                type="number"
+                                min={1}
+                                value={editingDuration}
+                                ref={(el) => el?.select()}
+                                onChange={(e) => setEditingDuration(e.target.value)}
+                                onBlur={() => {
+                                  const v = parseInt(editingDuration);
+                                  if (!isNaN(v) && v > 0) topic.durationMinutes = v;
+                                  setEditingTopicId(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") e.currentTarget.blur();
+                                  if (e.key === "Escape") setEditingTopicId(null);
+                                }}
+                              />
+                            ) : (
+                              <span
+                                onDoubleClick={() => {
+                                  setEditingTopicId(topic.id);
+                                  setEditingDuration(String(topic.durationMinutes ?? ""));
+                                }}
+                                title="Double-click to edit"
+                              >
+                                {topic.durationMinutes ?? "?"} min
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            className="btn-small btn-primary"
+                            onClick={() => deferCurrentAndActivate(meeting, topic)}
+                            disabled={!currentTopic}
+                          >
+                            Make Active
+                          </button>
+                          <button
+                            className="btn-small btn-danger"
+                            onClick={() => { topic.deferred = true; }}
+                          >
+                            Skip
+                          </button>
+                        </li>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </ul>
+              )}
+            </Droppable>
+          </DragDropContext>
         )}
 
         {deferredTopics.length > 0 && (
