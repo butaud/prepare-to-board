@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
 import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
+import { MdOutlineScience } from "react-icons/md";
 import { SignInButton, UserButton } from "@clerk/clerk-react";
 import { Settings } from "../views/Settings";
 import {
@@ -11,6 +12,67 @@ import {
   useLoadAccount,
   useLoadedAccount,
 } from "../hooks/Account";
+import { Schema, UserAccount } from "../schema";
+
+const RANDOM_TOPICS = [
+  { title: "Call to Order", durationMinutes: 2 },
+  { title: "Approval of Previous Minutes", durationMinutes: 5 },
+  { title: "Treasurer's Report", durationMinutes: 10 },
+  { title: "Committee Reports", durationMinutes: 15 },
+  { title: "Old Business", durationMinutes: 20 },
+  { title: "New Business", durationMinutes: 15 },
+  { title: "Director Updates", durationMinutes: 10 },
+  { title: "Strategic Planning Discussion", durationMinutes: 25 },
+  { title: "Budget Review", durationMinutes: 15 },
+  { title: "Member Forum", durationMinutes: 10 },
+  { title: "Adjourn", durationMinutes: 2 },
+];
+
+const createRandomMeeting = (me: UserAccount) => {
+  const org = me.root?.selectedOrganization;
+  if (!org) return;
+
+  const now = new Date();
+  now.setSeconds(0, 0);
+
+  // Pick 5–6 random topics (no duplicates)
+  const shuffled = [...RANDOM_TOPICS].sort(() => Math.random() - 0.5);
+  const count = 5 + Math.floor(Math.random() * 2);
+  const picked = shuffled.slice(0, count);
+
+  const topicList = Schema.ListOfTopics.create(
+    picked.map((t) =>
+      Schema.Topic.create({ title: t.title, durationMinutes: t.durationMinutes }, org._owner)
+    ),
+    org._owner
+  );
+
+  const meeting = Schema.Meeting.create(
+    {
+      date: now,
+      plannedAgenda: topicList,
+      liveAgenda: Schema.ListOfTopics.create([], org._owner),
+      minutes: Schema.ListOfMinutes.create([], org._owner),
+      status: "published",
+    },
+    org._owner
+  );
+
+  org.meetings?.push(meeting);
+};
+
+const DevCreateMeetingButton = ({ me }: { me: UserAccount }) => {
+  if (!import.meta.env.DEV) return null;
+  return (
+    <button
+      className="dev-create-meeting"
+      title="[DEV] Create random meeting"
+      onClick={() => createRandomMeeting(me)}
+    >
+      <MdOutlineScience />
+    </button>
+  );
+};
 
 export const Header = () => {
   const { me } = useLoadAccount();
@@ -68,6 +130,9 @@ export const Header = () => {
         )}
       </nav>
       <div className="end">
+        {isAuthenticated && me.root.selectedOrganization && (
+          <DevCreateMeetingButton me={me} />
+        )}
         {isAuthenticated ? (
           <LoadedAccountContext.Provider value={me}>
             <OrganizationSelector />

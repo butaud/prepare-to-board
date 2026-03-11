@@ -11,6 +11,7 @@ export type TopicNodeProps = {
   topic: Topic;
   startTime: Date;
   index: number;
+  locked?: boolean;
   onPublish?: () => void;
   onCancel?: () => void;
   onDelete?: () => void;
@@ -20,21 +21,25 @@ export const TopicNode: FC<TopicNodeProps> = ({
   topic,
   startTime,
   index,
+  locked = false,
   onCancel,
   onDelete,
   onPublish,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const me = useLoadedAccount();
-  const canEdit = me.canWrite(topic);
+  const canEdit = me.canWrite(topic) && !locked;
   const isDraft = topicIsDraft(topic);
   return (
     <Draggable draggableId={topic.id} index={index} isDragDisabled={!canEdit}>
       {(provided, snapshot) => (
         <div
-          className={["topic-node", snapshot.isDragging ? "dragging" : ""].join(
-            " "
-          )}
+          className={[
+            "topic-node",
+            snapshot.isDragging ? "dragging" : "",
+            locked ? "locked" : "",
+            topic.cancelled ? "cancelled" : "",
+          ].join(" ")}
           ref={provided.innerRef}
           {...provided.draggableProps}
         >

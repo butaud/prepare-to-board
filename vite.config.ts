@@ -6,6 +6,9 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: "/",
   plugins: [react()],
+  server: {
+    allowedHosts: ["butaud-hp-spectre-silver.tail8f308b.ts.net"],
+  },
   test: {
     globals: true,
     environment: "jsdom",

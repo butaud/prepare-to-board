@@ -85,6 +85,19 @@ header {
       flex: 0 1 400px;
       min-width: 100px;
     }
+    .dev-create-meeting {
+      background: none;
+      border: 1px dashed #f59e0b;
+      color: #f59e0b;
+      border-radius: 6px;
+      padding: 4px 6px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      opacity: 0.7;
+      &:hover { opacity: 1; }
+    }
 
     .organization-selector select {
       width: 100%;

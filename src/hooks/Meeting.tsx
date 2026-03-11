@@ -19,6 +19,16 @@ export const useLoadMeeting = (meetingId: string | undefined) => {
             plannedTopic: true,
           },
         },
+        liveAgenda: {
+          $each: {
+            plannedTopic: true,
+          },
+        },
+        minutes: {
+          $each: {
+            topic: true,
+          },
+        },
       },
     }
   );

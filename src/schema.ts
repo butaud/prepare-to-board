@@ -20,6 +20,7 @@ const JTopic = co.map({
     return co.optional(JTopic);
   },
   cancelled: z.optional(z.boolean()),
+  deferred: z.optional(z.boolean()),
 });
 export type Topic = co.loaded<typeof JTopic>;
 
@@ -58,6 +59,7 @@ const JMeeting = co
     plannedAgenda: z.optional(JListOfTopics),
     liveAgenda: z.optional(JListOfTopics),
     minutes: z.optional(JListOfMinutes),
+    liveStartTime: z.optional(z.date()),
   })
   .withMigration((meeting) => {
     if (meeting.status === undefined) {
@@ -66,7 +68,11 @@ const JMeeting = co
   });
 export type Meeting = co.loaded<
   typeof JMeeting,
-  { plannedAgenda: { $each: { plannedTopic: true } } }
+  {
+    plannedAgenda: { $each: { plannedTopic: true } };
+    liveAgenda: { $each: { plannedTopic: true } };
+    minutes: { $each: { topic: true } };
+  }
 >;
 export const getMeetingDisplayStatus = (meeting: Meeting) => {
   if (meeting.status === "draft") return "Draft";

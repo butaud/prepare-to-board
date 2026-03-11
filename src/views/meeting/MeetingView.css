@@ -7,3 +7,9 @@
   max-width: 1200px;
   margin: 0 auto;
 }
+
+.meeting-view-live-start {
+  font-size: 0.9rem;
+  color: var(--color-muted, #555);
+  margin: 4px 0 0 0;
+}

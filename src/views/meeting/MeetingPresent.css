@@ -1,0 +1,145 @@
+.meeting-present {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.present-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  background: var(--color-surface, #f5f5f5);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+}
+
+.present-date {
+  font-weight: 600;
+  flex: 1;
+}
+
+.present-elapsed,
+.present-projected-end {
+  color: var(--color-muted, #666);
+}
+
+.present-current-topic {
+  background: var(--color-primary-light, #e8f4fd);
+  border-left: 4px solid var(--color-primary, #1a73e8);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+
+.present-no-topic {
+  background: var(--color-surface, #f5f5f5);
+  border-left-color: var(--color-muted, #999);
+}
+
+.present-section-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary, #1a73e8);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.present-current-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+
+.present-current-meta {
+  display: flex;
+  gap: 24px;
+  font-size: 1rem;
+}
+
+.present-planned-duration {
+  color: var(--color-muted, #555);
+}
+
+.present-active-timer {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.present-active-timer .overtime {
+  color: var(--color-danger, #d32f2f);
+}
+
+.present-section {
+  background: var(--color-surface, #fafafa);
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.present-section-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted, #555);
+  margin: 0 0 12px 0;
+}
+
+.present-topic-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.present-topic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--color-bg, #fff);
+  gap: 12px;
+}
+
+.present-topic-item.present-completed {
+  opacity: 0.85;
+}
+
+.present-topic-title {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.present-cancelled-badge {
+  font-size: 0.75rem;
+  background: var(--color-muted, #aaa);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
+.present-topic-meta {
+  font-size: 0.875rem;
+  color: var(--color-muted, #666);
+  white-space: nowrap;
+}
+
+.overtime {
+  color: var(--color-danger, #d32f2f);
+  font-weight: 600;
+}
+
+.undertime {
+  color: var(--color-success, #388e3c);
+  font-weight: 600;
+}

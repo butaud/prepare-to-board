@@ -62,3 +62,13 @@
     visibility: inherit;
   }
 }
+
+.topic-node.locked .topic-header {
+  opacity: 0.6;
+  background-color: var(--secondary-color-light, #f0f0f0);
+}
+
+.topic-node.cancelled .topic-header {
+  opacity: 0.5;
+  text-decoration: line-through;
+}

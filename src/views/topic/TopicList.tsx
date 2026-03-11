@@ -33,12 +33,15 @@ export type TopicListProps = {
   >;
   meeting: Meeting;
   useDrafts?: boolean;
+  /** Number of topics at the start of the list that are locked (already have minutes) */
+  lockedCount?: number;
 };
 
 export const TopicList: FC<TopicListProps> = ({
   topicList,
   meeting,
   useDrafts,
+  lockedCount = 0,
 }) => {
   const me = useLoadedAccount();
   const meetingShadow = useLoadMeetingShadow();
@@ -114,14 +117,18 @@ export const TopicList: FC<TopicListProps> = ({
             >
               {topicListWithDrafts.map((topic, index) => {
                 const currentTopicStartTime = meetingStartTimes[topic.id];
+                const isLocked = index < lockedCount;
                 const node = (
                   <TopicNode
                     key={topic.id}
                     topic={topic}
                     index={index}
                     startTime={new Date(currentTopicStartTime)}
+                    locked={isLocked}
                     onDelete={
-                      isOfficer ? () => handleDeleteClick(topic) : undefined
+                      isOfficer && !isLocked
+                        ? () => handleDeleteClick(topic)
+                        : undefined
                     }
                     onPublish={
                       topicIsDraft(topic)

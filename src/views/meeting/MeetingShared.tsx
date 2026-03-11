@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
+import { startMeeting } from "../../util/data";
 
 import "./MeetingShared.css";
 
@@ -58,7 +59,7 @@ export const MeetingShared = () => {
       actions.push({
         label: "Start Meeting",
         onClick: () => {
-          meeting.status = "live";
+          startMeeting(meeting);
         },
         icon: <MdPlayCircleOutline />,
       });
