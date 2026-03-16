@@ -3,7 +3,6 @@ import { Dialog } from "./Dialog";
 import { createInviteLink } from "jazz-tools/react";
 import { Organization } from "../../schema";
 
-import "./InviteUserDialog.css";
 
 export type InviteUserDialogProps = {
   closeDialog: () => void;

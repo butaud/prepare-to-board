@@ -1,7 +1,6 @@
 import { FC, useState } from "react";
 import { Topic, topicIsDraft } from "../../schema";
 
-import "./TopicNode.css";
 import { useLoadedAccount } from "../../hooks/Account";
 import { MdDelete, MdDragHandle } from "react-icons/md";
 import { EditableInteger, EditableString } from "./EditableValue";

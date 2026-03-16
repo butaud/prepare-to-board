@@ -1,7 +1,6 @@
 import { FC } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import "./Breadcrumbs.css";
 
 export type BreadcrumbsProps = {
   dynamicTitleParts?: Record<string, string>;

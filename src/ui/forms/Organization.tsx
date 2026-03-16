@@ -8,7 +8,6 @@ import {
 import { useCoState } from "jazz-tools/react";
 import { Group, ID } from "jazz-tools";
 
-import "./Organization.css";
 import { useLoadedAccount } from "../../hooks/Account";
 
 type OrganizationFormProps = {

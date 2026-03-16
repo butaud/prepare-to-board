@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 
-import "./Dialog.css";
 
 export type DialogProps = {
   closeDialog: () => void;
