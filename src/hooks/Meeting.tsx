@@ -30,6 +30,7 @@ export const useLoadMeeting = (meetingId: string | undefined) => {
             notes: { $each: true },
           },
         },
+        currentNotes: { $each: true },
       },
     }
   );

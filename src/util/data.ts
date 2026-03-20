@@ -38,7 +38,6 @@ export const advanceTopic = (
   meeting: Meeting,
   actualDurationMinutes: number,
   notes?: string,
-  pendingNotes?: PendingNote[]
 ) => {
   if (!meeting.liveAgenda || !meeting.minutes) return;
   const currentIndex = meeting.minutes.length;
@@ -54,24 +53,13 @@ export const advanceTopic = (
     },
     meeting._owner
   );
-  if (pendingNotes && pendingNotes.length > 0) {
-    const noteObjects = pendingNotes.map((pn) => {
-      if (pn.type === "text") {
-        return Schema.TextNote.create({ type: "text", text: pn.text }, meeting._owner);
-      } else if (pn.type === "action_item") {
-        return Schema.ActionItemNote.create(
-          { type: "action_item", text: pn.text, assignee: pn.assignee },
-          meeting._owner
-        );
-      } else {
-        return Schema.MotionNote.create(
-          { type: "motion", text: pn.text, mover: pn.mover, seconder: pn.seconder, status: pn.status },
-          meeting._owner
-        );
-      }
-    });
-    minute.notes = Schema.ListOfNotes.create(noteObjects, meeting._owner);
+  const currentNotes = meeting.currentNotes
+    ? (meeting.currentNotes.filter((n) => n !== null) as NonNullable<typeof meeting.currentNotes>[number][])
+    : [];
+  if (currentNotes.length > 0) {
+    minute.notes = Schema.ListOfNotes.create(currentNotes, meeting._owner);
   }
+  meeting.currentNotes = undefined;
   meeting.minutes.push(minute);
 };
 
@@ -85,6 +73,7 @@ export const skipTopic = (meeting: Meeting) => {
   currentTopic.deferred = true;
   meeting.liveAgenda.splice(currentIndex, 1);
   meeting.liveAgenda.push(currentTopic);
+  meeting.currentNotes = undefined;
 };
 
 export const addLiveTopic = (

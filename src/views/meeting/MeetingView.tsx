@@ -18,6 +18,9 @@ import { Topic } from "../../schema";
 
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
+import "../meeting/MeetingMinutes.css";
+import { NoteDisplay } from "../../ui/NoteDisplay";
+import { Note } from "../../schema";
 
 const formatDuration = (totalSeconds: number): string => {
   const sign = totalSeconds < 0 ? "-" : "";
@@ -178,6 +181,16 @@ export const MeetingView = () => {
           <div className="present-current-topic">
             <div className="present-section-label">Now discussing</div>
             <h2 className="present-current-title">{currentTopic.title}</h2>
+            {currentTopic.outcome && (
+              <p className="present-topic-outcome">{currentTopic.outcome}</p>
+            )}
+            {(meeting.currentNotes ?? []).filter((n) => n !== null).length > 0 && (
+              <div className="present-current-notes">
+                {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
+                  <NoteDisplay key={i} note={note as Note} />
+                ))}
+              </div>
+            )}
             <div className="present-current-meta">
               <span className="present-planned-duration">
                 Planned:{" "}
@@ -414,7 +427,7 @@ export const MeetingView = () => {
         {completedMinutes.length > 0 && (
           <div className="present-section">
             <h3 className="present-section-heading">Completed</h3>
-            <ol className="present-topic-list">
+            <ol className="present-topic-list present-completed-list">
               {completedMinutes.map((minute, idx) => {
                 const topic = minute.topic;
                 const planned =
@@ -422,25 +435,39 @@ export const MeetingView = () => {
                   topic?.durationMinutes;
                 const actual = minute.durationMinutes;
                 const diff = planned !== undefined ? actual - planned : null;
+                const notes = minute.notes
+                  ? (minute.notes.filter((n) => n !== null) as Note[])
+                  : [];
                 return (
                   <li
                     key={idx}
                     className="present-topic-item present-completed"
                   >
-                    <span className="present-topic-title">
-                      {topic?.title ?? "(unknown)"}
-                    </span>
-                    <span className="present-topic-meta">
-                      {actual} min actual
-                      {planned !== undefined && ` / ${planned} min planned`}
-                      {diff !== null && diff !== 0 && (
-                        <span className={diff > 0 ? "overtime" : "undertime"}>
-                          {" "}
-                          ({diff > 0 ? "+" : ""}
-                          {diff} min)
+                    <div className="present-completed-body">
+                      <div className="present-completed-header">
+                        <span className="present-topic-title">
+                          {topic?.title ?? "(unknown)"}
                         </span>
+                        <span className="present-topic-meta">
+                          {actual} min actual
+                          {planned !== undefined && ` / ${planned} min planned`}
+                          {diff !== null && diff !== 0 && (
+                            <span className={diff > 0 ? "overtime" : "undertime"}>
+                              {" "}
+                              ({diff > 0 ? "+" : ""}
+                              {diff} min)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {notes.length > 0 && (
+                        <div className="present-completed-notes">
+                          {notes.map((note, ni) => (
+                            <NoteDisplay key={ni} note={note} />
+                          ))}
+                        </div>
                       )}
-                    </span>
+                    </div>
                   </li>
                 );
               })}

@@ -12,6 +12,7 @@ import { PendingNote } from "../../util/data";
 import { Topic, Note, Schema } from "../../schema";
 
 import "./MeetingMinutes.css";
+import { NoteDisplay } from "../../ui/NoteDisplay";
 
 const formatDuration = (totalSeconds: number): string => {
   const sign = totalSeconds < 0 ? "-" : "";
@@ -23,123 +24,6 @@ const formatDuration = (totalSeconds: number): string => {
     return `${sign}${h}h ${m}m ${s}s`;
   }
   return `${sign}${m}m ${s}s`;
-};
-
-// --- Markdown renderer (React-node approach, no dangerouslySetInnerHTML) ---
-
-type ReactNode = React.ReactNode;
-
-function renderMarkdown(text: string): ReactNode[] {
-  // Parse the string into React nodes handling **bold**, *italic*, _italic_, [text](url)
-  const nodes: ReactNode[] = [];
-  let remaining = text;
-  let keyIdx = 0;
-
-  while (remaining.length > 0) {
-    // Try bold: **text**
-    const boldMatch = remaining.match(/^([\s\S]*?)\*\*(.+?)\*\*/);
-    // Try italic: *text* (not **)
-    const italicStarMatch = remaining.match(/^([\s\S]*?)(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
-    // Try italic: _text_
-    const italicUnderMatch = remaining.match(/^([\s\S]*?)_(.+?)_/);
-    // Try link: [text](url)
-    const linkMatch = remaining.match(/^([\s\S]*?)\[(.+?)\]\((https?:\/\/[^)]+)\)/);
-
-    // Find which match comes first (shortest prefix group)
-    const candidates: Array<{ prefixLen: number; type: string; match: RegExpMatchArray }> = [];
-    if (boldMatch) candidates.push({ prefixLen: boldMatch[1].length, type: "bold", match: boldMatch });
-    if (italicStarMatch) candidates.push({ prefixLen: italicStarMatch[1].length, type: "italic-star", match: italicStarMatch });
-    if (italicUnderMatch) candidates.push({ prefixLen: italicUnderMatch[1].length, type: "italic-under", match: italicUnderMatch });
-    if (linkMatch) candidates.push({ prefixLen: linkMatch[1].length, type: "link", match: linkMatch });
-
-    if (candidates.length === 0) {
-      // No more patterns, emit remainder as text
-      nodes.push(remaining);
-      break;
-    }
-
-    // Pick the candidate with the smallest prefix (earliest occurrence)
-    candidates.sort((a, b) => a.prefixLen - b.prefixLen);
-    const winner = candidates[0];
-    const { prefixLen, type, match } = winner;
-
-    // Emit prefix text
-    if (prefixLen > 0) {
-      nodes.push(match[1]);
-    }
-
-    if (type === "bold") {
-      nodes.push(<strong key={keyIdx++}>{match[2]}</strong>);
-      remaining = remaining.slice(prefixLen + match[2].length + 4); // 4 = "**" + "**"
-    } else if (type === "italic-star") {
-      nodes.push(<em key={keyIdx++}>{match[2]}</em>);
-      remaining = remaining.slice(prefixLen + match[2].length + 2); // 2 = "*" + "*"
-    } else if (type === "italic-under") {
-      nodes.push(<em key={keyIdx++}>{match[2]}</em>);
-      remaining = remaining.slice(prefixLen + match[2].length + 2); // 2 = "_" + "_"
-    } else if (type === "link") {
-      const url = match[3];
-      const linkText = match[2];
-      nodes.push(
-        <a key={keyIdx++} href={url} target="_blank" rel="noopener noreferrer">
-          {linkText}
-        </a>
-      );
-      // full match: [text](url)
-      remaining = remaining.slice(prefixLen + 1 + linkText.length + 2 + url.length + 1);
-    }
-  }
-
-  return nodes;
-}
-
-// --- NoteDisplay ---
-
-const motionStatusLabel: Record<string, string> = {
-  proposed: "Proposed",
-  under_discussion: "Under Discussion",
-  passed: "Passed",
-  failed: "Failed",
-  tabled: "Tabled",
-};
-
-interface NoteDisplayProps {
-  note: Note | PendingNote;
-}
-
-const NoteDisplay = ({ note }: NoteDisplayProps) => {
-  if (note.type === "text") {
-    return (
-      <div className="note-text">
-        {renderMarkdown(note.text)}
-      </div>
-    );
-  }
-  if (note.type === "action_item") {
-    return (
-      <div className="note-action-item">
-        <span className="note-action-checkbox">☐</span>
-        {note.assignee && <span className="note-action-assignee">{note.assignee}:</span>}
-        <span>{note.text}</span>
-      </div>
-    );
-  }
-  if (note.type === "motion") {
-    const status = note.status;
-    return (
-      <div className="note-motion">
-        <span>
-          {note.mover} moves {note.text}.
-          {note.seconder && ` Seconded by ${note.seconder}.`}
-        </span>
-        {" "}
-        <span className={`motion-status motion-status-${status}`}>
-          Status: {motionStatusLabel[status] ?? status}
-        </span>
-      </div>
-    );
-  }
-  return null;
 };
 
 // --- Note Forms ---
@@ -574,7 +458,6 @@ export const MeetingMinutes = () => {
   const [showAddTopic, setShowAddTopic] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
-  const [pendingNotes, setPendingNotes] = useState<PendingNote[]>([]);
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
 
   useEffect(() => {
@@ -590,8 +473,8 @@ export const MeetingMinutes = () => {
 
   useEffect(() => {
     setNotes("");
-    setPendingNotes([]);
     setNoteFormType(null);
+    meeting.currentNotes = undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTopicId]);
 
@@ -629,16 +512,14 @@ export const MeetingMinutes = () => {
 
   const handleCompleteTopic = () => {
     const actualDuration = Math.round(currentTopicActiveSeconds / 60);
-    advanceTopic(meeting, actualDuration, notes || undefined, pendingNotes.length > 0 ? pendingNotes : undefined);
+    advanceTopic(meeting, actualDuration, notes || undefined);
     setNotes("");
-    setPendingNotes([]);
     setNoteFormType(null);
   };
 
   const handleSkipTopic = () => {
     skipTopic(meeting);
     setNotes("");
-    setPendingNotes([]);
     setNoteFormType(null);
   };
 
@@ -758,13 +639,16 @@ export const MeetingMinutes = () => {
             <div className="minutes-notes-section">
               <h4>Notes for this topic</h4>
 
-              {pendingNotes.map((note, i) => (
+              {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
                 <div key={i} className="minutes-note-item">
-                  <NoteDisplay note={note} />
+                  <NoteDisplay note={note as Note} />
                   <button
                     className="note-delete-btn"
                     title="Remove note"
-                    onClick={() => setPendingNotes((prev) => prev.filter((_, j) => j !== i))}
+                    onClick={() => {
+                      if (!meeting.currentNotes) return;
+                      meeting.currentNotes.splice(i, 1);
+                    }}
                   >
                     ×
                   </button>
@@ -781,19 +665,35 @@ export const MeetingMinutes = () => {
 
               {noteFormType === "text" && (
                 <TextNoteForm
-                  onAdd={(note) => { setPendingNotes((prev) => [...prev, note]); setNoteFormType(null); }}
+                  onAdd={(pn) => {
+                    const note = Schema.TextNote.create({ type: "text", text: pn.text }, meeting._owner);
+                    if (!meeting.currentNotes) meeting.currentNotes = Schema.ListOfNotes.create([note], meeting._owner);
+                    else meeting.currentNotes.push(note);
+                    setNoteFormType(null);
+                  }}
                   onCancel={() => setNoteFormType(null)}
                 />
               )}
               {noteFormType === "action_item" && (
                 <ActionItemForm
-                  onAdd={(note) => { setPendingNotes((prev) => [...prev, note]); setNoteFormType(null); }}
+                  onAdd={(pn) => {
+                    const note = Schema.ActionItemNote.create({ type: "action_item", text: pn.text, assignee: (pn as { type: "action_item"; text: string; assignee?: string }).assignee }, meeting._owner);
+                    if (!meeting.currentNotes) meeting.currentNotes = Schema.ListOfNotes.create([note], meeting._owner);
+                    else meeting.currentNotes.push(note);
+                    setNoteFormType(null);
+                  }}
                   onCancel={() => setNoteFormType(null)}
                 />
               )}
               {noteFormType === "motion" && (
                 <MotionForm
-                  onAdd={(note) => { setPendingNotes((prev) => [...prev, note]); setNoteFormType(null); }}
+                  onAdd={(pn) => {
+                    const mn = pn as { type: "motion"; text: string; mover: string; seconder?: string; status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled" };
+                    const note = Schema.MotionNote.create({ type: "motion", text: mn.text, mover: mn.mover, seconder: mn.seconder, status: mn.status }, meeting._owner);
+                    if (!meeting.currentNotes) meeting.currentNotes = Schema.ListOfNotes.create([note], meeting._owner);
+                    else meeting.currentNotes.push(note);
+                    setNoteFormType(null);
+                  }}
                   onCancel={() => setNoteFormType(null)}
                 />
               )}

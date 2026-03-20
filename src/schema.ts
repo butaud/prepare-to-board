@@ -77,6 +77,7 @@ const JMeeting = co
     liveAgenda: z.optional(JListOfTopics),
     minutes: z.optional(JListOfMinutes),
     liveStartTime: z.optional(z.date()),
+    currentNotes: co.optional(JListOfNotes),
   })
   .withMigration((meeting) => {
     if (meeting.status === undefined) {
@@ -89,6 +90,7 @@ export type Meeting = co.loaded<
     plannedAgenda: { $each: { plannedTopic: true } };
     liveAgenda: { $each: { plannedTopic: true } };
     minutes: { $each: { topic: true; notes: { $each: true } } };
+    currentNotes: { $each: true };
   }
 >;
 export const getMeetingDisplayStatus = (meeting: Meeting) => {
