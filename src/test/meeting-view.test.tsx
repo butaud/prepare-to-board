@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   act,
+  addTestLiveTopic,
   addTestMeeting,
   addTestOrganization,
   addTestTopic,
@@ -12,7 +13,8 @@ import {
 } from "./test-utils";
 import App from "../App";
 import userEvent from "@testing-library/user-event";
-import { Meeting } from "../schema";
+import { Meeting, Schema } from "../schema";
+import { Group } from "jazz-tools";
 
 describe("MeetingView", () => {
   beforeEach(async () => {
@@ -329,6 +331,121 @@ describe("MeetingView", () => {
         expect(minutesTab).toBeEnabled();
         await userEvent.click(minutesTab);
         expect(minutesTab).toBeDisabled();
+      });
+    });
+  });
+
+  describe("live meeting notes", () => {
+    const setupLiveMeeting = async (role: "writer" | "reader") => {
+      await addTestOrganization("Test Org", role);
+      const testMeeting = await addTestMeeting(new Date("2023-10-01T12:00:00Z"));
+      await act(async () => {
+        await addTestLiveTopic(testMeeting, "Topic One", 15);
+        await addTestLiveTopic(testMeeting, "Topic Two", 10);
+        testMeeting.liveStartTime = new Date("2023-10-01T12:00:00Z");
+        testMeeting.status = "live";
+        await testMeeting.waitForSync();
+      });
+      await render(<App />, { startingPath: "/meetings" });
+      await userEvent.click(screen.getByRole("link", { name: "10/1/2023" }));
+      return testMeeting;
+    };
+
+    describe("attendee view", () => {
+      let testMeeting: Meeting;
+
+      beforeEach(async () => {
+        testMeeting = await setupLiveMeeting("reader");
+      });
+
+      it("should show the current topic", () => {
+        expect(screen.getByText("Now discussing")).toBeInTheDocument();
+        expect(screen.getByText("Topic One")).toBeInTheDocument();
+      });
+
+      it("should show currentNotes on the active topic", async () => {
+        await act(async () => {
+          const owningGroup = testMeeting._owner.castAs(Group);
+          const note = Schema.TextNote.create(
+            { type: "text", text: "Live note text" },
+            owningGroup
+          );
+          testMeeting.currentNotes = Schema.ListOfNotes.create(
+            [note],
+            owningGroup
+          );
+          await testMeeting.waitForSync();
+        });
+        expect(screen.getByText("Live note text")).toBeInTheDocument();
+      });
+
+      it("should show notes on completed topics", async () => {
+        await act(async () => {
+          const owningGroup = testMeeting._owner.castAs(Group);
+          const completedTopic = testMeeting.liveAgenda![0]!;
+          const note = Schema.TextNote.create(
+            { type: "text", text: "Completed topic note" },
+            owningGroup
+          );
+          const minute = Schema.Minute.create(
+            {
+              topic: completedTopic,
+              durationMinutes: 15,
+              notes: Schema.ListOfNotes.create([note], owningGroup),
+            },
+            owningGroup
+          );
+          testMeeting.minutes!.push(minute);
+          await testMeeting.waitForSync();
+        });
+        expect(screen.getByText("Completed topic note")).toBeInTheDocument();
+      });
+    });
+
+    describe("present view", () => {
+      let testMeeting: Meeting;
+
+      beforeEach(async () => {
+        testMeeting = await setupLiveMeeting("writer");
+        await userEvent.click(screen.getByRole("button", { name: "Present" }));
+      });
+
+      it("should show currentNotes on the active topic", async () => {
+        await act(async () => {
+          const owningGroup = testMeeting._owner.castAs(Group);
+          const note = Schema.TextNote.create(
+            { type: "text", text: "Present view note" },
+            owningGroup
+          );
+          testMeeting.currentNotes = Schema.ListOfNotes.create(
+            [note],
+            owningGroup
+          );
+          await testMeeting.waitForSync();
+        });
+        expect(screen.getByText("Present view note")).toBeInTheDocument();
+      });
+
+      it("should show notes on completed topics", async () => {
+        await act(async () => {
+          const owningGroup = testMeeting._owner.castAs(Group);
+          const completedTopic = testMeeting.liveAgenda![0]!;
+          const note = Schema.TextNote.create(
+            { type: "text", text: "Present completed note" },
+            owningGroup
+          );
+          const minute = Schema.Minute.create(
+            {
+              topic: completedTopic,
+              durationMinutes: 15,
+              notes: Schema.ListOfNotes.create([note], owningGroup),
+            },
+            owningGroup
+          );
+          testMeeting.minutes!.push(minute);
+          await testMeeting.waitForSync();
+        });
+        expect(screen.getByText("Present completed note")).toBeInTheDocument();
       });
     });
   });

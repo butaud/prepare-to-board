@@ -129,6 +129,30 @@ export const addTestMeeting = async (
   return meeting;
 };
 
+export const addTestLiveTopic = async (
+  meeting: Meeting,
+  title: string,
+  durationMinutes?: number
+) => {
+  if (!testAccount) {
+    throw new Error("Test account not set up. Call setupTestAccount first.");
+  }
+
+  const org = organizations[0];
+  if (!org) {
+    throw new Error(
+      "No test organization found. Call addTestOrganization first."
+    );
+  }
+
+  const owningGroup = org._owner.castAs(Group);
+  const topic = Schema.Topic.create({ title, durationMinutes }, owningGroup);
+  meeting.liveAgenda?.push(topic);
+  await meeting.waitForSync();
+  await topic.waitForSync();
+  return topic;
+};
+
 export const addTestTopic = async (
   meeting: Meeting,
   title: string,
