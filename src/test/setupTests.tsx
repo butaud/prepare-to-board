@@ -103,6 +103,7 @@ vi.mock("react-icons/sl", async (importActual) => {
     SlPlus: () => <FakeIcon name="SlPlus" />,
     SlBan: () => <FakeIcon name="SlBan" />,
     SlTrash: () => <FakeIcon name="SlTrash" />,
+    SlPencil: () => <FakeIcon name="SlPencil" />,
   };
 });
 

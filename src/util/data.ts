@@ -1,9 +1,9 @@
 import { co } from "jazz-tools";
-import { DraftTopic, Meeting, MeetingShadow, Schema, Topic } from "../schema";
+import { BoardMember, DraftTopic, Meeting, MeetingShadow, Schema, Topic } from "../schema";
 
 type PendingNote =
   | { type: "text"; text: string }
-  | { type: "action_item"; text: string; assignee?: string }
+  | { type: "action_item"; text: string; assignee?: BoardMember }
   | { type: "motion"; text: string; mover: string; seconder?: string; status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled" };
 export type { PendingNote };
 

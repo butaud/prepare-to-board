@@ -9,7 +9,7 @@ import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { advanceTopic, addLiveTopic, skipTopic, deferCurrentAndActivate } from "../../util/data";
 import { PendingNote } from "../../util/data";
-import { Topic, Note, Schema } from "../../schema";
+import { BoardMember, Topic, Note, Schema } from "../../schema";
 
 import "./MeetingMinutes.css";
 import { NoteDisplay } from "../../ui/NoteDisplay";
@@ -69,11 +69,12 @@ const TextNoteForm = ({ onAdd, onCancel }: TextNoteFormProps) => {
 interface ActionItemFormProps {
   onAdd: (note: PendingNote) => void;
   onCancel: () => void;
+  members: BoardMember[];
 }
 
-const ActionItemForm = ({ onAdd, onCancel }: ActionItemFormProps) => {
+const ActionItemForm = ({ onAdd, onCancel, members }: ActionItemFormProps) => {
   const [text, setText] = useState("");
-  const [assignee, setAssignee] = useState("");
+  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
   return (
     <div className="note-form">
       <h5 className="note-form-title">Action Item</h5>
@@ -90,20 +91,24 @@ const ActionItemForm = ({ onAdd, onCancel }: ActionItemFormProps) => {
       </div>
       <div className="minutes-form-row">
         <label>Assignee (optional):</label>
-        <input
-          type="text"
-          value={assignee}
-          onChange={(e) => setAssignee(e.target.value)}
-          placeholder="Who is responsible?"
-          style={{ width: "100%", maxWidth: 300 }}
-        />
+        <select
+          value={selectedMemberId}
+          onChange={(e) => setSelectedMemberId(e.target.value)}
+          style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid var(--color-border, #ddd)" }}
+        >
+          <option value="">— None —</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
       </div>
       <div className="minutes-actions">
         <button
           className="btn-primary"
           onClick={() => {
             if (!text.trim()) return;
-            onAdd({ type: "action_item", text: text.trim(), assignee: assignee.trim() || undefined });
+            const assignee = members.find((m) => m.id === selectedMemberId);
+            onAdd({ type: "action_item", text: text.trim(), assignee });
           }}
         >
           Add
@@ -202,9 +207,10 @@ const MotionForm = ({ onAdd, onCancel }: MotionFormProps) => {
 interface CompletedMinuteNotesProps {
   minute: NonNullable<NonNullable<ReturnType<typeof useMeeting>["minutes"]>[number]>;
   meeting: ReturnType<typeof useMeeting>;
+  members: BoardMember[];
 }
 
-const CompletedMinuteNotes = ({ minute, meeting }: CompletedMinuteNotesProps) => {
+const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotesProps) => {
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
 
   const addNoteToMinute = (pn: PendingNote) => {
@@ -213,7 +219,7 @@ const CompletedMinuteNotes = ({ minute, meeting }: CompletedMinuteNotesProps) =>
       noteObj = Schema.TextNote.create({ type: "text", text: pn.text }, meeting._owner);
     } else if (pn.type === "action_item") {
       noteObj = Schema.ActionItemNote.create(
-        { type: "action_item", text: pn.text, assignee: pn.assignee },
+        { type: "action_item", text: pn.text, assignee: (pn as { type: "action_item"; text: string; assignee?: BoardMember }).assignee },
         meeting._owner
       );
     } else {
@@ -263,7 +269,7 @@ const CompletedMinuteNotes = ({ minute, meeting }: CompletedMinuteNotesProps) =>
         <TextNoteForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} />
       )}
       {noteFormType === "action_item" && (
-        <ActionItemForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} />
+        <ActionItemForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} members={members} />
       )}
       {noteFormType === "motion" && (
         <MotionForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} />
@@ -480,6 +486,8 @@ export const MeetingMinutes = () => {
 
   const isOfficer = me?.canWrite(meeting);
 
+  const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null) as BoardMember[];
+
   // Completed meeting view
   if (meeting.status === "completed") {
     return <PostMeetingMinutes />;
@@ -677,12 +685,13 @@ export const MeetingMinutes = () => {
               {noteFormType === "action_item" && (
                 <ActionItemForm
                   onAdd={(pn) => {
-                    const note = Schema.ActionItemNote.create({ type: "action_item", text: pn.text, assignee: (pn as { type: "action_item"; text: string; assignee?: string }).assignee }, meeting._owner);
+                    const note = Schema.ActionItemNote.create({ type: "action_item", text: pn.text, assignee: (pn as { type: "action_item"; text: string; assignee?: BoardMember }).assignee }, meeting._owner);
                     if (!meeting.currentNotes) meeting.currentNotes = Schema.ListOfNotes.create([note], meeting._owner);
                     else meeting.currentNotes.push(note);
                     setNoteFormType(null);
                   }}
                   onCancel={() => setNoteFormType(null)}
+                  members={members}
                 />
               )}
               {noteFormType === "motion" && (
@@ -890,7 +899,7 @@ export const MeetingMinutes = () => {
                   {topic?.outcome && (
                     <div className="minutes-item-notes">{topic.outcome}</div>
                   )}
-                  <CompletedMinuteNotes minute={minute} meeting={meeting} />
+                  <CompletedMinuteNotes minute={minute} meeting={meeting} members={members} />
                 </li>
               );
             })}

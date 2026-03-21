@@ -87,7 +87,7 @@ export const NoteDisplay = ({ note }: NoteDisplayProps) => {
     return (
       <div className="note-action-item">
         <span className="note-action-checkbox">☐</span>
-        {note.assignee && <span className="note-action-assignee">{note.assignee}:</span>}
+        {note.assignee?.name && <span className="note-action-assignee">{note.assignee.name}:</span>}
         <span>{note.text}</span>
       </div>
     );

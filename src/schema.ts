@@ -6,10 +6,24 @@ const JTextNote = co.map({
 });
 export type TextNote = co.loaded<typeof JTextNote>;
 
+const JBoardMember = co.map({
+  name: z.string(),
+  email: z.optional(z.string()),
+  title: z.optional(z.string()),
+  // accountId links this persona to a Jazz UserAccount ID once claimed
+  accountId: z.optional(z.string()),
+});
+export type BoardMember = co.loaded<typeof JBoardMember>;
+
+const JListOfBoardMembers = co.list(JBoardMember);
+export type ListOfBoardMembers = co.loaded<typeof JListOfBoardMembers>;
+
 const JActionItemNote = co.map({
   type: z.literal("action_item"),
   text: z.string(),
-  assignee: z.optional(z.string()),
+  get assignee(): z.ZodOptional<typeof JBoardMember> {
+    return co.optional(JBoardMember);
+  },
 });
 export type ActionItemNote = co.loaded<typeof JActionItemNote>;
 
@@ -134,6 +148,7 @@ export const validateDraftMeeting = (draft: DraftMeeting): string[] => {
 const JOrganization = co.map({
   name: z.string(),
   meetings: JListOfMeetings,
+  members: co.optional(JListOfBoardMembers),
 });
 export type Organization = co.loaded<typeof JOrganization>;
 
@@ -251,4 +266,6 @@ export const Schema = {
   UserAccountRoot: JUserAccountRoot,
   UserProfile: JUserProfile,
   UserAccount: JUserAccount,
+  BoardMember: JBoardMember,
+  ListOfBoardMembers: JListOfBoardMembers,
 };

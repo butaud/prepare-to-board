@@ -37,7 +37,7 @@ describe("Members", () => {
 
     it("should show all members of the organization with their roles", async () => {
       const membersList = await screen.findAllByRole("row");
-      expect(membersList).toHaveLength(5); // header + 3 test users + self
+      expect(membersList).toHaveLength(5); // header + self + 3 test users
 
       within(membersList[1]).getByText("Other Account");
       within(membersList[1]).getByText("Admin");

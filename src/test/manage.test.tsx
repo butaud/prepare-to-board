@@ -52,7 +52,7 @@ describe("Manage", () => {
 
     it("should show all members of the organization with their roles", async () => {
       const membersList = await screen.findAllByRole("row");
-      expect(membersList).toHaveLength(5); // header + 3 test users + self
+      expect(membersList).toHaveLength(5); // header + self + 3 test users
 
       within(membersList[1]).getByText("Test User (me)");
       within(membersList[1]).getByText("Admin");
@@ -144,7 +144,7 @@ describe("Manage", () => {
       const membersList = await screen.findAllByRole("row");
       const nonAdminMember = within(membersList[4]);
       const removeButton = nonAdminMember.getByRole("button", {
-        name: "Remove",
+        name: "Remove member",
       });
 
       vi.spyOn(window, "confirm").mockReturnValue(true);
@@ -161,7 +161,7 @@ describe("Manage", () => {
       const membersList = await screen.findAllByRole("row");
       const adminMember = within(membersList[2]);
       const removeButton = adminMember.getByRole("button", {
-        name: "Remove",
+        name: "Remove member",
       });
       expect(removeButton).toBeDisabled();
       await userEvent.click(removeButton);
@@ -175,7 +175,7 @@ describe("Manage", () => {
       const membersList = await screen.findAllByRole("row");
       const selfMember = within(membersList[1]);
       const removeButton = selfMember.queryByRole("button", {
-        name: "Remove",
+        name: "Remove member",
       });
       expect(removeButton).not.toBeInTheDocument();
     });
