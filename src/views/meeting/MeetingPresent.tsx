@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
-import { Note, Topic } from "../../schema";
+import { Topic } from "../../schema";
 import { NoteDisplay } from "../../ui/NoteDisplay";
 
 import "./MeetingPresent.css";
@@ -61,7 +61,7 @@ export const MeetingPresent = () => {
   // = now - (liveStartTime + sum of completed minute durations)
   const sumCompletedMinutes = minutes
     .filter((m) => m !== null)
-    .reduce((sum, m) => sum + (m!.durationMinutes ?? 0), 0);
+    .reduce((sum, m) => sum + (m.durationMinutes ?? 0), 0);
   const currentTopicActiveSeconds = liveStartTime
     ? Math.floor(
         (now.getTime() -
@@ -74,7 +74,7 @@ export const MeetingPresent = () => {
   const remainingTopics = liveAgenda
     .filter((t) => t !== null)
     .slice(currentTopicIndex + 1)
-    .filter((t) => !t!.cancelled) as Topic[];
+    .filter((t) => !t.cancelled);
 
   // Base time for projected starts of remaining topics:
   // use the later of (planned end of current topic) and (now),
@@ -114,9 +114,7 @@ export const MeetingPresent = () => {
     });
 
   // Completed topics
-  const completedMinutes = minutes.filter((m) => m !== null) as NonNullable<
-    (typeof minutes)[number]
-  >[];
+  const completedMinutes = minutes.filter((m) => m !== null);
 
   return (
     <div className="meeting-present">
@@ -151,7 +149,7 @@ export const MeetingPresent = () => {
           {(meeting.currentNotes ?? []).filter((n) => n !== null).length > 0 && (
             <div className="present-current-notes">
               {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
-                <NoteDisplay key={i} note={note as Note} />
+                <NoteDisplay key={i} note={note} />
               ))}
             </div>
           )}
@@ -209,7 +207,7 @@ export const MeetingPresent = () => {
               const actual = minute.durationMinutes;
               const diff = planned !== undefined ? actual - planned : null;
               const notes = minute.notes
-                ? (minute.notes.filter((n) => n !== null) as Note[])
+                ? (minute.notes.filter((n) => n !== null))
                 : [];
               return (
                 <li key={idx} className="present-topic-item present-completed">

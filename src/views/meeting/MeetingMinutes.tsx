@@ -5,11 +5,12 @@ import {
   Draggable,
   type DropResult,
 } from "@hello-pangea/dnd";
+import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
-import { advanceTopic, addLiveTopic, skipTopic, deferCurrentAndActivate } from "../../util/data";
 import { PendingNote } from "../../util/data";
-import { BoardMember, Topic, Note, Schema } from "../../schema";
+import { BoardMember, Topic } from "../../schema";
+import { api } from "../../convexClient";
 
 import "./MeetingMinutes.css";
 import { NoteDisplay } from "../../ui/NoteDisplay";
@@ -212,31 +213,26 @@ interface CompletedMinuteNotesProps {
 
 const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotesProps) => {
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
+  const addMinuteNote = useMutation(api.app.addMinuteNote);
+  const removeMinuteNote = useMutation(api.app.removeMinuteNote);
 
   const addNoteToMinute = (pn: PendingNote) => {
-    let noteObj;
-    if (pn.type === "text") {
-      noteObj = Schema.TextNote.create({ type: "text", text: pn.text }, meeting._owner);
-    } else if (pn.type === "action_item") {
-      noteObj = Schema.ActionItemNote.create(
-        { type: "action_item", text: pn.text, assignee: (pn as { type: "action_item"; text: string; assignee?: BoardMember }).assignee },
-        meeting._owner
-      );
-    } else {
-      noteObj = Schema.MotionNote.create(
-        { type: "motion", text: pn.text, mover: pn.mover, seconder: pn.seconder, status: pn.status },
-        meeting._owner
-      );
-    }
-    if (!minute.notes) {
-      minute.notes = Schema.ListOfNotes.create([noteObj], meeting._owner);
-    } else {
-      minute.notes.push(noteObj);
-    }
-    setNoteFormType(null);
+    void addMinuteNote({
+      meetingId: meeting.id,
+      minuteId: minute.id,
+      note:
+        pn.type === "action_item"
+          ? {
+              type: pn.type,
+              text: pn.text,
+              assigneeId: pn.assignee?.id,
+              assigneeName: pn.assignee?.name,
+            }
+          : pn,
+    }).then(() => setNoteFormType(null));
   };
 
-  const existingNotes = minute.notes ? minute.notes.filter((n) => n !== null) as Note[] : [];
+  const existingNotes = minute.notes ? minute.notes.filter((n) => n !== null) : [];
 
   return (
     <div className="minutes-notes-section">
@@ -247,9 +243,11 @@ const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotes
             className="note-delete-btn"
             title="Remove note"
             onClick={() => {
-              if (!minute.notes) return;
-              const idx = minute.notes.findIndex((_, j) => j === i);
-              if (idx !== -1) minute.notes.splice(idx, 1);
+              void removeMinuteNote({
+                meetingId: meeting.id,
+                minuteId: minute.id,
+                index: i,
+              });
             }}
           >
             ×
@@ -285,9 +283,7 @@ const PostMeetingMinutes = () => {
   const me = useLoadedAccount();
   const isOfficer = me?.canWrite(meeting);
   const minutes = meeting.minutes ?? [];
-  const completedMinutes = minutes.filter((m) => m !== null) as NonNullable<
-    (typeof minutes)[number]
-  >[];
+  const completedMinutes = minutes.filter((m) => m !== null);
 
   // Build planned agenda topics that have no minute (not covered)
   const coveredTopicIds = new Set(
@@ -296,7 +292,7 @@ const PostMeetingMinutes = () => {
 
   const plannedNotCovered = (meeting.plannedAgenda ?? [])
     .filter((t) => t !== null)
-    .filter((t) => !coveredTopicIds.has(t!.id)) as Topic[];
+    .filter((t) => !coveredTopicIds.has(t.id));
 
   // unplanned = live topics with no plannedTopic that have a minute
   return (
@@ -323,7 +319,7 @@ const PostMeetingMinutes = () => {
                 topic?.plannedTopic?.durationMinutes ?? topic?.durationMinutes;
               const actual = minute.durationMinutes;
               const diff = planned !== undefined ? actual - planned : null;
-              const notes = minute.notes ? minute.notes.filter((n) => n !== null) as Note[] : [];
+              const notes = minute.notes ? minute.notes.filter((n) => n !== null) : [];
               return (
                 <li key={idx} className="minutes-item">
                   <div className="minutes-item-header">
@@ -465,6 +461,14 @@ export const MeetingMinutes = () => {
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
+  const advanceTopic = useMutation(api.app.advanceTopic);
+  const skipTopic = useMutation(api.app.skipTopic);
+  const addTopic = useMutation(api.app.addTopic);
+  const updateTopic = useMutation(api.app.updateTopic);
+  const reorderTopics = useMutation(api.app.reorderTopics);
+  const makeActive = useMutation(api.app.makeActive);
+  const addCurrentNote = useMutation(api.app.addCurrentNote);
+  const removeCurrentNote = useMutation(api.app.removeCurrentNote);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -480,13 +484,12 @@ export const MeetingMinutes = () => {
   useEffect(() => {
     setNotes("");
     setNoteFormType(null);
-    meeting.currentNotes = undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [currentTopicId]);
 
   const isOfficer = me?.canWrite(meeting);
 
-  const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null) as BoardMember[];
+  const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
 
   // Completed meeting view
   if (meeting.status === "completed") {
@@ -508,7 +511,7 @@ export const MeetingMinutes = () => {
 
   const sumCompletedMinutes = minutes
     .filter((m) => m !== null)
-    .reduce((sum, m) => sum + (m!.durationMinutes ?? 0), 0);
+    .reduce((sum, m) => sum + (m.durationMinutes ?? 0), 0);
 
   const currentTopicActiveSeconds = liveStartTime
     ? Math.floor(
@@ -520,15 +523,21 @@ export const MeetingMinutes = () => {
 
   const handleCompleteTopic = () => {
     const actualDuration = Math.round(currentTopicActiveSeconds / 60);
-    advanceTopic(meeting, actualDuration, notes || undefined);
-    setNotes("");
-    setNoteFormType(null);
+    void advanceTopic({
+      meetingId: meeting.id,
+      actualDurationMinutes: actualDuration,
+      outcome: notes || undefined,
+    }).then(() => {
+      setNotes("");
+      setNoteFormType(null);
+    });
   };
 
   const handleSkipTopic = () => {
-    skipTopic(meeting);
-    setNotes("");
-    setNoteFormType(null);
+    void skipTopic({ meetingId: meeting.id }).then(() => {
+      setNotes("");
+      setNoteFormType(null);
+    });
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -536,18 +545,25 @@ export const MeetingMinutes = () => {
     const srcIdx = result.source.index;
     const destIdx = result.destination.index;
     if (srcIdx === destIdx) return;
-    const topic = remainingTopics[srcIdx];
-    const liveSrcIdx = liveAgenda.findIndex((t) => t?.id === topic.id);
-    const liveDestIdx = liveAgenda.findIndex(
-      (t) => t?.id === remainingTopics[destIdx].id
-    );
-    liveAgenda.splice(liveSrcIdx, 1);
-    liveAgenda.splice(liveDestIdx, 0, topic);
+    const nextRemaining = [...remainingTopics];
+    const [topic] = nextRemaining.splice(srcIdx, 1);
+    nextRemaining.splice(destIdx, 0, topic);
+    const remainingIds = new Set(remainingTopics.map((t) => t.id));
+    const nextIds = [
+      ...liveAgenda.filter((topic) => !remainingIds.has(topic.id)).map((topic) => topic.id),
+      ...nextRemaining.map((topic) => topic.id),
+    ];
+    void reorderTopics({ meetingId: meeting.id, list: "liveAgenda", topicIds: nextIds });
   };
 
   const handleAddTopic = () => {
     if (!newTopicTitle.trim()) return;
-    addLiveTopic(meeting, newTopicTitle.trim(), newTopicDuration);
+    void addTopic({
+      meetingId: meeting.id,
+      list: "liveAgenda",
+      title: newTopicTitle.trim(),
+      durationMinutes: newTopicDuration,
+    });
     setNewTopicTitle("");
     setNewTopicDuration(5);
     setShowAddTopic(false);
@@ -557,13 +573,11 @@ export const MeetingMinutes = () => {
   const allRemaining = liveAgenda
     .filter((t) => t !== null)
     .slice(currentTopicIndex + 1)
-    .filter((t) => !t!.cancelled) as Topic[];
+    .filter((t) => !t.cancelled);
   const remainingTopics = allRemaining.filter((t) => !t.deferred);
   const deferredTopics = allRemaining.filter((t) => t.deferred);
 
-  const completedMinutes = minutes.filter((m) => m !== null) as NonNullable<
-    (typeof minutes)[number]
-  >[];
+  const completedMinutes = minutes.filter((m) => m !== null);
 
   const formatDurationOvertime = (seconds: number, plannedMinutes: number) => {
     const formatted = formatDuration(seconds);
@@ -594,7 +608,14 @@ export const MeetingMinutes = () => {
                     onChange={(e) => setEditingDuration(e.target.value)}
                     onBlur={() => {
                       const v = parseInt(editingDuration);
-                      if (!isNaN(v) && v > 0) currentTopic.durationMinutes = v;
+                      if (!isNaN(v) && v > 0) {
+                        void updateTopic({
+                          meetingId: meeting.id,
+                          list: "liveAgenda",
+                          topicId: currentTopic.id,
+                          durationMinutes: v,
+                        });
+                      }
                       setEditingTopicId(null);
                     }}
                     onKeyDown={(e) => {
@@ -649,13 +670,12 @@ export const MeetingMinutes = () => {
 
               {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
                 <div key={i} className="minutes-note-item">
-                  <NoteDisplay note={note as Note} />
+                  <NoteDisplay note={note} />
                   <button
                     className="note-delete-btn"
                     title="Remove note"
                     onClick={() => {
-                      if (!meeting.currentNotes) return;
-                      meeting.currentNotes.splice(i, 1);
+                      void removeCurrentNote({ meetingId: meeting.id, index: i });
                     }}
                   >
                     ×
@@ -674,10 +694,10 @@ export const MeetingMinutes = () => {
               {noteFormType === "text" && (
                 <TextNoteForm
                   onAdd={(pn) => {
-                    const note = Schema.TextNote.create({ type: "text", text: pn.text }, meeting._owner);
-                    if (!meeting.currentNotes) meeting.currentNotes = Schema.ListOfNotes.create([note], meeting._owner);
-                    else meeting.currentNotes.push(note);
-                    setNoteFormType(null);
+                    void addCurrentNote({
+                      meetingId: meeting.id,
+                      note: { type: "text", text: pn.text },
+                    }).then(() => setNoteFormType(null));
                   }}
                   onCancel={() => setNoteFormType(null)}
                 />
@@ -685,10 +705,15 @@ export const MeetingMinutes = () => {
               {noteFormType === "action_item" && (
                 <ActionItemForm
                   onAdd={(pn) => {
-                    const note = Schema.ActionItemNote.create({ type: "action_item", text: pn.text, assignee: (pn as { type: "action_item"; text: string; assignee?: BoardMember }).assignee }, meeting._owner);
-                    if (!meeting.currentNotes) meeting.currentNotes = Schema.ListOfNotes.create([note], meeting._owner);
-                    else meeting.currentNotes.push(note);
-                    setNoteFormType(null);
+                    void addCurrentNote({
+                      meetingId: meeting.id,
+                      note: {
+                        type: "action_item",
+                        text: pn.text,
+                        assigneeId: (pn as { assignee?: BoardMember }).assignee?.id,
+                        assigneeName: (pn as { assignee?: BoardMember }).assignee?.name,
+                      },
+                    }).then(() => setNoteFormType(null));
                   }}
                   onCancel={() => setNoteFormType(null)}
                   members={members}
@@ -698,10 +723,16 @@ export const MeetingMinutes = () => {
                 <MotionForm
                   onAdd={(pn) => {
                     const mn = pn as { type: "motion"; text: string; mover: string; seconder?: string; status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled" };
-                    const note = Schema.MotionNote.create({ type: "motion", text: mn.text, mover: mn.mover, seconder: mn.seconder, status: mn.status }, meeting._owner);
-                    if (!meeting.currentNotes) meeting.currentNotes = Schema.ListOfNotes.create([note], meeting._owner);
-                    else meeting.currentNotes.push(note);
-                    setNoteFormType(null);
+                    void addCurrentNote({
+                      meetingId: meeting.id,
+                      note: {
+                        type: "motion",
+                        text: mn.text,
+                        mover: mn.mover,
+                        seconder: mn.seconder,
+                        status: mn.status,
+                      },
+                    }).then(() => setNoteFormType(null));
                   }}
                   onCancel={() => setNoteFormType(null)}
                 />
@@ -748,7 +779,14 @@ export const MeetingMinutes = () => {
                                 onChange={(e) => setEditingDuration(e.target.value)}
                                 onBlur={() => {
                                   const v = parseInt(editingDuration);
-                                  if (!isNaN(v) && v > 0) topic.durationMinutes = v;
+                                  if (!isNaN(v) && v > 0) {
+                                    void updateTopic({
+                                      meetingId: meeting.id,
+                                      list: "liveAgenda",
+                                      topicId: topic.id,
+                                      durationMinutes: v,
+                                    });
+                                  }
                                   setEditingTopicId(null);
                                 }}
                                 onKeyDown={(e) => {
@@ -770,14 +808,26 @@ export const MeetingMinutes = () => {
                           </span>
                           <button
                             className="btn-small btn-primary"
-                            onClick={() => deferCurrentAndActivate(meeting, topic)}
+                            onClick={() =>
+                              void makeActive({
+                                meetingId: meeting.id,
+                                topicId: topic.id,
+                              })
+                            }
                             disabled={!currentTopic}
                           >
                             Make Active
                           </button>
                           <button
                             className="btn-small btn-danger"
-                            onClick={() => { topic.deferred = true; }}
+                            onClick={() =>
+                              void updateTopic({
+                                meetingId: meeting.id,
+                                list: "liveAgenda",
+                                topicId: topic.id,
+                                deferred: true,
+                              })
+                            }
                           >
                             Skip
                           </button>
@@ -804,14 +854,23 @@ export const MeetingMinutes = () => {
                   </span>
                   <button
                     className="btn-small btn-primary"
-                    onClick={() => deferCurrentAndActivate(meeting, topic)}
+                    onClick={() =>
+                      void makeActive({ meetingId: meeting.id, topicId: topic.id })
+                    }
                     disabled={!currentTopic}
                   >
                     Make Active
                   </button>
                   <button
                     className="btn-small btn-danger"
-                    onClick={() => { topic.deferred = true; }}
+                    onClick={() =>
+                      void updateTopic({
+                        meetingId: meeting.id,
+                        list: "liveAgenda",
+                        topicId: topic.id,
+                        deferred: true,
+                      })
+                    }
                   >
                     Skip
                   </button>

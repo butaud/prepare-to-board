@@ -3,7 +3,7 @@
 Prepare to Board is a web application for planning and running board meetings.
 It is built with **React**, **TypeScript** and **Vite** and uses
 [Clerk](https://clerk.com) for authentication and
-[jazz-tools](https://jazz.tools) for real‑time data sync.
+[Convex](https://convex.dev) for the real-time data backend.
 
 ## Features
 
@@ -32,8 +32,17 @@ It is built with **React**, **TypeScript** and **Vite** and uses
 
    ```env
    VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-   VITE_JAZZ_API_KEY=your_jazz_api_key
+   VITE_CONVEX_URL=https://your-deployment.convex.cloud
    ```
+
+3. Configure Convex/Clerk auth:
+
+   ```bash
+   npx convex dev
+   ```
+
+   In the Convex dashboard, set `CLERK_JWT_ISSUER_DOMAIN` to your Clerk
+   issuer domain, for example `https://your-clerk-domain.clerk.accounts.dev`.
 
 ### Development
 

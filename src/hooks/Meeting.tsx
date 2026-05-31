@@ -1,7 +1,14 @@
-import { useAccount, useCoState } from "jazz-tools/react-core";
-import { Meeting, Schema } from "../schema";
+import { useQuery } from "convex/react";
 import { Outlet, useParams } from "react-router-dom";
 import { createContext, useContext } from "react";
+import { api } from "../convexClient";
+import { Meeting } from "../schema";
+
+const toDateMeeting = (meeting: Meeting & { date: number; liveStartTime?: number }): Meeting => ({
+  ...meeting,
+  date: new Date(meeting.date),
+  liveStartTime: meeting.liveStartTime ? new Date(meeting.liveStartTime) : undefined,
+});
 
 export const useLoadMeetingFromParams = () => {
   const { meetingId } = useParams();
@@ -9,31 +16,16 @@ export const useLoadMeetingFromParams = () => {
 };
 
 export const useLoadMeeting = (meetingId: string | undefined) => {
-  const meeting: Meeting | undefined | null = useCoState(
-    Schema.Meeting,
-    meetingId,
-    {
-      resolve: {
-        plannedAgenda: {
-          $each: {
-            plannedTopic: true,
-          },
-        },
-        liveAgenda: {
-          $each: {
-            plannedTopic: true,
-          },
-        },
-        minutes: {
-          $each: {
-            topic: true,
-            notes: { $each: true },
-          },
-        },
-        currentNotes: { $each: true },
-      },
-    }
-  );
+  const serverMeeting = useQuery(
+    api.app.meeting,
+    meetingId ? { meetingId } : "skip"
+  ) as (Meeting & { date: number; liveStartTime?: number }) | null | undefined;
+
+  const meeting =
+    serverMeeting === undefined || serverMeeting === null
+      ? serverMeeting
+      : toDateMeeting(serverMeeting);
+
   return {
     meeting,
     outlet: meeting && (
@@ -44,42 +36,7 @@ export const useLoadMeeting = (meetingId: string | undefined) => {
   };
 };
 
-export const useLoadMeetingShadow = () => {
-  const meeting = useMeeting();
-  const { me: meWithShadows } = useAccount(Schema.UserAccount, {
-    resolve: {
-      root: {
-        meetingShadows: {
-          $each: {
-            meeting: true,
-            notes: true,
-            draftTopics: {
-              $each: {
-                anchor: true,
-                plannedTopic: true,
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-  if (!meWithShadows) {
-    return undefined;
-  }
-  let meetingShadow = meWithShadows.root.meetingShadows.find(
-    (shadow) => shadow.meeting.id === meeting.id
-  );
-  if (!meetingShadow) {
-    meetingShadow = Schema.MeetingShadow.create({
-      meeting: meeting,
-      notes: Schema.ListOfNotes.create([]),
-      draftTopics: Schema.ListOfDraftTopics.create([]),
-    });
-    meWithShadows.root.meetingShadows.push(meetingShadow);
-  }
-  return meetingShadow;
-};
+export const useLoadMeetingShadow = () => undefined;
 
 export const MeetingContext = createContext<Meeting | undefined>(undefined);
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Prepare to Board** is a real-time collaborative board meeting planning app built with React + TypeScript. It uses Jazz Tools for peer-to-peer data sync (no traditional backend API) and Clerk for authentication.
+**Prepare to Board** is a real-time board meeting planning app built with React + TypeScript. It uses Clerk for authentication and Convex for the data backend.
 
 ## Commands
 
@@ -14,11 +14,7 @@ yarn build      # Type check + production build
 yarn lint       # ESLint
 yarn test       # Run Vitest suite
 yarn preview    # Preview production build
-```
-
-Run a single test file:
-```bash
-yarn test src/test/meeting-view.test.tsx
+npx convex dev  # Generate Convex types and push backend functions
 ```
 
 ## Architecture
@@ -27,40 +23,33 @@ yarn test src/test/meeting-view.test.tsx
 
 ```
 ClerkProvider (auth)
-  └─ JazzProvider (real-time sync via wss://cloud.jazz.tools)
+  └─ ConvexProviderWithClerk (real-time backend)
      └─ BrowserRouter
         └─ App (routes)
 ```
 
-### Data Layer (Jazz Tools)
+### Data Layer (Convex)
 
-All collaborative data is defined in `src/schema.ts` using Jazz's CoMap/CoList primitives. Key entities:
+Convex schema and backend functions live under `convex/`.
 
-- **UserAccount** — root of user's data; holds organizations, selectedOrg, meetingShadows
-- **Organization** — collaborative space with meetings list and member roles
-- **Meeting** — has status lifecycle: `draft → published → live → completed`
-- **Topic** — agenda item (title, duration, outcome) in a shared CoList
-- **MeetingShadow** — user-local data (draft topics, notes) stored in UserAccount; enables async collaboration without polluting shared state
-- **DraftTopic** — user's local topic before publishing to shared agenda
+- `convex/schema.ts` defines users, organizations, memberships, board members, and meetings.
+- `convex/app.ts` contains the public queries and mutations used by the React app.
+- `src/schema.ts` contains the client-side TypeScript shapes used by components.
 
-Jazz uses `useCoState` and `useAccount` hooks for reactive, auto-syncing data binding. No manual fetch/cache logic needed.
+The app reads data with `useQuery` and writes through explicit Convex mutations. Meeting agenda data is currently embedded on the meeting document as arrays of topics, live topics, minutes, and notes.
 
 ### Context & Hooks
 
 Data flows through the tree via context:
 
-- `LoadedAccountContext` — user account with resolved org/meeting relationships; set up in `src/ui/Header.tsx` via `useLoadAccount()` hook
-- `MeetingContext` — current meeting; set up in `src/views/meeting/MeetingShared.tsx`
-- `useLoadedAccount()` — consume account context (throws if not loaded)
-- `useMeeting()` — consume meeting context (throws if not loaded)
+- `LoadedAccountContext` — current user plus selected organization, loaded by `useLoadAccount()`
+- `MeetingContext` — current meeting, loaded by `useLoadMeetingFromParams()`
+- `useLoadedAccount()` — consume account context
+- `useMeeting()` — consume meeting context
 
 ### Permissions
 
-Jazz Groups drive access control. Roles: `admin`, `writer` (officer), `reader` (member). Use `me.canWrite(entity)` and `me.canAdmin(org)` for checks — enforced at both UI and data layers.
-
-### Draft Topic System
-
-`src/util/data.ts` contains the publish/merge logic. Draft topics live in `MeetingShadow` (user-local) and are published to the shared `Meeting.topics` CoList. Drafts can specify an anchor topic for insertion position.
+Convex `memberships` drive access control. Roles are `admin`, `writer` (officer), and `reader` (member). Server mutations enforce admin/officer checks, while client helpers expose `me.canWrite(entity)` and `me.canAdmin(entity)` for UI decisions.
 
 ### Component Organization
 
@@ -68,15 +57,19 @@ Jazz Groups drive access control. Roles: `admin`, `writer` (officer), `reader` (
 - `src/views/meeting/` — meeting-specific pages (plan, present, minutes)
 - `src/ui/` — reusable components (dialogs, forms, header)
 - `src/hooks/` — data loading hooks
-- `src/contexts/` — React context definitions
 - `src/util/` — pure utility functions
 
 ## Environment Variables
 
-Required in `.env`:
+Required locally:
+
 - `VITE_CLERK_PUBLISHABLE_KEY`
-- `VITE_JAZZ_API_KEY`
+- `VITE_CONVEX_URL`
+
+Required in Convex dashboard:
+
+- `CLERK_JWT_ISSUER_DOMAIN`
 
 ## Deployment
 
-Deployed to Cloudflare via `wrangler.jsonc`. CI/CD via `.github/workflows/ci-cd.yml` — runs tests, then deploys to GitHub Pages on merge to master.
+Deployed to Cloudflare via `wrangler.jsonc`. CI/CD via `.github/workflows/ci-cd.yml` — runs tests, then deploys on merge to master.

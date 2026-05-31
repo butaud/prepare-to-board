@@ -10,9 +10,10 @@ import {
   MdStopCircle,
 } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
+import { useMutation } from "convex/react";
 import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
-import { startMeeting } from "../../util/data";
+import { api } from "../../convexClient";
 
 import "./MeetingShared.css";
 
@@ -20,6 +21,9 @@ export const MeetingShared = () => {
   const me = useLoadedAccount();
   const { meeting, outlet } = useLoadMeetingFromParams();
   const navigate = useNavigate();
+  const deleteMeeting = useMutation(api.app.deleteMeeting);
+  const startMeeting = useMutation(api.app.startMeeting);
+  const setMeetingStatus = useMutation(api.app.setMeetingStatus);
   if (meeting === undefined) {
     return <p>Loading...</p>;
   }
@@ -34,13 +38,7 @@ export const MeetingShared = () => {
     if (!confirm("Are you sure you want to delete this meeting?")) {
       return;
     }
-    me.root.selectedOrganization?.meetings.splice(
-      me.root.selectedOrganization?.meetings.findIndex(
-        (m) => m?.id === meeting.id
-      ),
-      1
-    );
-    void navigate("/meetings");
+    void deleteMeeting({ meetingId: meeting.id }).then(() => navigate("/meetings"));
   };
 
   const isOfficer = me?.canWrite(meeting);
@@ -51,7 +49,7 @@ export const MeetingShared = () => {
       actions.push({
         label: "Publish",
         onClick: () => {
-          meeting.status = "published";
+          void setMeetingStatus({ meetingId: meeting.id, status: "published" });
         },
         icon: <MdPublish />,
       });
@@ -59,7 +57,7 @@ export const MeetingShared = () => {
       actions.push({
         label: "Start Meeting",
         onClick: () => {
-          startMeeting(meeting);
+          void startMeeting({ meetingId: meeting.id });
         },
         icon: <MdPlayCircleOutline />,
       });
@@ -85,7 +83,7 @@ export const MeetingShared = () => {
       actions.push({
         label: "End Meeting",
         onClick: () => {
-          meeting.status = "completed";
+          void setMeetingStatus({ meetingId: meeting.id, status: "completed" });
         },
         icon: <MdStopCircle />,
       });

@@ -1,161 +1,128 @@
-import { co, Group, z } from "jazz-tools";
+export type Id = string;
 
-const JTextNote = co.map({
-  type: z.literal("text"),
-  text: z.string(),
-});
-export type TextNote = co.loaded<typeof JTextNote>;
+export type Role = "admin" | "writer" | "reader";
 
-const JBoardMember = co.map({
-  name: z.string(),
-  email: z.optional(z.string()),
-  title: z.optional(z.string()),
-  // accountId links this persona to a Jazz UserAccount ID once claimed
-  accountId: z.optional(z.string()),
-});
-export type BoardMember = co.loaded<typeof JBoardMember>;
-
-const JListOfBoardMembers = co.list(JBoardMember);
-export type ListOfBoardMembers = co.loaded<typeof JListOfBoardMembers>;
-
-const JActionItemNote = co.map({
-  type: z.literal("action_item"),
-  text: z.string(),
-  get assignee(): z.ZodOptional<typeof JBoardMember> {
-    return co.optional(JBoardMember);
-  },
-});
-export type ActionItemNote = co.loaded<typeof JActionItemNote>;
-
-const JMotionNote = co.map({
-  type: z.literal("motion"),
-  text: z.string(),
-  mover: z.string(),
-  seconder: z.optional(z.string()),
-  status: z.literal(["proposed", "under_discussion", "passed", "failed", "tabled"]),
-});
-export type MotionNote = co.loaded<typeof JMotionNote>;
-
-const JNote = co.discriminatedUnion("type", [JTextNote, JActionItemNote, JMotionNote]);
-export type Note = co.loaded<typeof JNote>;
-
-const JListOfNotes = co.list(JNote);
-export type ListOfNotes = co.loaded<typeof JListOfNotes>;
-
-const JTopic = co.map({
-  title: z.string(),
-  outcome: z.optional(z.string()),
-  durationMinutes: z.optional(z.number()),
-  get plannedTopic(): z.ZodOptional<typeof JTopic> {
-    return co.optional(JTopic);
-  },
-  cancelled: z.optional(z.boolean()),
-  deferred: z.optional(z.boolean()),
-});
-export type Topic = co.loaded<typeof JTopic>;
-
-const JListOfTopics = co.list(JTopic);
-export type ListOfTopics = co.loaded<typeof JListOfTopics>;
-
-const JDraftTopic = co.map({
-  ...JTopic.def.shape,
-  isDraft: z.literal(true),
-  anchor: co.optional(JTopic),
-  anchorIndex: z.optional(z.number()),
-});
-export type DraftTopic = co.loaded<typeof JDraftTopic>;
-export const topicIsDraft = (
-  topic: Topic | DraftTopic
-): topic is DraftTopic => {
-  return (topic as DraftTopic).isDraft !== undefined;
+export type TextNote = {
+  id: Id;
+  type: "text";
+  text: string;
 };
 
-const JListOfDraftTopics = co.list(JDraftTopic);
-export type ListOfDraftTopics = co.loaded<typeof JListOfDraftTopics>;
-
-const JMinute = co.map({
-  topic: JTopic,
-  durationMinutes: z.number(),
-  notes: co.optional(JListOfNotes),
-});
-export type Minute = co.loaded<typeof JMinute>;
-
-const JListOfMinutes = co.list(JMinute);
-export type ListOfMinutes = co.loaded<typeof JListOfMinutes>;
-
-const JMeeting = co
-  .map({
-    date: z.date(),
-    status: z.literal(["draft", "published", "live", "completed"]),
-    plannedAgenda: z.optional(JListOfTopics),
-    liveAgenda: z.optional(JListOfTopics),
-    minutes: z.optional(JListOfMinutes),
-    liveStartTime: z.optional(z.date()),
-    currentNotes: co.optional(JListOfNotes),
-  })
-  .withMigration((meeting) => {
-    if (meeting.status === undefined) {
-      meeting.status = "draft";
-    }
-  });
-export type Meeting = co.loaded<
-  typeof JMeeting,
-  {
-    plannedAgenda: { $each: { plannedTopic: true } };
-    liveAgenda: { $each: { plannedTopic: true } };
-    minutes: { $each: { topic: true; notes: { $each: true } } };
-    currentNotes: { $each: true };
-  }
->;
-export const getMeetingDisplayStatus = (meeting: Meeting) => {
-  if (meeting.status === "draft") return "Draft";
-  if (meeting.status === "published") return "Scheduled";
-  if (meeting.status === "live") return "Live";
-  if (meeting.status === "completed") return "Completed";
-  return "Unknown" as never;
+export type BoardMember = {
+  id: Id;
+  name: string;
+  email?: string;
+  title?: string;
+  accountId?: Id;
 };
 
-const JListOfMeetings = co.list(JMeeting);
-export type ListOfMeetings = co.loaded<typeof JListOfMeetings>;
+export type ActionItemNote = {
+  id: Id;
+  type: "action_item";
+  text: string;
+  assignee?: BoardMember;
+};
 
-const JMeetingShadow = co.map({
-  meeting: JMeeting,
-  notes: JListOfNotes,
-  draftTopics: JListOfDraftTopics,
-});
-export type MeetingShadow = co.loaded<
-  typeof JMeetingShadow,
-  {
-    draftTopics: true;
-  }
->;
+export type MotionNote = {
+  id: Id;
+  type: "motion";
+  text: string;
+  mover: string;
+  seconder?: string;
+  status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled";
+};
 
-const JListOfMeetingShadows = co.list(JMeetingShadow);
-export type ListOfMeetingShadows = co.loaded<typeof JListOfMeetingShadows>;
+export type Note = TextNote | ActionItemNote | MotionNote;
+export type PendingNote =
+  | Omit<TextNote, "id">
+  | Omit<ActionItemNote, "id">
+  | Omit<MotionNote, "id">;
 
-const JDraftMeeting = co.map({
-  date: z.optional(z.date()),
-});
-export type DraftMeeting = co.loaded<typeof JDraftMeeting>;
+export type Topic = {
+  id: Id;
+  title: string;
+  outcome?: string;
+  durationMinutes?: number;
+  plannedTopic?: Topic;
+  plannedTopicId?: Id;
+  cancelled?: boolean;
+  deferred?: boolean;
+};
+
+export type DraftTopic = Topic & {
+  isDraft: true;
+  anchor?: Topic;
+  anchorIndex?: number;
+};
+
+export const topicIsDraft = (topic: Topic | DraftTopic): topic is DraftTopic =>
+  "isDraft" in topic;
+
+export type Minute = {
+  id: Id;
+  topic: Topic;
+  durationMinutes: number;
+  notes?: Note[];
+};
+
+export type MeetingStatus = "draft" | "published" | "live" | "completed";
+
+export type Meeting = {
+  id: Id;
+  organizationId: Id;
+  date: Date;
+  status: MeetingStatus;
+  plannedAgenda: Topic[];
+  liveAgenda: Topic[];
+  minutes: Minute[];
+  liveStartTime?: Date;
+  currentNotes?: Note[];
+};
+
+export type Organization = {
+  id: Id;
+  name: string;
+  meetings: Meeting[];
+  members: BoardMember[];
+  memberships: Membership[];
+};
+
+export type Membership = {
+  userId: Id;
+  name: string;
+  role: Role;
+};
+
+export type UserProfile = {
+  name: string;
+  title: string;
+};
+
+export type UserAccount = {
+  id: Id;
+  profile: UserProfile;
+  root: {
+    organizations: Organization[];
+    selectedOrganization?: Organization;
+  };
+  canWrite: (entity?: { organizationId?: Id; id?: Id } | null) => boolean;
+  canAdmin: (entity?: { organizationId?: Id; id?: Id } | null) => boolean;
+};
+
+export type DraftMeeting = {
+  date?: Date;
+};
+
+export type DraftOrganization = {
+  name?: string;
+};
+
 export const validateDraftMeeting = (draft: DraftMeeting): string[] => {
   const errors: string[] = [];
-  if (draft.date === undefined) {
-    errors.push("Date is required");
-  }
+  if (draft.date === undefined) errors.push("Date is required");
   return errors;
 };
 
-const JOrganization = co.map({
-  name: z.string(),
-  meetings: JListOfMeetings,
-  members: co.optional(JListOfBoardMembers),
-});
-export type Organization = co.loaded<typeof JOrganization>;
-
-const JDraftOrganization = co.map({
-  name: z.optional(z.string()),
-});
-export type DraftOrganization = co.loaded<typeof JDraftOrganization>;
 export const validateDraftOrganization = (
   draft: DraftOrganization
 ): string[] => {
@@ -166,37 +133,22 @@ export const validateDraftOrganization = (
   return errors;
 };
 
-const JListOfOrganizations = co.list(JOrganization);
-export type ListOfOrganizations = co.loaded<typeof JListOfOrganizations>;
-
-const JUserAccountRoot = co.map({
-  organizations: JListOfOrganizations,
-  selectedOrganization: co.optional(JOrganization),
-  meetingShadows: JListOfMeetingShadows,
-});
-export type UserAccountRoot = co.loaded<typeof JUserAccountRoot>;
-
-const JUserProfile = co
-  .profile({
-    title: z.string(),
-  })
-  .withMigration((profile) => {
-    if (profile.title === undefined || profile.title === "") {
-      profile.title = "Mr.";
-    }
-  });
-export type UserProfile = co.loaded<typeof JUserProfile>;
+export const getMeetingDisplayStatus = (meeting: Meeting) => {
+  if (meeting.status === "draft") return "Draft";
+  if (meeting.status === "published") return "Scheduled";
+  if (meeting.status === "live") return "Live";
+  if (meeting.status === "completed") return "Completed";
+  return "Unknown" as never;
+};
 
 export const getUserProfileFirstName = (
   profile: UserProfile | undefined
-): string | undefined => {
-  return profile?.name.split(" ")[0];
-};
+): string | undefined => profile?.name.split(" ")[0];
+
 export const getUserProfileLastName = (
   profile: UserProfile | undefined
-): string | undefined => {
-  return profile?.name.split(" ")[1];
-};
+): string | undefined => profile?.name.split(" ")[1];
+
 export const getUserProfileInitials = (
   profile: UserProfile | undefined
 ): string | undefined => {
@@ -205,6 +157,7 @@ export const getUserProfileInitials = (
   if (first && last) return first + last;
   return undefined;
 };
+
 export const getUserProfileFormalName = (
   profile: UserProfile | undefined
 ): string | undefined => {
@@ -212,60 +165,4 @@ export const getUserProfileFormalName = (
   const lastName = getUserProfileLastName(profile);
   if (!lastName) return undefined;
   return `${profile.title} ${lastName}`;
-};
-
-const JUserAccount = co
-  .account({
-    root: JUserAccountRoot,
-    profile: JUserProfile,
-  })
-  .withMigration((account, creationProps?: { name: string }) => {
-    if (account.root === undefined) {
-      account.root = JUserAccountRoot.create({
-        selectedOrganization: undefined,
-        organizations: JListOfOrganizations.create([]),
-        meetingShadows: JListOfMeetingShadows.create([]),
-      });
-    }
-
-    if (account.profile === undefined) {
-      const profileGroup = Group.create();
-      profileGroup.makePublic();
-
-      account.profile = JUserProfile.create(
-        {
-          name: creationProps?.name || "John Doe",
-          title: "Mr.",
-        },
-        profileGroup
-      );
-    }
-  });
-export type UserAccount = co.loaded<typeof JUserAccount>;
-
-export const Schema = {
-  TextNote: JTextNote,
-  ActionItemNote: JActionItemNote,
-  MotionNote: JMotionNote,
-  Note: JNote,
-  ListOfNotes: JListOfNotes,
-  Topic: JTopic,
-  ListOfTopics: JListOfTopics,
-  DraftTopic: JDraftTopic,
-  ListOfDraftTopics: JListOfDraftTopics,
-  Minute: JMinute,
-  ListOfMinutes: JListOfMinutes,
-  Meeting: JMeeting,
-  ListOfMeetings: JListOfMeetings,
-  MeetingShadow: JMeetingShadow,
-  ListOfMeetingShadows: JListOfMeetingShadows,
-  DraftMeeting: JDraftMeeting,
-  Organization: JOrganization,
-  DraftOrganization: JDraftOrganization,
-  ListOfOrganizations: JListOfOrganizations,
-  UserAccountRoot: JUserAccountRoot,
-  UserProfile: JUserProfile,
-  UserAccount: JUserAccount,
-  BoardMember: JBoardMember,
-  ListOfBoardMembers: JListOfBoardMembers,
 };

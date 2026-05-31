@@ -6,21 +6,18 @@ import {
   Draggable,
   type DropResult,
 } from "@hello-pangea/dnd";
+import { useMutation } from "convex/react";
 import { TopicList } from "../topic/TopicList";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
-import {
-  addLiveTopic,
-  computeProjectedEndTime,
-  skipTopic,
-} from "../../util/data";
+import { computeProjectedEndTime } from "../../util/data";
 import { Topic } from "../../schema";
+import { api } from "../../convexClient";
 
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
 import "../meeting/MeetingMinutes.css";
 import { NoteDisplay } from "../../ui/NoteDisplay";
-import { Note } from "../../schema";
 
 const formatDuration = (totalSeconds: number): string => {
   const sign = totalSeconds < 0 ? "-" : "";
@@ -44,6 +41,10 @@ export const MeetingView = () => {
   const [newTopicDuration, setNewTopicDuration] = useState(5);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
+  const addTopic = useMutation(api.app.addTopic);
+  const updateTopic = useMutation(api.app.updateTopic);
+  const reorderTopics = useMutation(api.app.reorderTopics);
+  const skipTopic = useMutation(api.app.skipTopic);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -74,7 +75,7 @@ export const MeetingView = () => {
 
     const sumCompletedMinutes = minutes
       .filter((m) => m !== null)
-      .reduce((sum, m) => sum + (m!.durationMinutes ?? 0), 0);
+      .reduce((sum, m) => sum + (m.durationMinutes ?? 0), 0);
 
     const elapsedSeconds = liveStartTime
       ? Math.floor((now.getTime() - liveStartTime.getTime()) / 1000)
@@ -91,7 +92,7 @@ export const MeetingView = () => {
     const allRemaining = liveAgenda
       .filter((t) => t !== null)
       .slice(currentTopicIndex + 1)
-      .filter((t) => !t!.cancelled) as Topic[];
+      .filter((t) => !t.cancelled);
     const remainingTopics = allRemaining.filter((t) => !t.deferred);
     const deferredTopics = allRemaining.filter((t) => t.deferred);
 
@@ -128,27 +129,32 @@ export const MeetingView = () => {
         return { topic, projectedStart };
       });
 
-    const completedMinutes = minutes.filter((m) => m !== null) as NonNullable<
-      (typeof minutes)[number]
-    >[];
+    const completedMinutes = minutes.filter((m) => m !== null);
 
     const onDragEnd = (result: DropResult) => {
       if (!result.destination) return;
       const srcIdx = result.source.index;
       const destIdx = result.destination.index;
       if (srcIdx === destIdx) return;
-      const topic = remainingTopics[srcIdx];
-      const liveSrcIdx = liveAgenda.findIndex((t) => t?.id === topic.id);
-      const liveDestIdx = liveAgenda.findIndex(
-        (t) => t?.id === remainingTopics[destIdx].id
-      );
-      liveAgenda.splice(liveSrcIdx, 1);
-      liveAgenda.splice(liveDestIdx, 0, topic);
+      const nextRemaining = [...remainingTopics];
+      const [topic] = nextRemaining.splice(srcIdx, 1);
+      nextRemaining.splice(destIdx, 0, topic);
+      const remainingIds = new Set(remainingTopics.map((t) => t.id));
+      const nextIds = [
+        ...liveAgenda.filter((topic) => !remainingIds.has(topic.id)).map((topic) => topic.id),
+        ...nextRemaining.map((topic) => topic.id),
+      ];
+      void reorderTopics({ meetingId: meeting.id, list: "liveAgenda", topicIds: nextIds });
     };
 
     const handleAddTopic = () => {
       if (!newTopicTitle.trim()) return;
-      addLiveTopic(meeting, newTopicTitle.trim(), newTopicDuration);
+      void addTopic({
+        meetingId: meeting.id,
+        list: "liveAgenda",
+        title: newTopicTitle.trim(),
+        durationMinutes: newTopicDuration,
+      });
       setNewTopicTitle("");
       setNewTopicDuration(5);
       setShowAddTopic(false);
@@ -187,7 +193,7 @@ export const MeetingView = () => {
             {(meeting.currentNotes ?? []).filter((n) => n !== null).length > 0 && (
               <div className="present-current-notes">
                 {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
-                  <NoteDisplay key={i} note={note as Note} />
+                  <NoteDisplay key={i} note={note} />
                 ))}
               </div>
             )}
@@ -204,7 +210,14 @@ export const MeetingView = () => {
                     onChange={(e) => setEditingDuration(e.target.value)}
                     onBlur={() => {
                       const v = parseInt(editingDuration);
-                      if (!isNaN(v) && v > 0) currentTopic.durationMinutes = v;
+                      if (!isNaN(v) && v > 0) {
+                        void updateTopic({
+                          meetingId: meeting.id,
+                          list: "liveAgenda",
+                          topicId: currentTopic.id,
+                          durationMinutes: v,
+                        });
+                      }
                       setEditingTopicId(null);
                     }}
                     onKeyDown={(e) => {
@@ -240,7 +253,7 @@ export const MeetingView = () => {
               {isOfficer && (
                 <button
                   className="btn-small btn-secondary"
-                  onClick={() => skipTopic(meeting)}
+                  onClick={() => void skipTopic({ meetingId: meeting.id })}
                 >
                   Defer
                 </button>
@@ -294,7 +307,14 @@ export const MeetingView = () => {
                                     onChange={(e) => setEditingDuration(e.target.value)}
                                     onBlur={() => {
                                       const v = parseInt(editingDuration);
-                                      if (!isNaN(v) && v > 0) topic.durationMinutes = v;
+                                      if (!isNaN(v) && v > 0) {
+                                        void updateTopic({
+                                          meetingId: meeting.id,
+                                          list: "liveAgenda",
+                                          topicId: topic.id,
+                                          durationMinutes: v,
+                                        });
+                                      }
                                       setEditingTopicId(null);
                                     }}
                                     onKeyDown={(e) => {
@@ -319,7 +339,14 @@ export const MeetingView = () => {
                               <div className="present-topic-actions">
                                 <button
                                   className="btn-small btn-secondary"
-                                  onClick={() => { topic.deferred = true; }}
+                                  onClick={() =>
+                                    void updateTopic({
+                                      meetingId: meeting.id,
+                                      list: "liveAgenda",
+                                      topicId: topic.id,
+                                      deferred: true,
+                                    })
+                                  }
                                 >
                                   Defer
                                 </button>
@@ -365,7 +392,14 @@ export const MeetingView = () => {
                       <div className="present-topic-actions">
                         <button
                           className="btn-small btn-secondary"
-                          onClick={() => { topic.deferred = false; }}
+                          onClick={() =>
+                            void updateTopic({
+                              meetingId: meeting.id,
+                              list: "liveAgenda",
+                              topicId: topic.id,
+                              deferred: false,
+                            })
+                          }
                         >
                           Restore
                         </button>
@@ -436,7 +470,7 @@ export const MeetingView = () => {
                 const actual = minute.durationMinutes;
                 const diff = planned !== undefined ? actual - planned : null;
                 const notes = minute.notes
-                  ? (minute.notes.filter((n) => n !== null) as Note[])
+                  ? (minute.notes.filter((n) => n !== null))
                   : [];
                 return (
                   <li

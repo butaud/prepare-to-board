@@ -2,7 +2,6 @@ import { FC, useState } from "react";
 import { Topic, topicIsDraft } from "../../schema";
 
 import "./TopicNode.css";
-import { useLoadedAccount } from "../../hooks/Account";
 import { MdDelete, MdDragHandle } from "react-icons/md";
 import { EditableInteger, EditableString } from "./EditableValue";
 import { Draggable } from "@hello-pangea/dnd";
@@ -15,6 +14,8 @@ export type TopicNodeProps = {
   onPublish?: () => void;
   onCancel?: () => void;
   onDelete?: () => void;
+  onUpdate?: (patch: { title?: string; durationMinutes?: number }) => void;
+  canEdit?: boolean;
 };
 
 export const TopicNode: FC<TopicNodeProps> = ({
@@ -25,10 +26,11 @@ export const TopicNode: FC<TopicNodeProps> = ({
   onCancel,
   onDelete,
   onPublish,
+  onUpdate,
+  canEdit: canEditProp,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const me = useLoadedAccount();
-  const canEdit = me.canWrite(topic) && !locked;
+  const canEdit = (canEditProp ?? !!onUpdate) && !locked;
   const isDraft = topicIsDraft(topic);
   return (
     <Draggable draggableId={topic.id} index={index} isDragDisabled={!canEdit}>
@@ -65,8 +67,8 @@ export const TopicNode: FC<TopicNodeProps> = ({
               as="h4"
               value={topic.title}
               onValueChange={(newValue) => {
-                topic.title = newValue;
-                if (topic.title === "" && isDraft && onCancel) {
+                onUpdate?.({ title: newValue });
+                if (newValue === "" && isDraft && onCancel) {
                   onCancel();
                 }
               }}
@@ -83,7 +85,7 @@ export const TopicNode: FC<TopicNodeProps> = ({
                 value={topic.durationMinutes || 0}
                 editingByDefault={isDraft}
                 onValueChange={(newDuration) => {
-                  topic.durationMinutes = newDuration;
+                  onUpdate?.({ durationMinutes: newDuration });
                   if (isDraft && onPublish) {
                     onPublish();
                   }

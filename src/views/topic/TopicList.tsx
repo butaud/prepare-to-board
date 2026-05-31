@@ -1,21 +1,9 @@
-import {
-  DraftTopic,
-  ListOfTopics,
-  Meeting,
-  Topic,
-  topicIsDraft,
-} from "../../schema";
 import { FC } from "react";
 import { TopicNode } from "../../ui/doc/TopicNode";
-import { Resolved } from "jazz-tools";
-import {
-  createDraftTopic,
-  deleteDraftTopic,
-  getTopicListWithDrafts,
-  publishDraftTopic,
-} from "../../util/data";
+import { useMutation } from "convex/react";
+import { Meeting, Topic } from "../../schema";
 import { useLoadedAccount } from "../../hooks/Account";
-import { useLoadMeetingShadow } from "../../hooks/Meeting";
+import { api } from "../../convexClient";
 
 import "./TopicList.css";
 import {
@@ -25,63 +13,38 @@ import {
 } from "@hello-pangea/dnd";
 
 export type TopicListProps = {
-  topicList: Resolved<
-    ListOfTopics,
-    {
-      $each: true;
-    }
-  >;
+  topicList: Topic[];
   meeting: Meeting;
   useDrafts?: boolean;
-  /** Number of topics at the start of the list that are locked (already have minutes) */
   lockedCount?: number;
 };
 
 export const TopicList: FC<TopicListProps> = ({
   topicList,
   meeting,
-  useDrafts,
   lockedCount = 0,
 }) => {
   const me = useLoadedAccount();
-  const meetingShadow = useLoadMeetingShadow();
+  const addTopic = useMutation(api.app.addTopic);
+  const deleteTopic = useMutation(api.app.deleteTopic);
+  const updateTopic = useMutation(api.app.updateTopic);
+  const reorderTopics = useMutation(api.app.reorderTopics);
 
-  if (!me || meetingShadow === undefined) {
-    return <p>Loading...</p>;
-  }
-  const isOfficer = me?.canWrite(topicList);
-
-  const handleDeleteClick = (topic: Topic) => {
-    const index = topicList.findIndex((t) => t?.id === topic.id);
-    if (index !== -1) {
-      topicList.splice(index, 1);
-    }
-  };
-
-  const handlePublishClick = (topic: DraftTopic) => {
-    publishDraftTopic(meeting, topic, meetingShadow);
-  };
-
-  const handleCancelDraftTopic = (topic: DraftTopic) => {
-    deleteDraftTopic(topic, meetingShadow);
-  };
-
-  const topicListWithDrafts = useDrafts
-    ? getTopicListWithDrafts(topicList, meetingShadow)
-    : topicList;
+  const isOfficer = me.canWrite(meeting);
 
   const onDragEnd: OnDragEndResponder<string> = (result) => {
-    if (!result.destination) {
-      return;
-    }
+    if (!result.destination) return;
     const sourceIndex = result.source.index;
     const destinationIndex = result.destination.index;
-    if (sourceIndex === destinationIndex) {
-      return;
-    }
-    const movedTopic = topicListWithDrafts[sourceIndex];
-    topicListWithDrafts.splice(sourceIndex, 1);
-    topicListWithDrafts.splice(destinationIndex, 0, movedTopic);
+    if (sourceIndex === destinationIndex) return;
+    const nextTopics = [...topicList];
+    const [movedTopic] = nextTopics.splice(sourceIndex, 1);
+    nextTopics.splice(destinationIndex, 0, movedTopic);
+    void reorderTopics({
+      meetingId: meeting.id,
+      list: "plannedAgenda",
+      topicIds: nextTopics.map((topic) => topic.id),
+    });
   };
 
   const lastTopicIndex = topicList.length - 1;
@@ -90,7 +53,7 @@ export const TopicList: FC<TopicListProps> = ({
   const meetingStartTimes: Record<string, Date> = (() => {
     const startTimes: Record<string, Date> = {};
     let currentTime = new Date(meeting.date);
-    topicListWithDrafts.forEach((topic) => {
+    topicList.forEach((topic) => {
       startTimes[topic.id] = new Date(currentTime);
       if (topic.durationMinutes) {
         currentTime = new Date(
@@ -115,52 +78,53 @@ export const TopicList: FC<TopicListProps> = ({
               ref={provided.innerRef}
               {...provided.droppableProps}
             >
-              {topicListWithDrafts.map((topic, index) => {
+              {topicList.map((topic, index) => {
                 const currentTopicStartTime = meetingStartTimes[topic.id];
                 const isLocked = index < lockedCount;
-                const node = (
+                return (
                   <TopicNode
                     key={topic.id}
                     topic={topic}
                     index={index}
                     startTime={new Date(currentTopicStartTime)}
                     locked={isLocked}
+                    canEdit={isOfficer}
+                    onUpdate={
+                      isOfficer
+                        ? (patch) =>
+                            void updateTopic({
+                              meetingId: meeting.id,
+                              list: "plannedAgenda",
+                              topicId: topic.id,
+                              ...patch,
+                            })
+                        : undefined
+                    }
                     onDelete={
                       isOfficer && !isLocked
-                        ? () => handleDeleteClick(topic)
-                        : undefined
-                    }
-                    onPublish={
-                      topicIsDraft(topic)
-                        ? () => handlePublishClick(topic)
-                        : undefined
-                    }
-                    onCancel={
-                      topicIsDraft(topic)
-                        ? () => handleCancelDraftTopic(topic)
+                        ? () =>
+                            void deleteTopic({
+                              meetingId: meeting.id,
+                              list: "plannedAgenda",
+                              topicId: topic.id,
+                            })
                         : undefined
                     }
                   />
                 );
-                return node;
               })}
               {provided.placeholder}
               {isOfficer && (
                 <div className="add-topic">
                   <button
-                    onClick={() => {
-                      createDraftTopic(
-                        meetingShadow,
-                        lastTopic
-                          ? {
-                              topic: lastTopic,
-                              index: topicList.findIndex(
-                                (t) => t.id === lastTopic.id
-                              ),
-                            }
-                          : undefined
-                      );
-                    }}
+                    onClick={() =>
+                      void addTopic({
+                        meetingId: meeting.id,
+                        list: "plannedAgenda",
+                        title: "New Topic",
+                        durationMinutes: lastTopic?.durationMinutes ?? 5,
+                      })
+                    }
                   >
                     Add Topic
                   </button>

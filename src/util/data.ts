@@ -1,109 +1,51 @@
-import { co } from "jazz-tools";
-import { BoardMember, DraftTopic, Meeting, MeetingShadow, Schema, Topic } from "../schema";
+import { DraftTopic, Meeting, PendingNote, Topic } from "../schema";
 
-type PendingNote =
-  | { type: "text"; text: string }
-  | { type: "action_item"; text: string; assignee?: BoardMember }
-  | { type: "motion"; text: string; mover: string; seconder?: string; status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled" };
 export type { PendingNote };
 
-export const startMeeting = (meeting: Meeting) => {
-  const liveTopics = (meeting.plannedAgenda ?? [])
-    .filter((t) => t !== null)
-    .map((plannedTopic) =>
-      Schema.Topic.create(
-        {
-          title: plannedTopic!.title,
-          durationMinutes: plannedTopic!.durationMinutes,
-          outcome: plannedTopic!.outcome,
-          cancelled: plannedTopic!.cancelled,
-          plannedTopic: plannedTopic!,
-        },
-        meeting._owner
-      )
-    );
-  meeting.liveAgenda = Schema.ListOfTopics.create(liveTopics, meeting._owner);
-  meeting.minutes = Schema.ListOfMinutes.create([], meeting._owner);
-  meeting.liveStartTime = new Date();
-  meeting.status = "live";
+const nextLocalId = () =>
+  Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+export type MeetingShadow = {
+  draftTopics: DraftTopic[];
+};
+
+export const startMeeting = () => {
+  throw new Error("startMeeting is now a Convex mutation");
 };
 
 export const getCurrentLiveTopic = (meeting: Meeting): Topic | null => {
-  if (!meeting.liveAgenda || !meeting.minutes) return null;
   const currentIndex = meeting.minutes.length;
   return meeting.liveAgenda[currentIndex] ?? null;
 };
 
-export const advanceTopic = (
-  meeting: Meeting,
-  actualDurationMinutes: number,
-  notes?: string,
-) => {
-  if (!meeting.liveAgenda || !meeting.minutes) return;
-  const currentIndex = meeting.minutes.length;
-  const currentLiveTopic = meeting.liveAgenda[currentIndex];
-  if (!currentLiveTopic) return;
-  if (notes !== undefined) {
-    currentLiveTopic.outcome = notes;
-  }
-  const minute = Schema.Minute.create(
-    {
-      topic: currentLiveTopic,
-      durationMinutes: actualDurationMinutes,
-    },
-    meeting._owner
-  );
-  const currentNotes = meeting.currentNotes
-    ? (meeting.currentNotes.filter((n) => n !== null) as NonNullable<typeof meeting.currentNotes>[number][])
-    : [];
-  if (currentNotes.length > 0) {
-    minute.notes = Schema.ListOfNotes.create(currentNotes, meeting._owner);
-  }
-  meeting.currentNotes = undefined;
-  meeting.minutes.push(minute);
+export const advanceTopic = () => {
+  throw new Error("advanceTopic is now a Convex mutation");
 };
 
-export const skipTopic = (meeting: Meeting) => {
-  if (!meeting.liveAgenda || !meeting.minutes) return;
-  const currentIndex = meeting.minutes.length;
-  const currentTopic = meeting.liveAgenda[currentIndex];
-  if (!currentTopic) return;
-  // Defer rather than cancel: move to end so the next remaining topic becomes
-  // active, and show it in the Deferred list for possible retrieval.
-  currentTopic.deferred = true;
-  meeting.liveAgenda.splice(currentIndex, 1);
-  meeting.liveAgenda.push(currentTopic);
-  meeting.currentNotes = undefined;
+export const skipTopic = () => {
+  throw new Error("skipTopic is now a Convex mutation");
 };
 
-export const addLiveTopic = (
-  meeting: Meeting,
-  title: string,
-  durationMinutes: number
-) => {
-  if (!meeting.liveAgenda) return;
-  const topic = Schema.Topic.create(
-    {
-      title,
-      durationMinutes,
-    },
-    meeting._owner
-  );
-  meeting.liveAgenda.push(topic);
+export const addLiveTopic = () => {
+  throw new Error("addLiveTopic is now a Convex mutation");
+};
+
+export const deferCurrentAndActivate = () => {
+  throw new Error("deferCurrentAndActivate is now a Convex mutation");
 };
 
 export const computeProjectedEndTime = (meeting: Meeting): Date | null => {
   if (!meeting.liveStartTime) return null;
-  const minutesDone = (meeting.minutes ?? [])
-    .filter((m) => m !== null)
-    .reduce((sum, m) => sum + (m!.durationMinutes ?? 0), 0);
-  const currentIndex = (meeting.minutes ?? []).filter((m) => m !== null).length;
-  const remainingTopics = (meeting.liveAgenda ?? [])
-    .filter((t) => t !== null)
+  const minutesDone = meeting.minutes.reduce(
+    (sum, minute) => sum + (minute.durationMinutes ?? 0),
+    0
+  );
+  const currentIndex = meeting.minutes.length;
+  const remainingTopics = meeting.liveAgenda
     .slice(currentIndex)
-    .filter((t) => !t!.cancelled && !t!.deferred);
+    .filter((topic) => !topic.cancelled && !topic.deferred);
   const minutesRemaining = remainingTopics.reduce(
-    (sum, t) => sum + (t!.durationMinutes ?? 0),
+    (sum, topic) => sum + (topic.durationMinutes ?? 0),
     0
   );
   return new Date(
@@ -112,47 +54,11 @@ export const computeProjectedEndTime = (meeting: Meeting): Date | null => {
   );
 };
 
-// Make a remaining topic immediately active, deferring the current active topic.
-// The deferred topic goes back into the remaining pool (shown separately) and
-// can be made active again later.
-export const deferCurrentAndActivate = (
-  meeting: Meeting,
-  targetTopic: Topic
-) => {
-  const liveAgenda = meeting.liveAgenda;
-  if (!liveAgenda) return;
-  const currentIndex = (meeting.minutes ?? []).filter((m) => m !== null).length;
-  const currentTopic = liveAgenda[currentIndex];
-  if (!currentTopic) return;
-
-  const targetIndex = liveAgenda.findIndex((t) => t?.id === targetTopic.id);
-  if (targetIndex === -1) return;
-
-  // Mark the currently active topic as deferred
-  currentTopic.deferred = true;
-  // Clear deferred on the incoming topic (in case it was deferred before)
-  targetTopic.deferred = false;
-
-  // Rearrange so that: target moves to currentIndex, deferred topic moves to
-  // the end (so it doesn't become active automatically when the next topic
-  // completes — it only comes back when explicitly made active again).
-  //
-  // Step 1: remove currentTopic from currentIndex.
-  //   targetIndex > currentIndex, so it shifts down by 1.
-  liveAgenda.splice(currentIndex, 1);
-  // Step 2: remove target from its shifted position.
-  liveAgenda.splice(targetIndex - 1, 1);
-  // Step 3: insert target at currentIndex.
-  liveAgenda.splice(currentIndex, 0, targetTopic);
-  // Step 4: append the deferred topic at the end.
-  liveAgenda.push(currentTopic);
-};
-
 export const computePlannedEndTime = (meeting: Meeting): Date | null => {
-  if (!meeting.date) return null;
-  const totalMinutes = (meeting.plannedAgenda ?? [])
-    .filter((t) => t !== null)
-    .reduce((sum, t) => sum + (t!.durationMinutes ?? 0), 0);
+  const totalMinutes = meeting.plannedAgenda.reduce(
+    (sum, topic) => sum + (topic.durationMinutes ?? 0),
+    0
+  );
   return new Date(meeting.date.getTime() + totalMinutes * 60 * 1000);
 };
 
@@ -160,12 +66,13 @@ export const createDraftTopic = (
   meetingShadow: MeetingShadow,
   anchor?: { topic: Topic; index: number }
 ) => {
-  const draftTopic = Schema.DraftTopic.create({
+  const draftTopic: DraftTopic = {
+    id: nextLocalId(),
     isDraft: true,
     title: "",
     anchor: anchor?.topic,
     anchorIndex: anchor?.index,
-  });
+  };
   meetingShadow.draftTopics.push(draftTopic);
   return draftTopic;
 };
@@ -175,7 +82,7 @@ export const deleteDraftTopic = (
   meetingShadow: MeetingShadow
 ) => {
   const draftTopicIndex = meetingShadow.draftTopics.findIndex(
-    (topic) => topic?.id === draftTopic.id
+    (topic) => topic.id === draftTopic.id
   );
   if (draftTopicIndex !== -1) {
     meetingShadow.draftTopics.splice(draftTopicIndex, 1);
@@ -187,51 +94,31 @@ export const publishDraftTopic = (
   draftTopic: DraftTopic,
   meetingShadow: MeetingShadow
 ) => {
-  deleteDraftTopic(draftTopic, meetingShadow);
-  const topic = Schema.Topic.create(
-    {
-      title: draftTopic.title,
-      plannedTopic: draftTopic.plannedTopic ?? undefined,
-      durationMinutes: draftTopic.durationMinutes,
-      outcome: draftTopic.outcome,
-      cancelled: draftTopic.cancelled,
-    },
-    meeting._owner
-  );
-
-  const currentAnchorIndex =
-    meeting.plannedAgenda?.findIndex(
-      (topic) => topic?.id === draftTopic.anchor?.id
-    ) ?? -1;
-  const insertIndex =
-    currentAnchorIndex !== -1
-      ? currentAnchorIndex + 1
-      : Math.max(
-          draftTopic.anchorIndex ?? 0,
-          meeting.plannedAgenda?.length ?? 0
-        );
-  meeting.plannedAgenda?.splice(insertIndex, 0, topic);
+  void meeting;
+  void draftTopic;
+  void meetingShadow;
+  throw new Error("publishDraftTopic is now handled by a Convex mutation");
 };
 
 export const getTopicListWithDrafts = (
-  topicList: co.loaded<typeof Schema.ListOfTopics, { $each: true }>,
+  topicList: Topic[],
   meetingShadow: MeetingShadow
 ) => {
   if (!meetingShadow.draftTopics || meetingShadow.draftTopics.length === 0) {
     return topicList;
   }
-  const draftTopics = meetingShadow.draftTopics as DraftTopic[];
-  const topicsWithDrafts: Topic[] = [];
+  const draftTopics: DraftTopic[] = meetingShadow.draftTopics;
+  const topicsWithDrafts: Array<Topic | DraftTopic> = [];
   topicList.forEach((topic) => {
     topicsWithDrafts.push(topic);
     const anchoredDraftTopics = draftTopics.filter(
-      (draftTopic) => draftTopic.anchor?.id === topic.id
+      (draftTopic: DraftTopic) => draftTopic.anchor?.id === topic.id
     );
     if (anchoredDraftTopics.length > 0) {
       topicsWithDrafts.push(...anchoredDraftTopics);
     }
   });
-  draftTopics.forEach((draftTopic) => {
+  draftTopics.forEach((draftTopic: DraftTopic) => {
     if (!topicsWithDrafts.find((topic) => topic.id === draftTopic.id)) {
       if (draftTopic.anchorIndex) {
         topicsWithDrafts.splice(draftTopic.anchorIndex + 1, 0, draftTopic);

@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { Home } from "./views/Home";
-import { useIsAuthenticated } from "jazz-tools/react";
+import { useConvexAuth } from "convex/react";
 import { Welcome } from "./views/Welcome";
 import { Layout } from "./views/Layout";
 import { ActionItems } from "./views/ActionItems";
@@ -16,7 +16,7 @@ import { useLoadAccount } from "./hooks/Account";
 import { MeetingMinutes } from "./views/meeting/MeetingMinutes";
 
 function App() {
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useConvexAuth();
   const { me } = useLoadAccount();
 
   const isAdmin =

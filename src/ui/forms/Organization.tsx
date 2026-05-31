@@ -1,19 +1,18 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
+import { useMutation } from "convex/react";
 import {
-  Schema,
   DraftOrganization,
   Organization,
   validateDraftOrganization,
 } from "../../schema";
-import { useCoState } from "jazz-tools/react";
-import { Group, ID } from "jazz-tools";
+import { api } from "../../convexClient";
 
 import "./Organization.css";
 import { useLoadedAccount } from "../../hooks/Account";
 
 type OrganizationFormProps = {
   organization: Organization | DraftOrganization;
-  onSave?: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSave?: (name: string) => void;
   onCancel?: () => void;
 };
 const OrganizationForm: FC<OrganizationFormProps> = ({
@@ -21,15 +20,22 @@ const OrganizationForm: FC<OrganizationFormProps> = ({
   onSave,
   onCancel,
 }) => {
+  const [name, setName] = useState(organization.name ?? "");
   return (
-    <form className="organization" onSubmit={onSave}>
+    <form
+      className="organization"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave?.(name);
+      }}
+    >
       <div>
         <label htmlFor="name">Name</label>
         <input
           type="text"
           id="name"
-          value={organization.name}
-          onChange={(e) => (organization.name = e.target.value)}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           required
         />
       </div>
@@ -49,47 +55,27 @@ export type CreateOrganizationProps = {
 export const CreateOrganization: FC<CreateOrganizationProps> = ({
   onDoneCreating,
 }) => {
-  const me = useLoadedAccount();
-  const [draft, setDraft] = useState<DraftOrganization>();
+  useLoadedAccount();
+  const createOrganization = useMutation(api.app.createOrganization);
+  const [draft, setDraft] = useState<DraftOrganization>({});
   const [errors, setErrors] = useState<string[]>([]);
 
-  useEffect(() => {
-    setDraft(Schema.DraftOrganization.create({}));
-  }, [me?.id]);
-
-  if (!me) {
-    return null;
-  }
-
-  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!draft) return;
-    const validationErrors = validateDraftOrganization(draft);
+  const handleSave = (name: string) => {
+    const nextDraft = { name };
+    const validationErrors = validateDraftOrganization(nextDraft);
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
     }
     setErrors([]);
-
-    const organizationGroup = Group.create();
-    const newOrganization = Schema.Organization.create(
-      {
-        name: draft.name!,
-        meetings: Schema.ListOfMeetings.create([], organizationGroup),
-      },
-      organizationGroup
-    );
-
-    if (me) {
-      me.root.organizations.push(newOrganization);
-      me.root.selectedOrganization = newOrganization;
-    }
-    setDraft(undefined);
-    onDoneCreating?.();
+    void createOrganization({ name }).then(() => {
+      setDraft({});
+      onDoneCreating?.();
+    });
   };
 
   const handleCancel = () => {
-    setDraft(undefined);
+    setDraft({});
     setErrors([]);
     onDoneCreating?.();
   };
@@ -105,23 +91,26 @@ export const CreateOrganization: FC<CreateOrganizationProps> = ({
           </ul>
         </div>
       )}
-      {draft && (
-        <OrganizationForm
-          organization={draft}
-          onSave={handleSave}
-          onCancel={onDoneCreating ? handleCancel : undefined}
-        />
-      )}
+      <OrganizationForm
+        organization={draft}
+        onSave={handleSave}
+        onCancel={onDoneCreating ? handleCancel : undefined}
+      />
     </div>
   );
 };
 
-export const EditOrganization: FC<{ id: ID<Organization> }> = ({ id }) => {
-  const organization = useCoState(Schema.Organization, id);
+export const EditOrganization: FC<{ organization: Organization }> = ({
+  organization,
+}) => {
+  const updateOrganization = useMutation(api.app.updateOrganization);
 
-  if (!organization) {
-    return null;
-  }
-
-  return <OrganizationForm organization={organization} />;
+  return (
+    <OrganizationForm
+      organization={organization}
+      onSave={(name) =>
+        void updateOrganization({ organizationId: organization.id, name })
+      }
+    />
+  );
 };

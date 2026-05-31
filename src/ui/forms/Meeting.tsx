@@ -1,12 +1,14 @@
 import { FC, useState } from "react";
-import { Schema, Meeting } from "../../schema";
+import { useMutation } from "convex/react";
 import DatePicker from "react-datepicker";
+import { Meeting } from "../../schema";
+import { api } from "../../convexClient";
 
 import "react-datepicker/dist/react-datepicker.css";
 import { useLoadedAccount } from "../../hooks/Account";
 
 export type CreateMeetingProps = {
-  onCreated?: (meeting: Meeting) => void;
+  onCreated?: (meetingId: string) => void;
   defaultDate?: Date | null;
 };
 
@@ -15,10 +17,11 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
   defaultDate = null,
 }) => {
   const me = useLoadedAccount();
+  const createMeeting = useMutation(api.app.createMeeting);
   const [date, setDate] = useState<Date | null>(defaultDate);
   const [time, setTime] = useState<Date | null>(null);
 
-  if (!me || !me.root.selectedOrganization) {
+  if (!me.root.selectedOrganization) {
     return null;
   }
 
@@ -34,33 +37,10 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
     const fullDate = new Date(date);
     fullDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
 
-    const newMeeting = Schema.Meeting.create(
-      {
-        date: fullDate,
-        plannedAgenda: Schema.ListOfTopics.create(
-          [],
-          selectedOrganization._owner
-        ),
-        liveAgenda: Schema.ListOfTopics.create([], selectedOrganization._owner),
-        minutes: Schema.ListOfMinutes.create([], selectedOrganization._owner),
-        status: "draft",
-      },
-      selectedOrganization._owner
-    );
-
-    if (selectedOrganization) {
-      selectedOrganization.meetings.push(newMeeting);
-    }
-    if (onCreated) {
-      onCreated(newMeeting);
-    }
-  };
-
-  const handleDateChange = (date: Date | null) => {
-    setDate(date);
-  };
-  const handleTimeChange = (time: Date | null) => {
-    setTime(time);
+    void createMeeting({
+      organizationId: selectedOrganization.id,
+      date: fullDate.getTime(),
+    }).then((meetingId: string) => onCreated?.(meetingId));
   };
 
   return (
@@ -70,7 +50,7 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
           Meeting date
           <DatePicker
             selected={date}
-            onSelect={handleDateChange}
+            onSelect={setDate}
             dateFormat="M/d/yyyy"
             popperProps={{
               placement: "bottom",
@@ -84,7 +64,7 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
           Meeting time
           <DatePicker
             selected={time}
-            onChange={handleTimeChange}
+            onChange={setTime}
             showTimeSelect
             showTimeSelectOnly
             timeIntervals={15}
@@ -102,3 +82,5 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
     </form>
   );
 };
+
+export type { Meeting };

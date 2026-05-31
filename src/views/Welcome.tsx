@@ -1,5 +1,4 @@
 import { SignInButton } from "@clerk/clerk-react";
-// import { PasskeyAuthBasicUI } from "jazz-tools/react";
 
 export const Welcome = () => {
   return (

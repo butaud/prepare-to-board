@@ -1,4 +1,3 @@
-import { useIsAuthenticated } from "jazz-tools/react";
 import "./Header.css";
 import { NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
@@ -6,68 +5,26 @@ import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 import { MdOutlineScience } from "react-icons/md";
 import { SignInButton, UserButton } from "@clerk/clerk-react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { Settings } from "../views/Settings";
 import {
   LoadedAccountContext,
   useLoadAccount,
   useLoadedAccount,
 } from "../hooks/Account";
-import { Schema, UserAccount } from "../schema";
-
-const RANDOM_TOPICS = [
-  { title: "Call to Order", durationMinutes: 2 },
-  { title: "Approval of Previous Minutes", durationMinutes: 5 },
-  { title: "Treasurer's Report", durationMinutes: 10 },
-  { title: "Committee Reports", durationMinutes: 15 },
-  { title: "Old Business", durationMinutes: 20 },
-  { title: "New Business", durationMinutes: 15 },
-  { title: "Director Updates", durationMinutes: 10 },
-  { title: "Strategic Planning Discussion", durationMinutes: 25 },
-  { title: "Budget Review", durationMinutes: 15 },
-  { title: "Member Forum", durationMinutes: 10 },
-  { title: "Adjourn", durationMinutes: 2 },
-];
-
-const createRandomMeeting = (me: UserAccount) => {
-  const org = me.root?.selectedOrganization;
-  if (!org) return;
-
-  const now = new Date();
-  now.setSeconds(0, 0);
-
-  // Pick 5–6 random topics (no duplicates)
-  const shuffled = [...RANDOM_TOPICS].sort(() => Math.random() - 0.5);
-  const count = 5 + Math.floor(Math.random() * 2);
-  const picked = shuffled.slice(0, count);
-
-  const topicList = Schema.ListOfTopics.create(
-    picked.map((t) =>
-      Schema.Topic.create({ title: t.title, durationMinutes: t.durationMinutes }, org._owner)
-    ),
-    org._owner
-  );
-
-  const meeting = Schema.Meeting.create(
-    {
-      date: now,
-      plannedAgenda: topicList,
-      liveAgenda: Schema.ListOfTopics.create([], org._owner),
-      minutes: Schema.ListOfMinutes.create([], org._owner),
-      status: "published",
-    },
-    org._owner
-  );
-
-  org.meetings?.push(meeting);
-};
+import { UserAccount } from "../schema";
+import { api } from "../convexClient";
 
 const DevCreateMeetingButton = ({ me }: { me: UserAccount }) => {
+  const createRandomMeeting = useMutation(api.app.createRandomMeeting);
   if (!import.meta.env.DEV) return null;
+  const organizationId = me.root.selectedOrganization?.id;
+  if (!organizationId) return null;
   return (
     <button
       className="dev-create-meeting"
       title="[DEV] Create random meeting"
-      onClick={() => createRandomMeeting(me)}
+      onClick={() => void createRandomMeeting({ organizationId })}
     >
       <MdOutlineScience />
     </button>
@@ -76,8 +33,9 @@ const DevCreateMeetingButton = ({ me }: { me: UserAccount }) => {
 
 export const Header = () => {
   const { me } = useLoadAccount();
+  const { isAuthenticated: convexAuthenticated } = useConvexAuth();
 
-  const isAuthenticated = useIsAuthenticated() && !!me;
+  const isAuthenticated = convexAuthenticated && !!me;
 
   if (me === undefined) {
     return <p>Loading...</p>;
@@ -158,6 +116,7 @@ export const Header = () => {
 
 const OrganizationSelector = () => {
   const me = useLoadedAccount();
+  const selectOrganization = useMutation(api.app.selectOrganization);
   const organizations = me.root.organizations;
   const selectedOrganization = me.root.selectedOrganization;
 
@@ -168,19 +127,7 @@ const OrganizationSelector = () => {
   const handleOrganizationChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
-    void (async () => {
-      const selectedId = event.target.value;
-      const selectedOrg = await organizations
-        .find((org) => org?.id === selectedId)
-        ?.ensureLoaded({
-          resolve: {
-            meetings: { $each: true },
-          },
-        });
-      if (selectedOrg) {
-        me.root.selectedOrganization = selectedOrg;
-      }
-    })();
+    void selectOrganization({ organizationId: event.target.value });
   };
 
   return (
@@ -192,8 +139,8 @@ const OrganizationSelector = () => {
         onChange={handleOrganizationChange}
       >
         {organizations.map((org) => (
-          <option key={org?.id ?? "<empty>"} value={org?.id}>
-            {org?.name}
+          <option key={org.id} value={org.id}>
+            {org.name}
           </option>
         ))}
       </select>

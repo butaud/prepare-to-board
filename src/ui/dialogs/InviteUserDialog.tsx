@@ -1,6 +1,5 @@
 import { FC, useMemo } from "react";
 import { Dialog } from "./Dialog";
-import { createInviteLink } from "jazz-tools/react";
 import { Organization } from "../../schema";
 
 import "./InviteUserDialog.css";
@@ -15,13 +14,11 @@ export const InviteUserDialog: FC<InviteUserDialogProps> = ({
   organization,
 }) => {
   const inviteLink = useMemo(() => {
-    const managePathIndex = window.location.href.lastIndexOf("/manage");
-    const urlWithoutManagePath =
-      window.location.href.slice(0, managePathIndex) + "/invite";
-    return createInviteLink(organization, "reader", {
-      baseURL: urlWithoutManagePath,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const url = new URL(window.location.href);
+    url.pathname = `${import.meta.env.BASE_URL}invite`;
+    url.search = `?org=${encodeURIComponent(organization.id)}`;
+    url.hash = "";
+    return url.toString();
   }, [organization.id]);
   return (
     <Dialog
