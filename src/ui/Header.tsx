@@ -4,7 +4,7 @@ import { CgFileDocument } from "react-icons/cg";
 import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 import { MdOutlineScience } from "react-icons/md";
-import { SignInButton, UserButton } from "@clerk/clerk-react";
+import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import { useConvexAuth, useMutation } from "convex/react";
 import { Settings } from "../views/Settings";
 import {
@@ -33,11 +33,12 @@ const DevCreateMeetingButton = ({ me }: { me: UserAccount }) => {
 
 export const Header = () => {
   const { me } = useLoadAccount();
+  const { isLoaded: clerkLoaded, isSignedIn } = useUser();
   const { isAuthenticated: convexAuthenticated } = useConvexAuth();
 
   const isAuthenticated = convexAuthenticated && !!me;
 
-  if (me === undefined) {
+  if (!clerkLoaded || (isSignedIn && me === undefined)) {
     return <p>Loading...</p>;
   }
 
