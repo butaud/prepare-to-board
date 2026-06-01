@@ -21,6 +21,24 @@ const getCurrentUser = async (ctx: Ctx) => {
     .unique();
 };
 
+const getOrCreateCurrentUser = async (ctx: MutationCtx, fallbackName?: string) => {
+  const identity = await requireIdentity(ctx);
+  const existing = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .unique();
+  if (existing) return existing;
+
+  const userId = await ctx.db.insert("users", {
+    clerkId: identity.subject,
+    name: fallbackName ?? identity.name ?? identity.email ?? "New User",
+    title: "Mr.",
+  });
+  const user = await ctx.db.get(userId);
+  if (!user) throw new ConvexError("Unable to initialize user");
+  return user;
+};
+
 const requireUser = async (ctx: Ctx) => {
   const user = await getCurrentUser(ctx);
   if (!user) throw new ConvexError("User has not been initialized");
@@ -119,25 +137,20 @@ const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
   };
 };
 
+const currentLiveTopicIndex = (meeting: Doc<"meetings">) =>
+  meeting.liveAgenda.findIndex(
+    (topic, index) =>
+      index >= meeting.minutes.length && !topic.cancelled && !topic.deferred
+  );
+
 export const ensureCurrentUser = mutation({
   args: { name: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        name: args.name ?? identity.name ?? existing.name,
-      });
-      return existing._id;
+    const user = await getOrCreateCurrentUser(ctx, args.name);
+    if (args.name && args.name !== user.name) {
+      await ctx.db.patch(user._id, { name: args.name });
     }
-    return await ctx.db.insert("users", {
-      clerkId: identity.subject,
-      name: args.name ?? identity.name ?? identity.email ?? "New User",
-      title: "Mr.",
-    });
+    return user._id;
   },
 });
 
@@ -249,7 +262,7 @@ export const updateOrganization = mutation({
 export const joinOrganization = mutation({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
+    const user = await getOrCreateCurrentUser(ctx);
     const existing = await membershipFor(ctx, args.organizationId, user._id);
     if (!existing) {
       await ctx.db.insert("memberships", {
@@ -446,7 +459,7 @@ export const skipTopic = mutation({
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
-    const currentIndex = meeting.minutes.length;
+    const currentIndex = currentLiveTopicIndex(meeting);
     const topic = meeting.liveAgenda[currentIndex];
     if (!topic) return;
     const liveAgenda = [...meeting.liveAgenda];
@@ -486,7 +499,7 @@ export const advanceTopic = mutation({
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
-    const currentIndex = meeting.minutes.length;
+    const currentIndex = currentLiveTopicIndex(meeting);
     const topic = meeting.liveAgenda[currentIndex];
     if (!topic) return;
     const currentNotes = meeting.currentNotes ?? [];

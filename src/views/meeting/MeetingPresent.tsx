@@ -51,11 +51,15 @@ export const MeetingPresent = () => {
     ? Math.floor((now.getTime() - liveStartTime.getTime()) / 1000)
     : 0;
 
-  // Current topic index = minutes.length
   const completedCount = minutes.filter((m) => m !== null).length;
-  const currentTopicIndex = completedCount;
+  const currentTopicIndex = liveAgenda.findIndex(
+    (topic, index) =>
+      index >= completedCount && !topic.cancelled && !topic.deferred
+  );
   const currentTopic: Topic | null =
-    liveAgenda[currentTopicIndex] ?? null;
+    currentTopicIndex === -1 ? null : liveAgenda[currentTopicIndex];
+  const remainingStartIndex =
+    currentTopicIndex === -1 ? completedCount : currentTopicIndex + 1;
 
   // How long has the current topic been active?
   // = now - (liveStartTime + sum of completed minute durations)
@@ -73,7 +77,7 @@ export const MeetingPresent = () => {
   // Remaining topics (after current)
   const remainingTopics = liveAgenda
     .filter((t) => t !== null)
-    .slice(currentTopicIndex + 1)
+    .slice(remainingStartIndex)
     .filter((t) => !t.cancelled);
 
   // Base time for projected starts of remaining topics:

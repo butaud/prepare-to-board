@@ -50,6 +50,7 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
           Meeting date
           <DatePicker
             selected={date}
+            onChange={setDate}
             onSelect={setDate}
             dateFormat="M/d/yyyy"
             popperProps={{

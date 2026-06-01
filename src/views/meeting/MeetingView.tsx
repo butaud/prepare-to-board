@@ -70,8 +70,14 @@ export const MeetingView = () => {
     const minutes = meeting.minutes ?? [];
     const liveStartTime = meeting.liveStartTime;
     const completedCount = minutes.filter((m) => m !== null).length;
-    const currentTopicIndex = completedCount;
-    const currentTopic: Topic | null = liveAgenda[currentTopicIndex] ?? null;
+    const currentTopicIndex = liveAgenda.findIndex(
+      (topic, index) =>
+        index >= completedCount && !topic.cancelled && !topic.deferred
+    );
+    const currentTopic: Topic | null =
+      currentTopicIndex === -1 ? null : liveAgenda[currentTopicIndex];
+    const remainingStartIndex =
+      currentTopicIndex === -1 ? completedCount : currentTopicIndex + 1;
 
     const sumCompletedMinutes = minutes
       .filter((m) => m !== null)
@@ -91,7 +97,7 @@ export const MeetingView = () => {
 
     const allRemaining = liveAgenda
       .filter((t) => t !== null)
-      .slice(currentTopicIndex + 1)
+      .slice(remainingStartIndex)
       .filter((t) => !t.cancelled);
     const remainingTopics = allRemaining.filter((t) => !t.deferred);
     const deferredTopics = allRemaining.filter((t) => t.deferred);

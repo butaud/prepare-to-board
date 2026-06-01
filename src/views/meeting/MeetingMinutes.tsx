@@ -479,7 +479,15 @@ export const MeetingMinutes = () => {
   const liveAgenda = meeting.liveAgenda ?? [];
   const minutes = meeting.minutes ?? [];
   const completedCount = minutes.filter((m) => m !== null).length;
-  const currentTopicId = (liveAgenda[completedCount] ?? null)?.id ?? null;
+  const currentTopicIndex = liveAgenda.findIndex(
+    (topic, index) =>
+      index >= completedCount && !topic.cancelled && !topic.deferred
+  );
+  const currentTopic: Topic | null =
+    currentTopicIndex === -1 ? null : liveAgenda[currentTopicIndex];
+  const remainingStartIndex =
+    currentTopicIndex === -1 ? completedCount : currentTopicIndex + 1;
+  const currentTopicId = currentTopic?.id ?? null;
 
   useEffect(() => {
     setNotes("");
@@ -505,9 +513,6 @@ export const MeetingMinutes = () => {
   }
 
   const liveStartTime = meeting.liveStartTime;
-
-  const currentTopicIndex = completedCount;
-  const currentTopic: Topic | null = liveAgenda[currentTopicIndex] ?? null;
 
   const sumCompletedMinutes = minutes
     .filter((m) => m !== null)
@@ -572,7 +577,7 @@ export const MeetingMinutes = () => {
   // Remaining topics (after current), split into deferred and upcoming
   const allRemaining = liveAgenda
     .filter((t) => t !== null)
-    .slice(currentTopicIndex + 1)
+    .slice(remainingStartIndex)
     .filter((t) => !t.cancelled);
   const remainingTopics = allRemaining.filter((t) => !t.deferred);
   const deferredTopics = allRemaining.filter((t) => t.deferred);
