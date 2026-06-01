@@ -62,6 +62,17 @@ Execute the test suite with [Vitest](https://vitest.dev/):
 yarn test
 ```
 
+Run browser-based end-to-end checks with [Playwright](https://playwright.dev/):
+
+```bash
+yarn test:e2e
+```
+
+For feature-oriented E2E and visual review, use the reviewer brief in
+[`docs/agents/e2e-review-agent.md`](docs/agents/e2e-review-agent.md). It
+describes how to turn a plain-English feature request into realistic browser
+scenarios, screenshot review, findings, and residual risk.
+
 ### Linting
 
 Check code style and static analysis rules:
