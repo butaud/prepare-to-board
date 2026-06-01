@@ -9,7 +9,7 @@ import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { PendingNote } from "../../util/data";
-import { BoardMember, Topic } from "../../schema";
+import { BoardMember, Note, Topic } from "../../schema";
 import { api } from "../../convexClient";
 
 import "./MeetingMinutes.css";
@@ -32,10 +32,17 @@ const formatDuration = (totalSeconds: number): string => {
 interface TextNoteFormProps {
   onAdd: (note: PendingNote) => void;
   onCancel: () => void;
+  initialNote?: Extract<Note, { type: "text" }>;
+  submitLabel?: string;
 }
 
-const TextNoteForm = ({ onAdd, onCancel }: TextNoteFormProps) => {
-  const [text, setText] = useState("");
+const TextNoteForm = ({
+  onAdd,
+  onCancel,
+  initialNote,
+  submitLabel = "Add",
+}: TextNoteFormProps) => {
+  const [text, setText] = useState(initialNote?.text ?? "");
   return (
     <div className="note-form">
       <h5 className="note-form-title">Text Note</h5>
@@ -57,7 +64,7 @@ const TextNoteForm = ({ onAdd, onCancel }: TextNoteFormProps) => {
             onAdd({ type: "text", text: text.trim() });
           }}
         >
-          Add
+          {submitLabel}
         </button>
         <button className="btn-secondary" onClick={onCancel}>
           Cancel
@@ -71,11 +78,21 @@ interface ActionItemFormProps {
   onAdd: (note: PendingNote) => void;
   onCancel: () => void;
   members: BoardMember[];
+  initialNote?: Extract<Note, { type: "action_item" }>;
+  submitLabel?: string;
 }
 
-const ActionItemForm = ({ onAdd, onCancel, members }: ActionItemFormProps) => {
-  const [text, setText] = useState("");
-  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
+const ActionItemForm = ({
+  onAdd,
+  onCancel,
+  members,
+  initialNote,
+  submitLabel = "Add",
+}: ActionItemFormProps) => {
+  const [text, setText] = useState(initialNote?.text ?? "");
+  const [selectedMemberId, setSelectedMemberId] = useState<string>(
+    initialNote?.assignee?.id ?? ""
+  );
   return (
     <div className="note-form">
       <h5 className="note-form-title">Action Item</h5>
@@ -112,7 +129,7 @@ const ActionItemForm = ({ onAdd, onCancel, members }: ActionItemFormProps) => {
             onAdd({ type: "action_item", text: text.trim(), assignee });
           }}
         >
-          Add
+          {submitLabel}
         </button>
         <button className="btn-secondary" onClick={onCancel}>
           Cancel
@@ -125,13 +142,20 @@ const ActionItemForm = ({ onAdd, onCancel, members }: ActionItemFormProps) => {
 interface MotionFormProps {
   onAdd: (note: PendingNote) => void;
   onCancel: () => void;
+  initialNote?: Extract<Note, { type: "motion" }>;
+  submitLabel?: string;
 }
 
-const MotionForm = ({ onAdd, onCancel }: MotionFormProps) => {
-  const [text, setText] = useState("");
-  const [mover, setMover] = useState("");
-  const [seconder, setSeconder] = useState("");
-  const [status, setStatus] = useState<"proposed" | "under_discussion" | "passed" | "failed" | "tabled">("proposed");
+const MotionForm = ({
+  onAdd,
+  onCancel,
+  initialNote,
+  submitLabel = "Add",
+}: MotionFormProps) => {
+  const [text, setText] = useState(initialNote?.text ?? "");
+  const [mover, setMover] = useState(initialNote?.mover ?? "");
+  const [seconder, setSeconder] = useState(initialNote?.seconder ?? "");
+  const [status, setStatus] = useState<"proposed" | "under_discussion" | "passed" | "failed" | "tabled">(initialNote?.status ?? "proposed");
   return (
     <div className="note-form">
       <h5 className="note-form-title">Motion</h5>
@@ -193,12 +217,101 @@ const MotionForm = ({ onAdd, onCancel }: MotionFormProps) => {
             });
           }}
         >
-          Add
+          {submitLabel}
         </button>
         <button className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>
       </div>
+    </div>
+  );
+};
+
+const toStoredNote = (note: PendingNote) =>
+  note.type === "action_item"
+    ? {
+        type: note.type,
+        text: note.text,
+        assigneeId: note.assignee?.id,
+        assigneeName: note.assignee?.name,
+      }
+    : note;
+
+type EditableNoteProps = {
+  note: Note;
+  members: BoardMember[];
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onStopEdit: () => void;
+  onUpdate: (note: PendingNote) => void;
+  onDelete: () => void;
+};
+
+const EditableNote = ({
+  note,
+  members,
+  isEditing,
+  onStartEdit,
+  onStopEdit,
+  onUpdate,
+  onDelete,
+}: EditableNoteProps) => {
+  if (isEditing) {
+    const handleSave = (updatedNote: PendingNote) => {
+      onUpdate(updatedNote);
+      onStopEdit();
+    };
+
+    return (
+      <div className="minutes-note-edit">
+        {note.type === "text" && (
+          <TextNoteForm
+            initialNote={note}
+            submitLabel="Save"
+            onAdd={handleSave}
+            onCancel={onStopEdit}
+          />
+        )}
+        {note.type === "action_item" && (
+          <ActionItemForm
+            initialNote={note}
+            submitLabel="Save"
+            onAdd={handleSave}
+            onCancel={onStopEdit}
+            members={members}
+          />
+        )}
+        {note.type === "motion" && (
+          <MotionForm
+            initialNote={note}
+            submitLabel="Save"
+            onAdd={handleSave}
+            onCancel={onStopEdit}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="minutes-note-item">
+      <NoteDisplay note={note} />
+      <button
+        className="note-edit-btn"
+        title="Edit note"
+        aria-label="Edit note"
+        onClick={onStartEdit}
+      >
+        Edit
+      </button>
+      <button
+        className="note-delete-btn"
+        title="Remove note"
+        aria-label="Remove note"
+        onClick={onDelete}
+      >
+        ×
+      </button>
     </div>
   );
 };
@@ -213,22 +326,16 @@ interface CompletedMinuteNotesProps {
 
 const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotesProps) => {
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const addMinuteNote = useMutation(api.app.addMinuteNote);
+  const updateMinuteNote = useMutation(api.app.updateMinuteNote);
   const removeMinuteNote = useMutation(api.app.removeMinuteNote);
 
   const addNoteToMinute = (pn: PendingNote) => {
     void addMinuteNote({
       meetingId: meeting.id,
       minuteId: minute.id,
-      note:
-        pn.type === "action_item"
-          ? {
-              type: pn.type,
-              text: pn.text,
-              assigneeId: pn.assignee?.id,
-              assigneeName: pn.assignee?.name,
-            }
-          : pn,
+      note: toStoredNote(pn),
     }).then(() => setNoteFormType(null));
   };
 
@@ -237,25 +344,35 @@ const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotes
   return (
     <div className="minutes-notes-section">
       {existingNotes.map((note, i) => (
-        <div key={i} className="minutes-note-item">
-          <NoteDisplay note={note} />
-          <button
-            className="note-delete-btn"
-            title="Remove note"
-            onClick={() => {
-              void removeMinuteNote({
-                meetingId: meeting.id,
-                minuteId: minute.id,
-                index: i,
-              });
-            }}
-          >
-            ×
-          </button>
-        </div>
+        <EditableNote
+          key={note.id}
+          note={note}
+          members={members}
+          isEditing={editingNoteId === note.id}
+          onStartEdit={() => {
+            setNoteFormType(null);
+            setEditingNoteId(note.id);
+          }}
+          onStopEdit={() => setEditingNoteId(null)}
+          onUpdate={(updatedNote) =>
+            void updateMinuteNote({
+              meetingId: meeting.id,
+              minuteId: minute.id,
+              noteId: note.id,
+              note: toStoredNote(updatedNote),
+            })
+          }
+          onDelete={() => {
+            void removeMinuteNote({
+              meetingId: meeting.id,
+              minuteId: minute.id,
+              index: i,
+            });
+          }}
+        />
       ))}
 
-      {!noteFormType && (
+      {!noteFormType && !editingNoteId && (
         <div className="minutes-note-add-buttons">
           <button className="btn-small btn-secondary" onClick={() => setNoteFormType("text")}>+ Text</button>
           <button className="btn-small btn-secondary" onClick={() => setNoteFormType("action_item")}>+ Action Item</button>
@@ -461,6 +578,7 @@ export const MeetingMinutes = () => {
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
+  const [editingCurrentNoteId, setEditingCurrentNoteId] = useState<string | null>(null);
   const advanceTopic = useMutation(api.app.advanceTopic);
   const skipTopic = useMutation(api.app.skipTopic);
   const addTopic = useMutation(api.app.addTopic);
@@ -468,6 +586,7 @@ export const MeetingMinutes = () => {
   const reorderTopics = useMutation(api.app.reorderTopics);
   const makeActive = useMutation(api.app.makeActive);
   const addCurrentNote = useMutation(api.app.addCurrentNote);
+  const updateCurrentNote = useMutation(api.app.updateCurrentNote);
   const removeCurrentNote = useMutation(api.app.removeCurrentNote);
 
   useEffect(() => {
@@ -674,21 +793,30 @@ export const MeetingMinutes = () => {
               <h4>Notes for this topic</h4>
 
               {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
-                <div key={i} className="minutes-note-item">
-                  <NoteDisplay note={note} />
-                  <button
-                    className="note-delete-btn"
-                    title="Remove note"
-                    onClick={() => {
-                      void removeCurrentNote({ meetingId: meeting.id, index: i });
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
+                <EditableNote
+                  key={note.id}
+                  note={note}
+                  members={members}
+                  isEditing={editingCurrentNoteId === note.id}
+                  onStartEdit={() => {
+                    setNoteFormType(null);
+                    setEditingCurrentNoteId(note.id);
+                  }}
+                  onStopEdit={() => setEditingCurrentNoteId(null)}
+                  onUpdate={(updatedNote) =>
+                    void updateCurrentNote({
+                      meetingId: meeting.id,
+                      noteId: note.id,
+                      note: toStoredNote(updatedNote),
+                    })
+                  }
+                  onDelete={() => {
+                    void removeCurrentNote({ meetingId: meeting.id, index: i });
+                  }}
+                />
               ))}
 
-              {!noteFormType && (
+              {!noteFormType && !editingCurrentNoteId && (
                 <div className="minutes-note-add-buttons">
                   <button className="btn-small btn-secondary" onClick={() => setNoteFormType("text")}>+ Text</button>
                   <button className="btn-small btn-secondary" onClick={() => setNoteFormType("action_item")}>+ Action Item</button>
@@ -701,7 +829,7 @@ export const MeetingMinutes = () => {
                   onAdd={(pn) => {
                     void addCurrentNote({
                       meetingId: meeting.id,
-                      note: { type: "text", text: pn.text },
+                      note: toStoredNote(pn),
                     }).then(() => setNoteFormType(null));
                   }}
                   onCancel={() => setNoteFormType(null)}
@@ -712,12 +840,7 @@ export const MeetingMinutes = () => {
                   onAdd={(pn) => {
                     void addCurrentNote({
                       meetingId: meeting.id,
-                      note: {
-                        type: "action_item",
-                        text: pn.text,
-                        assigneeId: (pn as { assignee?: BoardMember }).assignee?.id,
-                        assigneeName: (pn as { assignee?: BoardMember }).assignee?.name,
-                      },
+                      note: toStoredNote(pn),
                     }).then(() => setNoteFormType(null));
                   }}
                   onCancel={() => setNoteFormType(null)}
@@ -727,16 +850,9 @@ export const MeetingMinutes = () => {
               {noteFormType === "motion" && (
                 <MotionForm
                   onAdd={(pn) => {
-                    const mn = pn as { type: "motion"; text: string; mover: string; seconder?: string; status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled" };
                     void addCurrentNote({
                       meetingId: meeting.id,
-                      note: {
-                        type: "motion",
-                        text: mn.text,
-                        mover: mn.mover,
-                        seconder: mn.seconder,
-                        status: mn.status,
-                      },
+                      note: toStoredNote(pn),
                     }).then(() => setNoteFormType(null));
                   }}
                   onCancel={() => setNoteFormType(null)}

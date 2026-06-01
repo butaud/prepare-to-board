@@ -547,6 +547,20 @@ export const removeCurrentNote = mutation({
   },
 });
 
+export const updateCurrentNote = mutation({
+  args: { meetingId: v.id("meetings"), noteId: v.string(), note: noteArg },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      currentNotes: (meeting.currentNotes ?? []).map((note) =>
+        note.id === args.noteId ? { id: note.id, ...args.note } : note
+      ),
+    });
+  },
+});
+
 export const addMinuteNote = mutation({
   args: { meetingId: v.id("meetings"), minuteId: v.string(), note: noteArg },
   handler: async (ctx, args) => {
@@ -557,6 +571,32 @@ export const addMinuteNote = mutation({
       minutes: meeting.minutes.map((minute) =>
         minute.id === args.minuteId
           ? { ...minute, notes: [...(minute.notes ?? []), { id: id(), ...args.note }] }
+          : minute
+      ),
+    });
+  },
+});
+
+export const updateMinuteNote = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    minuteId: v.string(),
+    noteId: v.string(),
+    note: noteArg,
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      minutes: meeting.minutes.map((minute) =>
+        minute.id === args.minuteId
+          ? {
+              ...minute,
+              notes: (minute.notes ?? []).map((note) =>
+                note.id === args.noteId ? { id: note.id, ...args.note } : note
+              ),
+            }
           : minute
       ),
     });
