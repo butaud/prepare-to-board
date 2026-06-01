@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+.env.e2e.local
+playwright-report
+test-results
+.auth
 
 # Editor directories and files
 .vscode/*
