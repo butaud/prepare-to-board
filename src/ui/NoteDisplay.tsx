@@ -94,11 +94,13 @@ export const NoteDisplay = ({ note }: NoteDisplayProps) => {
   }
   if (note.type === "motion") {
     const status = note.status;
+    const mover = note.moverMember?.name ?? note.mover;
+    const seconder = note.seconderMember?.name ?? note.seconder;
     return (
       <div className="note-motion">
         <span>
-          {note.mover} moves {note.text}.
-          {note.seconder && ` Seconded by ${note.seconder}.`}
+          {mover} moves {note.text}.
+          {seconder && ` Seconded by ${seconder}.`}
         </span>
         {" "}
         <span className={`motion-status motion-status-${status}`}>

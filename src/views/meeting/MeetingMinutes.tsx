@@ -142,6 +142,7 @@ const ActionItemForm = ({
 interface MotionFormProps {
   onAdd: (note: PendingNote) => void;
   onCancel: () => void;
+  members: BoardMember[];
   initialNote?: Extract<Note, { type: "motion" }>;
   submitLabel?: string;
 }
@@ -149,13 +150,24 @@ interface MotionFormProps {
 const MotionForm = ({
   onAdd,
   onCancel,
+  members,
   initialNote,
   submitLabel = "Add",
 }: MotionFormProps) => {
   const [text, setText] = useState(initialNote?.text ?? "");
-  const [mover, setMover] = useState(initialNote?.mover ?? "");
-  const [seconder, setSeconder] = useState(initialNote?.seconder ?? "");
+  const [selectedMoverId, setSelectedMoverId] = useState(
+    initialNote?.moverMember?.id ??
+      members.find((member) => member.name === initialNote?.mover)?.id ??
+      ""
+  );
+  const [selectedSeconderId, setSelectedSeconderId] = useState(
+    initialNote?.seconderMember?.id ??
+      members.find((member) => member.name === initialNote?.seconder)?.id ??
+      ""
+  );
   const [status, setStatus] = useState<"proposed" | "under_discussion" | "passed" | "failed" | "tabled">(initialNote?.status ?? "proposed");
+  const selectedMover = members.find((member) => member.id === selectedMoverId);
+  const selectedSeconder = members.find((member) => member.id === selectedSeconderId);
   return (
     <div className="note-form">
       <h5 className="note-form-title">Motion</h5>
@@ -171,23 +183,29 @@ const MotionForm = ({
       </div>
       <div className="minutes-form-row">
         <label>Mover:</label>
-        <input
-          type="text"
-          value={mover}
-          onChange={(e) => setMover(e.target.value)}
-          placeholder="Who moved the motion?"
-          style={{ width: "100%", maxWidth: 300 }}
-        />
+        <select
+          value={selectedMoverId}
+          onChange={(e) => setSelectedMoverId(e.target.value)}
+          style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid var(--color-border, #ddd)" }}
+        >
+          <option value="">Select a board member</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>{member.name}</option>
+          ))}
+        </select>
       </div>
       <div className="minutes-form-row">
         <label>Seconder (optional):</label>
-        <input
-          type="text"
-          value={seconder}
-          onChange={(e) => setSeconder(e.target.value)}
-          placeholder="Who seconded?"
-          style={{ width: "100%", maxWidth: 300 }}
-        />
+        <select
+          value={selectedSeconderId}
+          onChange={(e) => setSelectedSeconderId(e.target.value)}
+          style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid var(--color-border, #ddd)" }}
+        >
+          <option value="">— None —</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>{member.name}</option>
+          ))}
+        </select>
       </div>
       <div className="minutes-form-row">
         <label>Status:</label>
@@ -207,12 +225,14 @@ const MotionForm = ({
         <button
           className="btn-primary"
           onClick={() => {
-            if (!text.trim() || !mover.trim()) return;
+            if (!text.trim() || !selectedMover) return;
             onAdd({
               type: "motion",
               text: text.trim(),
-              mover: mover.trim(),
-              seconder: seconder.trim() || undefined,
+              mover: selectedMover.name,
+              seconder: selectedSeconder?.name,
+              moverMember: selectedMover,
+              seconderMember: selectedSeconder,
               status,
             });
           }}
@@ -227,15 +247,30 @@ const MotionForm = ({
   );
 };
 
-const toStoredNote = (note: PendingNote) =>
-  note.type === "action_item"
-    ? {
-        type: note.type,
-        text: note.text,
-        assigneeId: note.assignee?.id,
-        assigneeName: note.assignee?.name,
-      }
-    : note;
+const toStoredNote = (note: PendingNote) => {
+  if (note.type === "action_item") {
+    return {
+      type: note.type,
+      text: note.text,
+      assigneeId: note.assignee?.id,
+      assigneeName: note.assignee?.name,
+    };
+  }
+  if (note.type === "motion") {
+    return {
+      type: note.type,
+      text: note.text,
+      mover: note.mover,
+      moverId: note.moverMember?.id,
+      moverName: note.moverMember?.name ?? note.mover,
+      seconder: note.seconder,
+      seconderId: note.seconderMember?.id,
+      seconderName: note.seconderMember?.name ?? note.seconder,
+      status: note.status,
+    };
+  }
+  return note;
+};
 
 type EditableNoteProps = {
   note: Note;
@@ -287,6 +322,7 @@ const EditableNote = ({
             submitLabel="Save"
             onAdd={handleSave}
             onCancel={onStopEdit}
+            members={members}
           />
         )}
       </div>
@@ -387,7 +423,7 @@ const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotes
         <ActionItemForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} members={members} />
       )}
       {noteFormType === "motion" && (
-        <MotionForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} />
+        <MotionForm onAdd={addNoteToMinute} onCancel={() => setNoteFormType(null)} members={members} />
       )}
     </div>
   );
@@ -842,6 +878,7 @@ export const MeetingMinutes = () => {
                     }).then(() => setNoteFormType(null));
                   }}
                   onCancel={() => setNoteFormType(null)}
+                  members={members}
                 />
               )}
             </div>

@@ -75,6 +75,10 @@ const noteArg = v.object({
   text: v.string(),
   assigneeId: v.optional(v.string()),
   assigneeName: v.optional(v.string()),
+  moverId: v.optional(v.string()),
+  moverName: v.optional(v.string()),
+  seconderId: v.optional(v.string()),
+  seconderName: v.optional(v.string()),
   mover: v.optional(v.string()),
   seconder: v.optional(v.string()),
   status: v.optional(
@@ -111,6 +115,28 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
       : undefined,
   mover: note.mover,
   seconder: note.seconder,
+  moverMember:
+    note.moverId || note.moverName
+      ? {
+          id: note.moverId ?? note.moverName ?? id(),
+          name:
+            members.find((member) => member._id === note.moverId)?.name ??
+            note.moverName ??
+            note.mover ??
+            "",
+        }
+      : undefined,
+  seconderMember:
+    note.seconderId || note.seconderName
+      ? {
+          id: note.seconderId ?? note.seconderName ?? id(),
+          name:
+            members.find((member) => member._id === note.seconderId)?.name ??
+            note.seconderName ??
+            note.seconder ??
+            "",
+        }
+      : undefined,
   status: note.status,
 });
 
