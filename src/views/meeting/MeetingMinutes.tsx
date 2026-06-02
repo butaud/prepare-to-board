@@ -165,7 +165,7 @@ const MotionForm = ({
           rows={2}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="e.g. the board approves the budget"
+          placeholder="e.g. to approve the budget"
           autoFocus
         />
       </div>
