@@ -160,7 +160,7 @@ const MotionForm = ({
     <div className="note-form">
       <h5 className="note-form-title">Motion</h5>
       <div className="minutes-form-row">
-        <label>Motion text (after "moves that..."):</label>
+        <label>Motion text (after "moves..."):</label>
         <textarea
           rows={2}
           value={text}
@@ -571,7 +571,6 @@ export const MeetingMinutes = () => {
   const me = useLoadedAccount();
 
   const [now, setNow] = useState(() => new Date());
-  const [notes, setNotes] = useState("");
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicDuration, setNewTopicDuration] = useState<number>(5);
   const [showAddTopic, setShowAddTopic] = useState(false);
@@ -609,9 +608,7 @@ export const MeetingMinutes = () => {
   const currentTopicId = currentTopic?.id ?? null;
 
   useEffect(() => {
-    setNotes("");
     setNoteFormType(null);
-     
   }, [currentTopicId]);
 
   const isOfficer = me?.canWrite(meeting);
@@ -638,10 +635,13 @@ export const MeetingMinutes = () => {
     .reduce((sum, m) => sum + (m.durationMinutes ?? 0), 0);
 
   const currentTopicActiveSeconds = liveStartTime
-    ? Math.floor(
-        (now.getTime() -
-          (liveStartTime.getTime() + sumCompletedMinutes * 60 * 1000)) /
-          1000
+    ? Math.max(
+        0,
+        Math.floor(
+          (now.getTime() -
+            (liveStartTime.getTime() + sumCompletedMinutes * 60 * 1000)) /
+            1000
+        )
       )
     : 0;
 
@@ -650,16 +650,13 @@ export const MeetingMinutes = () => {
     void advanceTopic({
       meetingId: meeting.id,
       actualDurationMinutes: actualDuration,
-      outcome: notes || undefined,
     }).then(() => {
-      setNotes("");
       setNoteFormType(null);
     });
   };
 
   const handleSkipTopic = () => {
     void skipTopic({ meetingId: meeting.id }).then(() => {
-      setNotes("");
       setNoteFormType(null);
     });
   };
@@ -768,17 +765,6 @@ export const MeetingMinutes = () => {
               </span>
             </div>
 
-            <div className="minutes-form-row">
-              <label htmlFor="topic-notes">Notes / outcome:</label>
-              <textarea
-                id="topic-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                placeholder="Optional notes or outcome for this topic..."
-              />
-            </div>
-
             <div className="minutes-actions">
               <button className="btn-primary" onClick={handleCompleteTopic}>
                 Complete Topic
@@ -865,9 +851,63 @@ export const MeetingMinutes = () => {
         )}
       </section>
 
-      {/* Live Agenda (remaining) */}
-      <section className="minutes-section">
-        <h2>Remaining Topics</h2>
+      {/* Agenda */}
+      <aside className="minutes-section minutes-topic-tray" aria-label="Meeting agenda tray">
+        <h2>Agenda</h2>
+        {completedMinutes.length > 0 && (
+          <div className="minutes-agenda-group">
+            <h3 className="minutes-agenda-heading">Completed</h3>
+            <ol className="minutes-list minutes-agenda-list">
+              {completedMinutes.map((minute, idx) => {
+                const topic = minute.topic;
+                const planned =
+                  topic?.plannedTopic?.durationMinutes ?? topic?.durationMinutes;
+                const actual = minute.durationMinutes;
+                const diff = planned !== undefined ? actual - planned : null;
+                return (
+                  <li key={idx} className="minutes-item minutes-agenda-completed-item">
+                    <div className="minutes-item-header">
+                      <span className="minutes-item-title">
+                        {topic?.title ?? "(unknown)"}
+                      </span>
+                      <span className="minutes-item-duration">
+                        {actual} min actual
+                        {planned !== undefined && ` / ${planned} min planned`}
+                        {diff !== null && diff !== 0 && (
+                          <span className={diff > 0 ? "overtime" : "undertime"}>
+                            {" "}
+                            ({diff > 0 ? "+" : ""}
+                            {diff})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    {topic?.outcome && (
+                      <div className="minutes-item-notes">{topic.outcome}</div>
+                    )}
+                    <CompletedMinuteNotes minute={minute} meeting={meeting} members={members} />
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
+
+        {currentTopic && (
+          <div className="minutes-agenda-group">
+            <h3 className="minutes-agenda-heading">Current</h3>
+            <div className="minutes-agenda-current-item">
+              <span className="minutes-agenda-current-kicker">Now discussing</span>
+              <span className="minutes-remaining-title">{currentTopic.title}</span>
+              <span className="minutes-remaining-duration">
+                {currentTopic.durationMinutes ?? "?"} min planned
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="minutes-agenda-group">
+          <h3 className="minutes-agenda-heading">Remaining</h3>
         {remainingTopics.length === 0 ? (
           <p>No remaining topics.</p>
         ) : (
@@ -962,10 +1002,11 @@ export const MeetingMinutes = () => {
             </Droppable>
           </DragDropContext>
         )}
+        </div>
 
         {deferredTopics.length > 0 && (
-          <>
-            <h3 className="minutes-deferred-heading">Deferred Topics</h3>
+          <div className="minutes-agenda-group">
+            <h3 className="minutes-deferred-heading">Deferred</h3>
             <ul className="minutes-remaining-list">
               {deferredTopics.map((topic) => (
                 <li key={topic.id} className="minutes-remaining-item minutes-deferred-item">
@@ -998,7 +1039,7 @@ export const MeetingMinutes = () => {
                 </li>
               ))}
             </ul>
-          </>
+          </div>
         )}
 
         {showAddTopic ? (
@@ -1045,47 +1086,8 @@ export const MeetingMinutes = () => {
             + Add Topic
           </button>
         )}
-      </section>
+      </aside>
 
-      {/* Completed */}
-      {completedMinutes.length > 0 && (
-        <section className="minutes-section">
-          <h2>Completed</h2>
-          <ol className="minutes-list">
-            {completedMinutes.map((minute, idx) => {
-              const topic = minute.topic;
-              const planned =
-                topic?.plannedTopic?.durationMinutes ?? topic?.durationMinutes;
-              const actual = minute.durationMinutes;
-              const diff = planned !== undefined ? actual - planned : null;
-              return (
-                <li key={idx} className="minutes-item">
-                  <div className="minutes-item-header">
-                    <span className="minutes-item-title">
-                      {topic?.title ?? "(unknown)"}
-                    </span>
-                    <span className="minutes-item-duration">
-                      {actual} min actual
-                      {planned !== undefined && ` / ${planned} min planned`}
-                      {diff !== null && diff !== 0 && (
-                        <span className={diff > 0 ? "overtime" : "undertime"}>
-                          {" "}
-                          ({diff > 0 ? "+" : ""}
-                          {diff})
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  {topic?.outcome && (
-                    <div className="minutes-item-notes">{topic.outcome}</div>
-                  )}
-                  <CompletedMinuteNotes minute={minute} meeting={meeting} members={members} />
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      )}
     </div>
   );
 };
