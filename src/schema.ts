@@ -31,6 +31,9 @@ export type MotionNote = {
   seconder?: string;
   moverMember?: BoardMember;
   seconderMember?: BoardMember;
+  votesFor?: number;
+  votesAgainst?: number;
+  votesAbstain?: number;
   status: "proposed" | "under_discussion" | "passed" | "failed" | "tabled";
 };
 

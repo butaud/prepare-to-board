@@ -81,6 +81,9 @@ const noteArg = v.object({
   seconderName: v.optional(v.string()),
   mover: v.optional(v.string()),
   seconder: v.optional(v.string()),
+  votesFor: v.optional(v.number()),
+  votesAgainst: v.optional(v.number()),
+  votesAbstain: v.optional(v.number()),
   status: v.optional(
     v.union(
       v.literal("proposed"),
@@ -115,6 +118,9 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
       : undefined,
   mover: note.mover,
   seconder: note.seconder,
+  votesFor: note.votesFor,
+  votesAgainst: note.votesAgainst,
+  votesAbstain: note.votesAbstain,
   moverMember:
     note.moverId || note.moverName
       ? {

@@ -154,6 +154,7 @@ const MotionForm = ({
   initialNote,
   submitLabel = "Add",
 }: MotionFormProps) => {
+  const completedMotionStatuses = new Set(["passed", "failed", "tabled"]);
   const [text, setText] = useState(initialNote?.text ?? "");
   const [selectedMoverId, setSelectedMoverId] = useState(
     initialNote?.moverMember?.id ??
@@ -166,8 +167,16 @@ const MotionForm = ({
       ""
   );
   const [status, setStatus] = useState<"proposed" | "under_discussion" | "passed" | "failed" | "tabled">(initialNote?.status ?? "proposed");
+  const [votesFor, setVotesFor] = useState(String(initialNote?.votesFor ?? 0));
+  const [votesAgainst, setVotesAgainst] = useState(String(initialNote?.votesAgainst ?? 0));
+  const [votesAbstain, setVotesAbstain] = useState(String(initialNote?.votesAbstain ?? 0));
   const selectedMover = members.find((member) => member.id === selectedMoverId);
   const selectedSeconder = members.find((member) => member.id === selectedSeconderId);
+  const shouldRecordVotes = completedMotionStatuses.has(status);
+  const parseVoteCount = (value: string) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  };
   return (
     <div className="note-form">
       <h5 className="note-form-title">Motion</h5>
@@ -221,6 +230,37 @@ const MotionForm = ({
           <option value="tabled">Tabled</option>
         </select>
       </div>
+      {shouldRecordVotes && (
+        <div className="motion-vote-counts">
+          <div className="minutes-form-row">
+            <label>For:</label>
+            <input
+              type="number"
+              min={0}
+              value={votesFor}
+              onChange={(e) => setVotesFor(e.target.value)}
+            />
+          </div>
+          <div className="minutes-form-row">
+            <label>Against:</label>
+            <input
+              type="number"
+              min={0}
+              value={votesAgainst}
+              onChange={(e) => setVotesAgainst(e.target.value)}
+            />
+          </div>
+          <div className="minutes-form-row">
+            <label>Abstain:</label>
+            <input
+              type="number"
+              min={0}
+              value={votesAbstain}
+              onChange={(e) => setVotesAbstain(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
       <div className="minutes-actions">
         <button
           className="btn-primary"
@@ -233,6 +273,9 @@ const MotionForm = ({
               seconder: selectedSeconder?.name,
               moverMember: selectedMover,
               seconderMember: selectedSeconder,
+              votesFor: shouldRecordVotes ? parseVoteCount(votesFor) : undefined,
+              votesAgainst: shouldRecordVotes ? parseVoteCount(votesAgainst) : undefined,
+              votesAbstain: shouldRecordVotes ? parseVoteCount(votesAbstain) : undefined,
               status,
             });
           }}
@@ -266,6 +309,9 @@ const toStoredNote = (note: PendingNote) => {
       seconder: note.seconder,
       seconderId: note.seconderMember?.id,
       seconderName: note.seconderMember?.name ?? note.seconder,
+      votesFor: note.votesFor,
+      votesAgainst: note.votesAgainst,
+      votesAbstain: note.votesAbstain,
       status: note.status,
     };
   }

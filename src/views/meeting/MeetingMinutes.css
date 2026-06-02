@@ -598,6 +598,29 @@
   line-height: 1.5;
 }
 
+.motion-vote-summary {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.motion-vote-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(80px, 120px));
+  gap: 10px;
+  align-items: end;
+}
+
+.motion-vote-counts .minutes-form-row {
+  margin-bottom: 12px;
+}
+
+.motion-vote-counts input[type="number"] {
+  width: 100%;
+}
+
 .motion-status {
   font-size: 0.8rem;
   font-weight: 700;
@@ -735,6 +758,10 @@
 
   .minutes-note-add-buttons button {
     text-align: center;
+  }
+
+  .motion-vote-counts {
+    grid-template-columns: 1fr;
   }
 
   .minutes-comparison-table {

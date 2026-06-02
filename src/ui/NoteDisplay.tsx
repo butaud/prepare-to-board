@@ -71,6 +71,8 @@ const motionStatusLabel: Record<string, string> = {
   tabled: "Tabled",
 };
 
+const completedMotionStatuses = new Set(["passed", "failed", "tabled"]);
+
 interface NoteDisplayProps {
   note: Note | PendingNote;
 }
@@ -96,6 +98,7 @@ export const NoteDisplay = ({ note }: NoteDisplayProps) => {
     const status = note.status;
     const mover = note.moverMember?.name ?? note.mover;
     const seconder = note.seconderMember?.name ?? note.seconder;
+    const showVotes = completedMotionStatuses.has(status);
     return (
       <div className="note-motion">
         <span>
@@ -106,6 +109,11 @@ export const NoteDisplay = ({ note }: NoteDisplayProps) => {
         <span className={`motion-status motion-status-${status}`}>
           Status: {motionStatusLabel[status] ?? status}
         </span>
+        {showVotes && (
+          <span className="motion-vote-summary">
+            For: {note.votesFor ?? 0} / Against: {note.votesAgainst ?? 0} / Abstain: {note.votesAbstain ?? 0}
+          </span>
+        )}
       </div>
     );
   }
