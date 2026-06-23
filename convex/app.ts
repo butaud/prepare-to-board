@@ -414,6 +414,16 @@ export const setFocusedTopic = mutation({
   },
 });
 
+export const updateLiveStartTime = mutation({
+  args: { meetingId: v.id("meetings"), liveStartTime: v.number() },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, { liveStartTime: args.liveStartTime });
+  },
+});
+
 export const deleteMeeting = mutation({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, args) => {
@@ -661,6 +671,29 @@ export const updateMinuteNote = mutation({
                 note.id === args.noteId ? { id: note.id, ...args.note } : note
               ),
             }
+          : minute
+      ),
+    });
+  },
+});
+
+export const updateMinuteDuration = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    minuteId: v.string(),
+    durationMinutes: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    if (args.durationMinutes < 1) {
+      throw new ConvexError("Duration must be at least 1 minute");
+    }
+    await ctx.db.patch(args.meetingId, {
+      minutes: meeting.minutes.map((minute) =>
+        minute.id === args.minuteId
+          ? { ...minute, durationMinutes: args.durationMinutes }
           : minute
       ),
     });

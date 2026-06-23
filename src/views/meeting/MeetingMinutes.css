@@ -88,6 +88,32 @@
   opacity: 0.65;
 }
 
+.meeting-minutes button.minutes-inline-edit-button {
+  display: inline;
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.minutes-start-time-input {
+  width: 132px;
+  max-width: 100%;
+  height: 28px;
+  margin-left: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--primary-color-light);
+  border-radius: 4px;
+  background-color: var(--background-color);
+  color: var(--font-color);
+  font: inherit;
+}
+
 .minutes-current-topic h3 {
   font-size: 1.3rem;
   font-weight: 700;
@@ -297,7 +323,6 @@
   color: var(--font-color);
   cursor: pointer;
   font: inherit;
-  height: auto;
   text-align: left;
 }
 
@@ -407,20 +432,27 @@
 }
 
 .minutes-day-view-list {
-  display: contents;
+  position: absolute;
+  top: 0;
+  right: var(--scrollbar-clearance);
+  left: 66px;
+  min-height: 100%;
   list-style: none;
   padding: 0;
   margin: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .minutes-day-view-draggable {
   position: absolute;
-  right: var(--scrollbar-clearance);
-  left: 66px;
+  right: 0;
+  left: 0;
   list-style: none;
   min-width: 0;
   padding: 0;
-  z-index: 2;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .minutes-day-view-draggable.is-selected {
@@ -443,9 +475,9 @@
   min-height: 0;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 3px;
+  gap: 2px;
   margin: 0;
-  padding: 6px 10px;
+  padding: 4px 10px;
   overflow: hidden;
   box-sizing: border-box;
   background: #eef3ff;
@@ -456,7 +488,6 @@
   color: var(--font-color);
   cursor: pointer;
   font: inherit;
-  height: auto;
   text-align: left;
 }
 
@@ -542,7 +573,8 @@
 .minutes-day-view-event .drag-handle {
   position: absolute;
   right: 7px;
-  top: 6px;
+  top: 50%;
+  transform: translateY(-50%);
   cursor: grab;
   opacity: 0.45;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -9,7 +9,7 @@ import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { PendingNote } from "../../util/data";
-import { BoardMember, Note, Topic } from "../../schema";
+import { BoardMember, Meeting, Note, Topic } from "../../schema";
 import { api } from "../../convexClient";
 
 import "./MeetingMinutes.css";
@@ -33,34 +33,69 @@ const formatAgendaTime = (date: Date): string =>
     minute: "2-digit",
   });
 
-const AGENDA_SLOT_MINUTES = 5;
+const formatTimeInputValue = (date: Date): string => {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+const AGENDA_BASE_SLOT_MINUTES = 5;
 const AGENDA_SLOT_HEIGHT_PX = 72;
+const AGENDA_TARGET_VISIBLE_MINUTES = 90;
+const AGENDA_EVENT_MIN_HEIGHT_PX = 14;
+const AGENDA_EVENT_GAP_PX = 3;
 
 const timelineGridStyle = (slotCount: number): CSSProperties =>
   ({ "--slot-count": slotCount }) as CSSProperties;
 
 const timelineEventStyle = (
   startSlot: number,
-  slotSpan: number
+  slotSpan: number,
+  topPx = startSlot * AGENDA_SLOT_HEIGHT_PX
 ): CSSProperties => ({
   "--start-slot": startSlot,
   "--slot-span": slotSpan,
-  top: `${startSlot * AGENDA_SLOT_HEIGHT_PX}px`,
-  height: `${Math.max(12, slotSpan * AGENDA_SLOT_HEIGHT_PX - 2)}px`,
+  top: `${topPx}px`,
+  height: `${Math.max(AGENDA_EVENT_MIN_HEIGHT_PX, slotSpan * AGENDA_SLOT_HEIGHT_PX - 2)}px`,
 }) as CSSProperties;
 
-const floorToAgendaSlot = (date: Date): Date => {
+const timelineDisplayEventStyle = (
+  startSlot: number,
+  slotSpan: number,
+  displayTopPx: number,
+  displayHeightPx: number
+): CSSProperties =>
+  ({
+    ...timelineEventStyle(startSlot, slotSpan, displayTopPx),
+    height: `${displayHeightPx}px`,
+  }) as CSSProperties;
+
+const floorToAgendaSlot = (date: Date, slotMinutes: number): Date => {
   const floored = new Date(date);
   floored.setSeconds(0, 0);
   floored.setMinutes(
-    Math.floor(floored.getMinutes() / AGENDA_SLOT_MINUTES) *
-      AGENDA_SLOT_MINUTES
+    Math.floor(floored.getMinutes() / slotMinutes) * slotMinutes
   );
   return floored;
 };
 
-const ceilMinutesToAgendaSlotCount = (minutes: number): number =>
-  Math.max(1, Math.ceil(minutes / AGENDA_SLOT_MINUTES));
+const ceilMinutesToAgendaSlotCount = (
+  minutes: number,
+  slotMinutes: number
+): number => Math.max(1, Math.ceil(minutes / slotMinutes));
+
+const getAgendaSlotMinutesForHeight = (availableHeight: number): number => {
+  const visibleSlotCount = Math.max(
+    1,
+    Math.floor(availableHeight / AGENDA_SLOT_HEIGHT_PX)
+  );
+  const slotMinutes = Math.ceil(
+    AGENDA_TARGET_VISIBLE_MINUTES /
+      visibleSlotCount /
+      AGENDA_BASE_SLOT_MINUTES
+  ) * AGENDA_BASE_SLOT_MINUTES;
+  return Math.max(AGENDA_BASE_SLOT_MINUTES, slotMinutes);
+};
 
 const formatMinuteCount = (minutes: number): string =>
   minutes === 1 ? "1 min" : `${minutes} min`;
@@ -693,31 +728,105 @@ export const MeetingMinutes = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
 
+  const agendaPaneRef = useRef<HTMLElement | null>(null);
   const [now, setNow] = useState(() => new Date());
   const focusedTopicId = meeting.focusedTopicId ?? null;
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
+  const [agendaSlotMinutes, setAgendaSlotMinutes] = useState(
+    AGENDA_BASE_SLOT_MINUTES
+  );
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicDuration, setNewTopicDuration] = useState<number>(5);
   const [showAddTopic, setShowAddTopic] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
+  const [editingMinuteId, setEditingMinuteId] = useState<string | null>(null);
+  const [editingActualDuration, setEditingActualDuration] = useState("");
+  const [isEditingMeetingStartTime, setIsEditingMeetingStartTime] =
+    useState(false);
+  const [editingMeetingStartTime, setEditingMeetingStartTime] = useState("");
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
   const [editingCurrentNoteId, setEditingCurrentNoteId] = useState<string | null>(null);
   const advanceTopic = useMutation(api.app.advanceTopic);
   const skipTopic = useMutation(api.app.skipTopic);
   const addTopic = useMutation(api.app.addTopic);
   const updateTopic = useMutation(api.app.updateTopic);
-  const reorderTopics = useMutation(api.app.reorderTopics);
+  const reorderTopics = useMutation(api.app.reorderTopics).withOptimisticUpdate(
+    (localStore, args) => {
+      if (args.list !== "liveAgenda") return;
+      const currentMeeting = localStore.getQuery(api.app.meeting, {
+        meetingId: args.meetingId,
+      }) as Meeting | undefined | null;
+      if (!currentMeeting) return;
+      const byId = new Map(
+        currentMeeting.liveAgenda.map((topic: Topic) => [topic.id, topic])
+      );
+      const reordered = (args.topicIds as string[])
+        .map((topicId: string) => byId.get(topicId))
+        .filter((topic: Topic | undefined): topic is Topic => Boolean(topic));
+      localStore.setQuery(
+        api.app.meeting,
+        { meetingId: args.meetingId },
+        {
+          ...currentMeeting,
+          liveAgenda: reordered,
+        }
+      );
+    }
+  );
   const makeActive = useMutation(api.app.makeActive);
   const addCurrentNote = useMutation(api.app.addCurrentNote);
   const updateCurrentNote = useMutation(api.app.updateCurrentNote);
   const removeCurrentNote = useMutation(api.app.removeCurrentNote);
   const setFocusedTopic = useMutation(api.app.setFocusedTopic);
+  const updateLiveStartTime = useMutation(api.app.updateLiveStartTime);
+  const updateMinuteDuration = useMutation(api.app.updateMinuteDuration);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const pane = agendaPaneRef.current;
+    if (!pane) return;
+
+    const updateSlotMinutes = () => {
+      const header = pane.querySelector<HTMLElement>(
+        ".minutes-agenda-pane-header"
+      );
+      const footer =
+        pane.querySelector<HTMLElement>(".minutes-add-topic-form") ??
+        pane.querySelector<HTMLElement>(":scope > .btn-secondary");
+      const availableHeight = Math.max(
+        AGENDA_SLOT_HEIGHT_PX,
+        pane.clientHeight -
+          (header?.offsetHeight ?? 0) -
+          (footer?.offsetHeight ?? 0) -
+          28
+      );
+      setAgendaSlotMinutes((current) => {
+        const next = getAgendaSlotMinutesForHeight(availableHeight);
+        return current === next ? current : next;
+      });
+    };
+
+    updateSlotMinutes();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateSlotMinutes);
+      return () => {
+        window.removeEventListener("resize", updateSlotMinutes);
+      };
+    }
+
+    const resizeObserver = new ResizeObserver(updateSlotMinutes);
+    resizeObserver.observe(pane);
+    window.addEventListener("resize", updateSlotMinutes);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateSlotMinutes);
+    };
+  }, [showAddTopic]);
 
   // Derive the meeting-active topic before any early returns so hook count stays stable.
   // "Meeting active" means the topic currently being discussed in the live meeting.
@@ -745,6 +854,7 @@ export const MeetingMinutes = () => {
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
 
   const liveStartTime = meeting.liveStartTime;
+  const meetingActualStartTime = liveStartTime ?? meeting.date;
 
   const sumCompletedMinutes = minutes
     .filter((m) => m !== null)
@@ -755,14 +865,14 @@ export const MeetingMinutes = () => {
         0,
         Math.floor(
           (now.getTime() -
-            (liveStartTime.getTime() + sumCompletedMinutes * 60 * 1000)) /
+            (meetingActualStartTime.getTime() + sumCompletedMinutes * 60 * 1000)) /
             1000
         )
       )
     : 0;
 
   const handleCompleteTopic = () => {
-    const actualDuration = Math.round(currentTopicActiveSeconds / 60);
+    const actualDuration = Math.max(1, Math.round(currentTopicActiveSeconds / 60));
     void advanceTopic({
       meetingId: meeting.id,
       actualDurationMinutes: actualDuration,
@@ -879,12 +989,17 @@ export const MeetingMinutes = () => {
     durationMinutes: number;
     startSlot: number;
     slotSpan: number;
+    displayTopPx: number;
+    displayHeightPx: number;
     plannedMinutes?: number;
   };
 
   const agendaTimelineEntries: AgendaTimelineEntry[] = [];
-  const agendaGridStart = floorToAgendaSlot(meeting.date);
-  let agendaCursor = new Date(meeting.date);
+  const agendaGridStart = floorToAgendaSlot(
+    meetingActualStartTime,
+    agendaSlotMinutes
+  );
+  let agendaCursor = new Date(meetingActualStartTime);
 
   const appendAgendaTimelineEntry = (
     item: AgendaMenuItem,
@@ -896,11 +1011,11 @@ export const MeetingMinutes = () => {
     const end = new Date(start.getTime() + normalizedDuration * 60 * 1000);
     const startSlot =
       (start.getTime() - agendaGridStart.getTime()) /
-      (AGENDA_SLOT_MINUTES * 60 * 1000);
+      (agendaSlotMinutes * 60 * 1000);
     const slotSpan = Math.max(
       0.2,
       (end.getTime() - start.getTime()) /
-        (AGENDA_SLOT_MINUTES * 60 * 1000)
+        (agendaSlotMinutes * 60 * 1000)
     );
     agendaTimelineEntries.push({
       item,
@@ -909,6 +1024,11 @@ export const MeetingMinutes = () => {
       durationMinutes: normalizedDuration,
       startSlot,
       slotSpan,
+      displayTopPx: startSlot * AGENDA_SLOT_HEIGHT_PX,
+      displayHeightPx: Math.max(
+        AGENDA_EVENT_MIN_HEIGHT_PX,
+        slotSpan * AGENDA_SLOT_HEIGHT_PX - 2
+      ),
       plannedMinutes,
     });
     agendaCursor = end;
@@ -943,16 +1063,42 @@ export const MeetingMinutes = () => {
   const timelineEntryByKey = new Map(
     agendaTimelineEntries.map((entry) => [entry.item.key, entry])
   );
+  let packedAgendaBottom = 0;
+  agendaTimelineEntries.forEach((entry, index) => {
+    const actualTop = entry.startSlot * AGENDA_SLOT_HEIGHT_PX;
+    const desiredHeight = Math.max(
+      AGENDA_EVENT_MIN_HEIGHT_PX,
+      entry.slotSpan * AGENDA_SLOT_HEIGHT_PX - 2
+    );
+    const nextActualTop =
+      agendaTimelineEntries[index + 1]?.startSlot === undefined
+        ? undefined
+        : agendaTimelineEntries[index + 1].startSlot * AGENDA_SLOT_HEIGHT_PX;
+    const displayTop = Math.max(actualTop, packedAgendaBottom);
+    const availableHeight =
+      nextActualTop === undefined
+        ? desiredHeight
+        : nextActualTop - displayTop - AGENDA_EVENT_GAP_PX;
+    const displayHeight = Math.max(
+      AGENDA_EVENT_MIN_HEIGHT_PX,
+      Math.min(desiredHeight, availableHeight)
+    );
+    entry.displayTopPx = displayTop;
+    entry.displayHeightPx = displayHeight;
+    packedAgendaBottom = displayTop + displayHeight + AGENDA_EVENT_GAP_PX;
+  });
   const agendaSlotCount = Math.max(
     1,
     ceilMinutesToAgendaSlotCount(
-      (agendaCursor.getTime() - agendaGridStart.getTime()) / (60 * 1000)
-    )
+      (agendaCursor.getTime() - agendaGridStart.getTime()) / (60 * 1000),
+      agendaSlotMinutes
+    ),
+    Math.ceil(packedAgendaBottom / AGENDA_SLOT_HEIGHT_PX)
   );
   const agendaTimeSlots = Array.from({ length: agendaSlotCount + 1 }, (_, index) => ({
     key: `slot:${index}`,
     label: formatAgendaTime(
-      new Date(agendaGridStart.getTime() + index * AGENDA_SLOT_MINUTES * 60 * 1000)
+      new Date(agendaGridStart.getTime() + index * agendaSlotMinutes * 60 * 1000)
     ),
     gridLine: index + 1,
   }));
@@ -1009,10 +1155,10 @@ export const MeetingMinutes = () => {
         type="number"
         min={1}
         value={editingDuration}
-        ref={(el) => el?.select()}
+        autoFocus
         onChange={(e) => setEditingDuration(e.target.value)}
-        onBlur={() => {
-          const v = parseInt(editingDuration);
+        onBlur={(e) => {
+          const v = parseInt(e.currentTarget.value);
           if (!isNaN(v) && v > 0) {
             void updateTopic({
               meetingId: meeting.id,
@@ -1039,6 +1185,58 @@ export const MeetingMinutes = () => {
         {topic.durationMinutes ?? "?"} min
       </span>
     );
+
+  const renderEditableActualDuration = (
+    minute: NonNullable<(typeof completedMinutes)[number]>
+  ) =>
+    editingMinuteId === minute.id ? (
+      <input
+        className="inline-duration-input"
+        type="number"
+        min={1}
+        value={editingActualDuration}
+        autoFocus
+        onChange={(e) => setEditingActualDuration(e.target.value)}
+        onBlur={(e) => {
+          const v = parseInt(e.currentTarget.value);
+          if (!isNaN(v) && v > 0) {
+            void updateMinuteDuration({
+              meetingId: meeting.id,
+              minuteId: minute.id,
+              durationMinutes: v,
+            });
+          }
+          setEditingMinuteId(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") setEditingMinuteId(null);
+        }}
+      />
+    ) : (
+      <span
+        onDoubleClick={() => {
+          setEditingMinuteId(minute.id);
+          setEditingActualDuration(String(minute.durationMinutes));
+        }}
+        title="Double-click to edit"
+      >
+        {minute.durationMinutes} min
+      </span>
+    );
+
+  const commitMeetingStartTime = (value = editingMeetingStartTime) => {
+    const match = value.match(/^(\d{2}):(\d{2})$/);
+    if (match) {
+      const next = new Date(meetingActualStartTime);
+      next.setHours(Number(match[1]), Number(match[2]), 0, 0);
+      void updateLiveStartTime({
+        meetingId: meeting.id,
+        liveStartTime: next.getTime(),
+      });
+    }
+    setIsEditingMeetingStartTime(false);
+  };
 
   const renderTimelineButtonContent = (entry: AgendaTimelineEntry) => {
     const { item } = entry;
@@ -1076,6 +1274,11 @@ export const MeetingMinutes = () => {
       </>
     );
   };
+
+  const getTimelineEntryTitle = (entry: AgendaTimelineEntry) =>
+    `${entry.item.topic.title} (${formatAgendaTime(entry.start)} - ${formatAgendaTime(
+      entry.end
+    )})`;
 
   const handleFocusTopic = (topicId: string) => {
     void setFocusedTopic({ meetingId: meeting.id, topicId });
@@ -1123,7 +1326,8 @@ export const MeetingMinutes = () => {
               )}
               {selectedAgendaItem.kind === "completed" && (
                 <span className="minutes-timer">
-                  Actual: {selectedAgendaItem.minute.durationMinutes} min
+                  Actual:{" "}
+                  {renderEditableActualDuration(selectedAgendaItem.minute)}
                 </span>
               )}
             </div>
@@ -1276,6 +1480,7 @@ export const MeetingMinutes = () => {
         onClick={() => setIsAgendaPaneOpen(false)}
       />
       <aside
+        ref={agendaPaneRef}
         id="minutes-agenda-pane"
         className={`minutes-section minutes-topic-tray${isAgendaPaneOpen ? " is-open" : ""}`}
         aria-label="Meeting agenda tray"
@@ -1283,7 +1488,38 @@ export const MeetingMinutes = () => {
         <div className="minutes-agenda-pane-header">
           <h2>Agenda</h2>
           <span className="minutes-agenda-pane-subtitle">
-            Starting {formatAgendaTime(meeting.date)}
+            Starting{" "}
+            {isEditingMeetingStartTime ? (
+              <input
+                className="minutes-start-time-input"
+                type="time"
+                value={editingMeetingStartTime}
+                autoFocus
+                onChange={(e) => setEditingMeetingStartTime(e.target.value)}
+                onBlur={(e) => commitMeetingStartTime(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                  if (e.key === "Escape") setIsEditingMeetingStartTime(false);
+                }}
+              />
+            ) : (
+              <button
+                className="minutes-inline-edit-button"
+                type="button"
+                title="Edit actual start time"
+                onClick={() => {
+                  setEditingMeetingStartTime(
+                    formatTimeInputValue(meetingActualStartTime)
+                  );
+                  setIsEditingMeetingStartTime(true);
+                }}
+              >
+                {formatAgendaTime(meetingActualStartTime)}
+              </button>
+            )}
           </span>
           <button
             className="minutes-agenda-pane-close"
@@ -1315,7 +1551,13 @@ export const MeetingMinutes = () => {
               <button
                 key={item.key}
                 className={`minutes-day-view-event minutes-agenda-completed-item${selectedTopicId === item.topic.id ? " is-selected" : ""}`}
-                style={timelineEventStyle(entry.startSlot, entry.slotSpan)}
+                style={timelineDisplayEventStyle(
+                  entry.startSlot,
+                  entry.slotSpan,
+                  entry.displayTopPx,
+                  entry.displayHeightPx
+                )}
+                title={getTimelineEntryTitle(entry)}
                 onClick={() => handleFocusTopic(item.topic.id)}
               >
                 {renderTimelineButtonContent(entry)}
@@ -1323,22 +1565,28 @@ export const MeetingMinutes = () => {
             );
           })}
 
-          {meetingActiveAgendaItem && (
-            <button
-              className={`minutes-day-view-event minutes-agenda-current-item is-meeting-active${selectedTopicId === meetingActiveAgendaItem.topic.id ? " is-selected" : ""}`}
-              style={timelineEventStyle(
-                timelineEntryByKey.get(meetingActiveAgendaItem.key)
-                  ?.startSlot ?? 0,
-                timelineEntryByKey.get(meetingActiveAgendaItem.key)
-                  ?.slotSpan ?? 1
-              )}
-              onClick={() => handleFocusTopic(meetingActiveAgendaItem.topic.id)}
-            >
-              {renderTimelineButtonContent(
-                timelineEntryByKey.get(meetingActiveAgendaItem.key)!
-              )}
-            </button>
-          )}
+          {meetingActiveAgendaItem &&
+            (() => {
+              const entry = timelineEntryByKey.get(meetingActiveAgendaItem.key);
+              if (!entry) return null;
+              return (
+                <button
+                  className={`minutes-day-view-event minutes-agenda-current-item is-meeting-active${selectedTopicId === meetingActiveAgendaItem.topic.id ? " is-selected" : ""}`}
+                  style={timelineDisplayEventStyle(
+                    entry.startSlot,
+                    entry.slotSpan,
+                    entry.displayTopPx,
+                    entry.displayHeightPx
+                  )}
+                  title={getTimelineEntryTitle(entry)}
+                  onClick={() =>
+                    handleFocusTopic(meetingActiveAgendaItem.topic.id)
+                  }
+                >
+                  {renderTimelineButtonContent(entry)}
+                </button>
+              );
+            })()}
 
           {remainingTopics.length > 0 ? (
             <DragDropContext onDragEnd={onDragEnd}>
@@ -1355,20 +1603,35 @@ export const MeetingMinutes = () => {
                       const topic = item.topic;
                       return (
                         <Draggable key={topic.id} draggableId={topic.id} index={index}>
-                          {(provided, snapshot) => (
-                            <li
-                              className={`minutes-day-view-draggable${selectedTopicId === topic.id ? " is-selected" : ""}${snapshot.isDragging ? " dragging" : ""}`}
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              style={{
-                                ...provided.draggableProps.style,
-                                ...timelineEventStyle(entry.startSlot, entry.slotSpan),
-                              }}
-                            >
+                          {(provided, snapshot) => {
+                            const timelineStyle = timelineDisplayEventStyle(
+                              entry.startSlot,
+                              entry.slotSpan,
+                              entry.displayTopPx,
+                              entry.displayHeightPx
+                            );
+                            const draggableStyle = snapshot.isDragging
+                              ? {
+                                  ...provided.draggableProps.style,
+                                  height: `${entry.displayHeightPx}px`,
+                                }
+                              : {
+                                  ...provided.draggableProps.style,
+                                  ...timelineStyle,
+                                };
+                            return (
+                              <li
+                                className={`minutes-day-view-draggable${selectedTopicId === topic.id ? " is-selected" : ""}${snapshot.isDragging ? " dragging" : ""}`}
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                style={draggableStyle}
+                              >
                               <div
                                 className={`minutes-day-view-event${selectedTopicId === topic.id ? " is-selected" : ""}`}
                                 role="button"
                                 tabIndex={0}
+                                style={{ height: `${entry.displayHeightPx}px` }}
+                                title={getTimelineEntryTitle(entry)}
                                 onClick={() => handleFocusTopic(topic.id)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
@@ -1386,8 +1649,9 @@ export const MeetingMinutes = () => {
                                 </span>
                                 {renderTimelineButtonContent(entry)}
                               </div>
-                            </li>
-                          )}
+                              </li>
+                            );
+                          }}
                         </Draggable>
                       );
                     })}
@@ -1408,9 +1672,15 @@ export const MeetingMinutes = () => {
               <div
                 key={item.key}
                 className={`minutes-day-view-event minutes-deferred-item${selectedTopicId === topic.id ? " is-selected" : ""}`}
-                style={timelineEventStyle(entry.startSlot, entry.slotSpan)}
+                style={timelineDisplayEventStyle(
+                  entry.startSlot,
+                  entry.slotSpan,
+                  entry.displayTopPx,
+                  entry.displayHeightPx
+                )}
                 role="button"
                 tabIndex={0}
+                title={getTimelineEntryTitle(entry)}
                 onClick={() => handleFocusTopic(topic.id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
