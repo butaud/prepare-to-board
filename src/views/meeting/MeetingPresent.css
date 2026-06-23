@@ -86,6 +86,127 @@
   margin: 0 0 12px 0;
 }
 
+.present-agenda-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.present-agenda-section-label {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary-color);
+}
+
+.present-agenda-section-label:first-child {
+  margin-top: 0;
+}
+
+.present-agenda-row {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background: var(--background-color);
+  box-shadow: 0 1px 3px var(--shadow-color);
+  overflow: hidden;
+}
+
+.meeting-present button.present-agenda-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--font-color);
+  box-shadow: none;
+  height: auto;
+  min-height: 58px;
+  padding: 13px 16px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.meeting-present button.present-agenda-item:hover:not(:disabled) {
+  background: var(--primary-color-subtle);
+  box-shadow: none;
+}
+
+.meeting-present button.present-agenda-item:disabled {
+  background: transparent;
+  border: 0;
+  color: var(--font-color);
+  cursor: default;
+  opacity: 1;
+  box-shadow: none;
+}
+
+.meeting-present button.present-agenda-item:disabled:hover {
+  background: transparent;
+  color: var(--font-color);
+  box-shadow: none;
+}
+
+.meeting-present button.present-agenda-item.is-focused {
+  background: var(--primary-color-subtle);
+  box-shadow: inset 4px 0 0 var(--primary-color);
+}
+
+.meeting-present button.present-agenda-item.is-meeting-active {
+  box-shadow: inset 4px 0 0 var(--primary-color);
+}
+
+.meeting-present button.present-agenda-item.is-meeting-active.is-focused {
+  box-shadow:
+    inset 4px 0 0 var(--primary-color),
+    inset 0 0 0 2px var(--primary-color-light);
+}
+
+.present-item-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.present-now-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: var(--background-color);
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.present-focused-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 16px 14px 20px;
+  border-top: 1px solid var(--primary-color-light);
+  border-left: 4px solid var(--primary-color);
+  font-size: 0.92rem;
+}
+
+.present-focused-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.9rem;
+  opacity: 0.82;
+}
+
 .present-topic-list {
   list-style: none;
   padding: 0;
@@ -291,6 +412,15 @@
 
   .present-section {
     padding: 12px 14px;
+  }
+
+  .meeting-present button.present-agenda-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .present-focused-notes {
+    padding: 10px 12px 12px 16px;
   }
 
   .present-topic-item {

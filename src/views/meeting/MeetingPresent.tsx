@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
-import { Topic } from "../../schema";
+import { Minute, Note, Topic } from "../../schema";
 import { NoteDisplay } from "../../ui/NoteDisplay";
+import { api } from "../../convexClient";
 
 import "./MeetingPresent.css";
 import "./MeetingMinutes.css";
@@ -24,34 +25,38 @@ const formatDuration = (totalSeconds: number): string => {
 const formatTime = (date: Date): string =>
   date.toLocaleTimeString(undefined, { timeStyle: "short" });
 
+type PresentAgendaItem = {
+  topic: Topic;
+  section: "completed" | "now" | "up-next";
+  minute?: Minute;
+  notes: Note[];
+  projectedStart?: Date | null;
+  activeSeconds?: number;
+};
+
 export const MeetingPresent = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
   const [now, setNow] = useState(() => new Date());
+  const focusedTopicId = meeting.focusedTopicId ?? null;
+  const setFocusedTopic = useMutation(api.app.setFocusedTopic);
+  const isOfficer = me.canWrite(meeting);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  if (!me.canWrite(meeting)) {
-    return <Navigate to=".." replace />;
-  }
-
-  if (meeting.status !== "live" && meeting.status !== "completed") {
-    return <p>Meeting is not currently live.</p>;
-  }
-
   const liveAgenda = meeting.liveAgenda ?? [];
   const minutes = meeting.minutes ?? [];
   const liveStartTime = meeting.liveStartTime;
 
-  // Elapsed since start
   const elapsedSeconds = liveStartTime
     ? Math.floor((now.getTime() - liveStartTime.getTime()) / 1000)
     : 0;
 
-  const completedCount = minutes.filter((m) => m !== null).length;
+  const completedMinutes = minutes.filter((m) => m !== null);
+  const completedCount = completedMinutes.length;
   const currentTopicIndex = liveAgenda.findIndex(
     (topic, index) =>
       index >= completedCount && !topic.cancelled && !topic.deferred
@@ -61,11 +66,10 @@ export const MeetingPresent = () => {
   const remainingStartIndex =
     currentTopicIndex === -1 ? completedCount : currentTopicIndex + 1;
 
-  // How long has the current topic been active?
-  // = now - (liveStartTime + sum of completed minute durations)
-  const sumCompletedMinutes = minutes
-    .filter((m) => m !== null)
-    .reduce((sum, m) => sum + (m.durationMinutes ?? 0), 0);
+  const sumCompletedMinutes = completedMinutes.reduce(
+    (sum, m) => sum + (m.durationMinutes ?? 0),
+    0
+  );
   const currentTopicActiveSeconds = liveStartTime
     ? Math.floor(
         (now.getTime() -
@@ -74,15 +78,11 @@ export const MeetingPresent = () => {
       )
     : 0;
 
-  // Remaining topics (after current)
   const remainingTopics = liveAgenda
     .filter((t) => t !== null)
     .slice(remainingStartIndex)
     .filter((t) => !t.cancelled);
 
-  // Base time for projected starts of remaining topics:
-  // use the later of (planned end of current topic) and (now),
-  // so that projected times shift with the clock when topics run long.
   const currentTopicPlannedMinutes = currentTopic?.durationMinutes ?? 0;
   const plannedCurrentTopicEnd = liveStartTime
     ? new Date(
@@ -90,12 +90,10 @@ export const MeetingPresent = () => {
           (sumCompletedMinutes + currentTopicPlannedMinutes) * 60 * 1000
       )
     : null;
-  let remainingProjectedBase =
-    plannedCurrentTopicEnd
-      ? new Date(Math.max(plannedCurrentTopicEnd.getTime(), now.getTime()))
-      : null;
+  let remainingProjectedBase = plannedCurrentTopicEnd
+    ? new Date(Math.max(plannedCurrentTopicEnd.getTime(), now.getTime()))
+    : null;
 
-  // Projected end time: base + sum of remaining topic durations
   const remainingDurationMs = remainingTopics.reduce(
     (sum, t) => sum + (t.durationMinutes ?? 0) * 60 * 1000,
     0
@@ -111,18 +109,155 @@ export const MeetingPresent = () => {
         : null;
       if (remainingProjectedBase) {
         remainingProjectedBase = new Date(
-          remainingProjectedBase.getTime() + (topic.durationMinutes ?? 0) * 60 * 1000
+          remainingProjectedBase.getTime() +
+            (topic.durationMinutes ?? 0) * 60 * 1000
         );
       }
       return { topic, projectedStart };
     });
 
-  // Completed topics
-  const completedMinutes = minutes.filter((m) => m !== null);
+  const completedItems: PresentAgendaItem[] = completedMinutes.map((minute) => ({
+    topic: minute.topic,
+    section: "completed",
+    minute,
+    notes: minute.notes?.filter((n) => n !== null) ?? [],
+  }));
+  const nowItem: PresentAgendaItem | null = currentTopic
+    ? {
+        topic: currentTopic,
+        section: "now",
+        notes: meeting.currentNotes?.filter((n) => n !== null) ?? [],
+        activeSeconds: currentTopicActiveSeconds,
+      }
+    : null;
+  const upcomingItems: PresentAgendaItem[] = remainingWithTimes.map(
+    ({ topic, projectedStart }) => ({
+      topic,
+      section: "up-next",
+      notes: [],
+      projectedStart,
+    })
+  );
+  const allItems = [
+    ...completedItems,
+    ...(nowItem ? [nowItem] : []),
+    ...upcomingItems,
+  ];
+  const focusedItem =
+    allItems.find((item) => item.topic.id === focusedTopicId) ??
+    nowItem ??
+    allItems[0] ??
+    null;
+  const selectedTopicId = focusedItem?.topic.id ?? null;
+  const hasFocusedAgendaTopic = focusedTopicId
+    ? allItems.some((item) => item.topic.id === focusedTopicId)
+    : false;
+  const fallbackFocusedTopicId = (nowItem ?? allItems[0])?.topic.id ?? null;
+
+  useEffect(() => {
+    if (!isOfficer) return;
+    if (!allItems.length) {
+      if (focusedTopicId) {
+        void setFocusedTopic({ meetingId: meeting.id, topicId: undefined });
+      }
+      return;
+    }
+    if (!hasFocusedAgendaTopic && fallbackFocusedTopicId) {
+      void setFocusedTopic({
+        meetingId: meeting.id,
+        topicId: fallbackFocusedTopicId,
+      });
+    }
+  }, [
+    isOfficer,
+    focusedTopicId,
+    hasFocusedAgendaTopic,
+    allItems.length,
+    fallbackFocusedTopicId,
+    meeting.id,
+    setFocusedTopic,
+  ]);
+
+  const focusTopic = (topicId: string) => {
+    if (!isOfficer) return;
+    void setFocusedTopic({ meetingId: meeting.id, topicId });
+  };
+
+  const renderAgendaItem = (item: PresentAgendaItem) => {
+    const topic = item.topic;
+    const isFocused = selectedTopicId === topic.id;
+    const planned =
+      topic.plannedTopic?.durationMinutes ?? topic.durationMinutes;
+    const actual = item.minute?.durationMinutes;
+    const diff =
+      actual !== undefined && planned !== undefined ? actual - planned : null;
+    const hasNotes = item.notes.length > 0;
+    const isOvertime =
+      item.activeSeconds !== undefined &&
+      item.activeSeconds > (topic.durationMinutes ?? 0) * 60;
+
+    return (
+      <li key={`${item.section}:${topic.id}`} className="present-agenda-row">
+        <button
+          className={`present-agenda-item${item.section === "now" ? " is-meeting-active" : ""}${isFocused ? " is-focused" : ""}`}
+          aria-expanded={isFocused}
+          disabled={!isOfficer}
+          onClick={() => focusTopic(topic.id)}
+        >
+          <span className="present-item-main">
+            <span className="present-topic-title">{topic.title}</span>
+            <span className="present-topic-meta">
+              {item.section === "completed" && actual !== undefined
+                ? `${actual} min actual`
+                : `${topic.durationMinutes ?? "?"} min planned`}
+              {item.section === "completed" &&
+                planned !== undefined &&
+                ` / ${planned} min planned`}
+              {diff !== null && diff !== 0 && (
+                <span className={diff > 0 ? "overtime" : "undertime"}>
+                  {" "}
+                  ({diff > 0 ? "+" : ""}
+                  {diff} min)
+                </span>
+              )}
+              {item.projectedStart && ` · starts ~${formatTime(item.projectedStart)}`}
+              {topic.deferred && " · deferred"}
+            </span>
+          </span>
+          {item.section === "now" && (
+            <span className="present-now-badge">Now Discussing</span>
+          )}
+        </button>
+
+        {isFocused && (
+          <div className="present-focused-notes">
+            {item.section === "now" && item.activeSeconds !== undefined && (
+              <div className="present-focused-meta">
+                <span>
+                  Active:{" "}
+                  <strong className={isOvertime ? "overtime" : undefined}>
+                    {formatDuration(item.activeSeconds)}
+                  </strong>
+                </span>
+              </div>
+            )}
+            {hasNotes ? (
+              item.notes.map((note, i) => <NoteDisplay key={i} note={note} />)
+            ) : (
+              <p className="present-empty">No notes for this topic.</p>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
+
+  if (meeting.status !== "live" && meeting.status !== "completed") {
+    return <p>Meeting is not currently live.</p>;
+  }
 
   return (
     <div className="meeting-present">
-      {/* Header bar */}
       <div className="present-header">
         <span className="present-date">
           {meeting.date.toLocaleDateString(undefined, {
@@ -142,109 +277,33 @@ export const MeetingPresent = () => {
         )}
       </div>
 
-      {/* Current topic */}
-      {currentTopic ? (
-        <div className="present-current-topic">
-          <div className="present-section-label">Now discussing</div>
-          <h2 className="present-current-title">{currentTopic.title}</h2>
-          {currentTopic.outcome && (
-            <p className="present-topic-outcome">{currentTopic.outcome}</p>
-          )}
-          {(meeting.currentNotes ?? []).filter((n) => n !== null).length > 0 && (
-            <div className="present-current-notes">
-              {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
-                <NoteDisplay key={i} note={note} />
-              ))}
-            </div>
-          )}
-          <div className="present-current-meta">
-            <span className="present-planned-duration">
-              Planned: {currentTopic.durationMinutes ?? "?"} min
-            </span>
-            <span className="present-active-timer">
-              Active:{" "}
-              <span
-                className={
-                  currentTopicActiveSeconds >
-                  (currentTopic.durationMinutes ?? 0) * 60
-                    ? "overtime"
-                    : ""
-                }
-              >
-                {formatDuration(currentTopicActiveSeconds)}
-              </span>
-            </span>
-          </div>
-        </div>
-      ) : (
+      {allItems.length === 0 ? (
         <div className="present-current-topic present-no-topic">
           <p>All topics have been covered.</p>
         </div>
-      )}
+      ) : (
+        <ol className="present-agenda-list">
+          {completedItems.length > 0 && (
+            <li className="present-agenda-section-label">Completed</li>
+          )}
+          {completedItems.map(renderAgendaItem)}
 
-      {/* Up next */}
-      {remainingWithTimes.length > 0 && (
-        <div className="present-section">
-          <h3 className="present-section-heading">Up Next</h3>
-          <ol className="present-topic-list">
-            {remainingWithTimes.map(({ topic, projectedStart }) => (
-              <li key={topic.id} className="present-topic-item">
-                <span className="present-topic-title">{topic.title}</span>
-                <span className="present-topic-meta">
-                  {topic.durationMinutes ?? "?"} min
-                  {projectedStart && ` · starts ~${formatTime(projectedStart)}`}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
+          {nowItem ? (
+            <>
+              <li className="present-agenda-section-label">Now Discussing</li>
+              {renderAgendaItem(nowItem)}
+            </>
+          ) : (
+            <li className="present-current-topic present-no-topic">
+              <p>All topics have been covered.</p>
+            </li>
+          )}
 
-      {/* Completed */}
-      {completedMinutes.length > 0 && (
-        <div className="present-section">
-          <h3 className="present-section-heading">Completed</h3>
-          <ol className="present-topic-list present-completed-list">
-            {completedMinutes.map((minute, idx) => {
-              const topic = minute.topic;
-              const planned = topic?.plannedTopic?.durationMinutes ?? topic?.durationMinutes;
-              const actual = minute.durationMinutes;
-              const diff = planned !== undefined ? actual - planned : null;
-              const notes = minute.notes
-                ? (minute.notes.filter((n) => n !== null))
-                : [];
-              return (
-                <li key={idx} className="present-topic-item present-completed">
-                  <div className="present-completed-body">
-                    <div className="present-completed-header">
-                      <span className="present-topic-title">
-                        {topic?.title ?? "(unknown)"}
-                      </span>
-                      <span className="present-topic-meta">
-                        {actual} min actual
-                        {planned !== undefined && ` / ${planned} min planned`}
-                        {diff !== null && diff !== 0 && (
-                          <span className={diff > 0 ? "overtime" : "undertime"}>
-                            {" "}
-                            ({diff > 0 ? "+" : ""}
-                            {diff} min)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    {notes.length > 0 && (
-                      <div className="present-completed-notes">
-                        {notes.map((note, ni) => (
-                          <NoteDisplay key={ni} note={note} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
+          {upcomingItems.length > 0 && (
+            <li className="present-agenda-section-label">Up Next</li>
+          )}
+          {upcomingItems.map(renderAgendaItem)}
+        </ol>
       )}
     </div>
   );

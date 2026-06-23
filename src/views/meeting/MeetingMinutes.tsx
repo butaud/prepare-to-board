@@ -653,7 +653,7 @@ export const MeetingMinutes = () => {
   const me = useLoadedAccount();
 
   const [now, setNow] = useState(() => new Date());
-  const [selectedAgendaItemId, setSelectedAgendaItemId] = useState<string | null>(null);
+  const focusedTopicId = meeting.focusedTopicId ?? null;
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicDuration, setNewTopicDuration] = useState<number>(5);
@@ -671,6 +671,7 @@ export const MeetingMinutes = () => {
   const addCurrentNote = useMutation(api.app.addCurrentNote);
   const updateCurrentNote = useMutation(api.app.updateCurrentNote);
   const removeCurrentNote = useMutation(api.app.removeCurrentNote);
+  const setFocusedTopic = useMutation(api.app.setFocusedTopic);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -819,25 +820,39 @@ export const MeetingMinutes = () => {
     ...deferredAgendaItems,
   ];
   const selectedAgendaItem =
-    agendaMenuItems.find((item) => item.key === selectedAgendaItemId) ??
+    agendaMenuItems.find((item) => item.topic.id === focusedTopicId) ??
     meetingActiveAgendaItem ??
     agendaMenuItems[0] ??
     null;
+  const selectedTopicId = selectedAgendaItem?.topic.id ?? null;
+  const hasFocusedAgendaTopic = focusedTopicId
+    ? agendaMenuItems.some((item) => item.topic.id === focusedTopicId)
+    : false;
+  const fallbackFocusedTopicId =
+    (meetingActiveAgendaItem ?? agendaMenuItems[0])?.topic.id ?? null;
 
   useEffect(() => {
+    if (!isOfficer) return;
     if (!agendaMenuItems.length) {
-      if (selectedAgendaItemId !== null) {
-        setSelectedAgendaItemId(null);
+      if (focusedTopicId) {
+        void setFocusedTopic({ meetingId: meeting.id, topicId: undefined });
       }
       return;
     }
-    if (!selectedAgendaItemId || !agendaMenuItems.some((item) => item.key === selectedAgendaItemId)) {
-      setSelectedAgendaItemId((meetingActiveAgendaItem ?? agendaMenuItems[0]).key);
+    if (!hasFocusedAgendaTopic && fallbackFocusedTopicId) {
+      void setFocusedTopic({
+        meetingId: meeting.id,
+        topicId: fallbackFocusedTopicId,
+      });
     }
   }, [
-    selectedAgendaItemId,
-    meetingActiveAgendaItem?.key,
-    agendaMenuItems.map((item) => item.key).join("|"),
+    isOfficer,
+    focusedTopicId,
+    hasFocusedAgendaTopic,
+    agendaMenuItems.length,
+    fallbackFocusedTopicId,
+    meeting.id,
+    setFocusedTopic,
   ]);
 
   // Completed meeting view
@@ -899,8 +914,8 @@ export const MeetingMinutes = () => {
       </span>
     );
 
-  const handleSelectAgendaItem = (key: string) => {
-    setSelectedAgendaItemId(key);
+  const handleFocusTopic = (topicId: string) => {
+    void setFocusedTopic({ meetingId: meeting.id, topicId });
     if (window.matchMedia("(max-width: 750px)").matches) {
       setIsAgendaPaneOpen(false);
     }
@@ -1128,8 +1143,8 @@ export const MeetingMinutes = () => {
                 return (
                   <li key={item.key} className="minutes-agenda-menu-row">
                     <button
-                      className={`minutes-agenda-menu-item minutes-agenda-completed-item${selectedAgendaItem?.key === item.key ? " is-selected" : ""}`}
-                      onClick={() => handleSelectAgendaItem(item.key)}
+                      className={`minutes-agenda-menu-item minutes-agenda-completed-item${selectedTopicId === item.topic.id ? " is-selected" : ""}`}
+                      onClick={() => handleFocusTopic(item.topic.id)}
                     >
                       <span className="minutes-agenda-menu-title">{topic?.title ?? "(unknown)"}</span>
                       <span className="minutes-agenda-menu-meta">
@@ -1155,8 +1170,8 @@ export const MeetingMinutes = () => {
           <div className="minutes-agenda-group">
             <h3 className="minutes-agenda-heading">Current</h3>
             <button
-              className={`minutes-agenda-menu-item minutes-agenda-current-item is-meeting-active${selectedAgendaItem?.key === meetingActiveAgendaItem.key ? " is-selected" : ""}`}
-              onClick={() => handleSelectAgendaItem(meetingActiveAgendaItem.key)}
+              className={`minutes-agenda-menu-item minutes-agenda-current-item is-meeting-active${selectedTopicId === meetingActiveAgendaItem.topic.id ? " is-selected" : ""}`}
+              onClick={() => handleFocusTopic(meetingActiveAgendaItem.topic.id)}
             >
               <span className="minutes-agenda-current-kicker">Now discussing</span>
               <span className="minutes-remaining-title">{meetingActiveTopic.title}</span>
@@ -1184,16 +1199,16 @@ export const MeetingMinutes = () => {
                     <Draggable key={topic.id} draggableId={topic.id} index={index}>
                       {(provided, snapshot) => (
                         <li
-                          className={`minutes-remaining-item${selectedAgendaItem?.key === `remaining:${topic.id}` ? " is-selected" : ""}${snapshot.isDragging ? " dragging" : ""}`}
+                          className={`minutes-remaining-item${selectedTopicId === topic.id ? " is-selected" : ""}${snapshot.isDragging ? " dragging" : ""}`}
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           role="button"
                           tabIndex={0}
-                          onClick={() => handleSelectAgendaItem(`remaining:${topic.id}`)}
+                          onClick={() => handleFocusTopic(topic.id)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
-                              handleSelectAgendaItem(`remaining:${topic.id}`);
+                              handleFocusTopic(topic.id);
                             }
                           }}
                         >
@@ -1254,14 +1269,14 @@ export const MeetingMinutes = () => {
               {deferredTopics.map((topic) => (
                 <li
                   key={topic.id}
-                  className={`minutes-remaining-item minutes-deferred-item${selectedAgendaItem?.key === `deferred:${topic.id}` ? " is-selected" : ""}`}
+                  className={`minutes-remaining-item minutes-deferred-item${selectedTopicId === topic.id ? " is-selected" : ""}`}
                   role="button"
                   tabIndex={0}
-                  onClick={() => handleSelectAgendaItem(`deferred:${topic.id}`)}
+                  onClick={() => handleFocusTopic(topic.id)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      handleSelectAgendaItem(`deferred:${topic.id}`);
+                      handleFocusTopic(topic.id);
                     }
                   }}
                 >

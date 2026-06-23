@@ -50,9 +50,11 @@ Useful commands:
 ```powershell
 & C:\nvm4w\nodejs\corepack.cmd yarn tsc -b
 & C:\nvm4w\nodejs\corepack.cmd yarn test:e2e
-& C:\nvm4w\nodejs\corepack.cmd yarn playwright test <spec> --project=signed-out --workers=1 --timeout=120000
+& C:\nvm4w\nodejs\corepack.cmd yarn playwright test e2e/smoke.spec.ts --project=signed-out --workers=1 --timeout=120000
 & C:\nvm4w\nodejs\corepack.cmd yarn convex dev --once
 ```
+
+On Windows, pass Playwright spec paths with forward slashes (`e2e/foo.spec.ts`), not backslashes. Backslash paths can fail with "No tests found."
 
 Playwright config loads `.env` and `.env.e2e.local`. Auth storage states live in `.auth/*.json`. `E2E_REFRESH_AUTH=true` forces refreshing those states.
 
@@ -178,8 +180,9 @@ When screenshots are needed, prefer a temporary Playwright spec that:
 ## Auth Handling
 
 - Reuse `.auth/*.json` storage states when they exist.
-- Use `E2E_REFRESH_AUTH=true` only when cached states are stale or a review specifically needs fresh sign-in coverage.
+- Use `E2E_REFRESH_AUTH=true` when cached states are stale, when auth behavior changed, or before a multi-user review if the previous run unexpectedly landed on a signed-out page.
 - If Clerk hosted sign-in fails while refreshing auth, report it as a blocker for auth refresh rather than printing secrets or repeatedly retrying.
+- Clerk password inputs are not reliably exposed as ARIA textboxes; use `input[name="password"], input[type="password"]` in auth helpers.
 - Do not print `.env.e2e.local`, `.auth/*.json`, Clerk tokens, Convex deployment secrets, invite URLs, or user passwords.
 - If a signed-out-only review fails because auth setup is running, inspect the Playwright project/global setup before assuming the product is broken.
 

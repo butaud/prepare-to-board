@@ -16,7 +16,9 @@ export const signInWithClerk = async (page: Page, user: TestUser) => {
     await continueButton.click();
   }
 
-  const passwordInput = page.getByRole("textbox", { name: /password/i });
+  const passwordInput = page
+    .locator('input[name="password"], input[type="password"]')
+    .first();
   await expect(passwordInput).toBeVisible();
   await passwordInput.fill(user.password);
 

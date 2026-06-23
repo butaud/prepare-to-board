@@ -58,9 +58,10 @@ export const SubHeader = ({
                 if ("onClick" in tab) {
                   return { onClick: tab.onClick, isActive: tab.isActive };
                 } else {
+                  const destinationPath = tab.destination.split("?")[0];
                   return {
                     onClick: () => navigate(tab.destination),
-                    isActive: location.pathname === tab.destination,
+                    isActive: location.pathname === destinationPath,
                   };
                 }
               })();

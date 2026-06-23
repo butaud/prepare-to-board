@@ -1,9 +1,9 @@
 import { chromium, FullConfig } from "@playwright/test";
 import { access, mkdir } from "node:fs/promises";
 import { signInWithClerk } from "./auth";
-import { configuredRoles, Role, testUsers } from "./test-users";
+import { configuredRoles, TestRole, testUsers } from "./test-users";
 
-const authProjects = new Set<Role>(["admin", "officer", "member"]);
+const authProjects = new Set<TestRole>(["admin", "officer", "member"]);
 
 const fileExists = async (path: string) => {
   try {
@@ -17,7 +17,7 @@ const fileExists = async (path: string) => {
 export default async function globalSetup(config: FullConfig) {
   const requestedRoles = config.projects
     .map((project) => project.name)
-    .filter((name): name is Role => authProjects.has(name as Role));
+    .filter((name): name is TestRole => authProjects.has(name as TestRole));
   const roles = configuredRoles.filter((role) => requestedRoles.includes(role));
   if (roles.length === 0) return;
 

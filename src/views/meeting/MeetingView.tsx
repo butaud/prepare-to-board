@@ -13,6 +13,7 @@ import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
+import { MeetingPresent } from "./MeetingPresent";
 
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
@@ -60,6 +61,10 @@ export const MeetingView = () => {
   }
 
   const isOfficer = me.canWrite(meeting);
+
+  if (meeting.status === "live" && !isOfficer) {
+    return <MeetingPresent />;
+  }
 
   if (meeting.status === "live") {
     if (!meeting.liveAgenda) {

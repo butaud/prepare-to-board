@@ -445,6 +445,7 @@ describe("MeetingView", () => {
           testMeeting.minutes!.push(minute);
           await testMeeting.waitForSync();
         });
+        await userEvent.click(screen.getByRole("button", { name: /Topic One/ }));
         expect(screen.getByText("Present completed note")).toBeInTheDocument();
       });
     });

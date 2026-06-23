@@ -63,15 +63,15 @@ export const MeetingShared = () => {
       });
     } else if (meeting.status === "live") {
       tabs.push({
-        label: "Manage Agenda",
-        icon: <PiListNumbersFill />,
-        destination: `/meetings/${meeting.id}`,
-        className: "live-meeting-tab",
-      });
-      tabs.push({
         label: "Present",
         icon: <MdOutlinePresentToAll />,
         destination: `/meetings/${meeting.id}/present`,
+        className: "live-meeting-tab",
+      });
+      tabs.push({
+        label: "Manage Agenda",
+        icon: <PiListNumbersFill />,
+        destination: `/meetings/${meeting.id}`,
         className: "live-meeting-tab",
       });
       tabs.push({

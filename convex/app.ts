@@ -166,6 +166,7 @@ const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
     })),
     liveStartTime: meeting.liveStartTime,
     currentNotes: meeting.currentNotes?.map((note) => serializeNote(note, members)),
+    focusedTopicId: meeting.focusedTopicId,
   };
 };
 
@@ -380,17 +381,36 @@ export const startMeeting = mutation({
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const liveAgenda = meeting.plannedAgenda.map((topic) => ({
+      ...topic,
+      id: id(),
+      plannedTopicId: topic.id,
+    }));
     await ctx.db.patch(args.meetingId, {
       status: "live",
       liveStartTime: Date.now(),
-      liveAgenda: meeting.plannedAgenda.map((topic) => ({
-        ...topic,
-        id: id(),
-        plannedTopicId: topic.id,
-      })),
+      liveAgenda,
       minutes: [],
       currentNotes: [],
+      focusedTopicId: liveAgenda.find((topic) => !topic.cancelled && !topic.deferred)?.id,
     });
+  },
+});
+
+export const setFocusedTopic = mutation({
+  args: { meetingId: v.id("meetings"), topicId: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    if (
+      args.topicId &&
+      !meeting.liveAgenda.some((topic) => topic.id === args.topicId) &&
+      !meeting.minutes.some((minute) => minute.topic.id === args.topicId)
+    ) {
+      throw new ConvexError("Topic not found");
+    }
+    await ctx.db.patch(args.meetingId, { focusedTopicId: args.topicId });
   },
 });
 
@@ -497,7 +517,11 @@ export const skipTopic = mutation({
     const liveAgenda = [...meeting.liveAgenda];
     liveAgenda.splice(currentIndex, 1);
     liveAgenda.push({ ...topic, deferred: true });
-    await ctx.db.patch(args.meetingId, { liveAgenda, currentNotes: [] });
+    await ctx.db.patch(args.meetingId, {
+      liveAgenda,
+      currentNotes: [],
+      focusedTopicId: liveAgenda.find((candidate) => !candidate.cancelled && !candidate.deferred)?.id,
+    });
   },
 });
 
@@ -517,7 +541,10 @@ export const makeActive = mutation({
     const [targetTopic] = liveAgenda.splice(adjustedTargetIndex, 1);
     liveAgenda.splice(currentIndex, 0, { ...targetTopic, deferred: false });
     liveAgenda.push({ ...currentTopic, deferred: true });
-    await ctx.db.patch(args.meetingId, { liveAgenda });
+    await ctx.db.patch(args.meetingId, {
+      liveAgenda,
+      focusedTopicId: targetTopic.id,
+    });
   },
 });
 
@@ -551,6 +578,11 @@ export const advanceTopic = mutation({
         },
       ],
       currentNotes: [],
+      focusedTopicId:
+        meeting.liveAgenda.find(
+          (candidate, index) =>
+            index > currentIndex && !candidate.cancelled && !candidate.deferred
+        )?.id ?? topic.id,
     });
   },
 });
