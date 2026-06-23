@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -26,6 +26,47 @@ const formatDuration = (totalSeconds: number): string => {
   }
   return `${sign}${m}m ${s}s`;
 };
+
+const formatAgendaTime = (date: Date): string =>
+  date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+const AGENDA_SLOT_MINUTES = 5;
+const AGENDA_SLOT_HEIGHT_PX = 72;
+
+const timelineGridStyle = (slotCount: number): CSSProperties =>
+  ({ "--slot-count": slotCount }) as CSSProperties;
+
+const timelineEventStyle = (
+  startSlot: number,
+  slotSpan: number
+): CSSProperties => ({
+  "--start-slot": startSlot,
+  "--slot-span": slotSpan,
+  top: `${startSlot * AGENDA_SLOT_HEIGHT_PX}px`,
+  height: `${Math.max(12, slotSpan * AGENDA_SLOT_HEIGHT_PX - 2)}px`,
+}) as CSSProperties;
+
+const floorToAgendaSlot = (date: Date): Date => {
+  const floored = new Date(date);
+  floored.setSeconds(0, 0);
+  floored.setMinutes(
+    Math.floor(floored.getMinutes() / AGENDA_SLOT_MINUTES) *
+      AGENDA_SLOT_MINUTES
+  );
+  return floored;
+};
+
+const ceilMinutesToAgendaSlotCount = (minutes: number): number =>
+  Math.max(1, Math.ceil(minutes / AGENDA_SLOT_MINUTES));
+
+const formatMinuteCount = (minutes: number): string =>
+  minutes === 1 ? "1 min" : `${minutes} min`;
+
+const formatDiff = (diff: number): string =>
+  diff === 0 ? "" : ` (${diff > 0 ? "+" : ""}${diff})`;
 
 // --- Note Forms ---
 
@@ -831,6 +872,91 @@ export const MeetingMinutes = () => {
   const fallbackFocusedTopicId =
     (meetingActiveAgendaItem ?? agendaMenuItems[0])?.topic.id ?? null;
 
+  type AgendaTimelineEntry = {
+    item: AgendaMenuItem;
+    start: Date;
+    end: Date;
+    durationMinutes: number;
+    startSlot: number;
+    slotSpan: number;
+    plannedMinutes?: number;
+  };
+
+  const agendaTimelineEntries: AgendaTimelineEntry[] = [];
+  const agendaGridStart = floorToAgendaSlot(meeting.date);
+  let agendaCursor = new Date(meeting.date);
+
+  const appendAgendaTimelineEntry = (
+    item: AgendaMenuItem,
+    durationMinutes: number,
+    plannedMinutes?: number
+  ) => {
+    const normalizedDuration = Math.max(1, Math.round(durationMinutes));
+    const start = new Date(agendaCursor);
+    const end = new Date(start.getTime() + normalizedDuration * 60 * 1000);
+    const startSlot =
+      (start.getTime() - agendaGridStart.getTime()) /
+      (AGENDA_SLOT_MINUTES * 60 * 1000);
+    const slotSpan = Math.max(
+      0.2,
+      (end.getTime() - start.getTime()) /
+        (AGENDA_SLOT_MINUTES * 60 * 1000)
+    );
+    agendaTimelineEntries.push({
+      item,
+      start,
+      end,
+      durationMinutes: normalizedDuration,
+      startSlot,
+      slotSpan,
+      plannedMinutes,
+    });
+    agendaCursor = end;
+  };
+
+  completedAgendaItems.forEach((item) => {
+    const planned =
+      item.topic.plannedTopic?.durationMinutes ?? item.topic.durationMinutes;
+    appendAgendaTimelineEntry(item, item.minute.durationMinutes, planned);
+  });
+
+  if (meetingActiveAgendaItem) {
+    const planned = meetingActiveAgendaItem.topic.durationMinutes;
+    const elapsedMinutes = Math.max(1, Math.ceil(currentTopicActiveSeconds / 60));
+    appendAgendaTimelineEntry(
+      meetingActiveAgendaItem,
+      Math.max(elapsedMinutes, planned ?? elapsedMinutes),
+      planned
+    );
+  }
+
+  remainingAgendaItems.forEach((item) => {
+    const planned = item.topic.durationMinutes;
+    appendAgendaTimelineEntry(item, planned ?? 5, planned);
+  });
+
+  deferredAgendaItems.forEach((item) => {
+    const planned = item.topic.durationMinutes;
+    appendAgendaTimelineEntry(item, planned ?? 5, planned);
+  });
+
+  const timelineEntryByKey = new Map(
+    agendaTimelineEntries.map((entry) => [entry.item.key, entry])
+  );
+  const agendaSlotCount = Math.max(
+    1,
+    ceilMinutesToAgendaSlotCount(
+      (agendaCursor.getTime() - agendaGridStart.getTime()) / (60 * 1000)
+    )
+  );
+  const agendaTimeSlots = Array.from({ length: agendaSlotCount + 1 }, (_, index) => ({
+    key: `slot:${index}`,
+    label: formatAgendaTime(
+      new Date(agendaGridStart.getTime() + index * AGENDA_SLOT_MINUTES * 60 * 1000)
+    ),
+    gridLine: index + 1,
+  }));
+
   useEffect(() => {
     if (!isOfficer) return;
     if (!agendaMenuItems.length) {
@@ -913,6 +1039,43 @@ export const MeetingMinutes = () => {
         {topic.durationMinutes ?? "?"} min
       </span>
     );
+
+  const renderTimelineButtonContent = (entry: AgendaTimelineEntry) => {
+    const { item } = entry;
+    const topic = item.topic;
+    const isCompleted = item.kind === "completed";
+    const diff =
+      isCompleted && entry.plannedMinutes !== undefined
+        ? entry.durationMinutes - entry.plannedMinutes
+        : null;
+    const statusLabel =
+      item.kind === "meeting-active"
+        ? "Now discussing"
+        : item.kind === "completed"
+          ? "Completed"
+          : item.kind === "deferred"
+            ? "Deferred"
+            : "Projected";
+
+    return (
+      <>
+        <span className="minutes-day-view-status">{statusLabel}</span>
+        <span className="minutes-day-view-title">{topic.title}</span>
+        <span className="minutes-day-view-meta">
+          {isCompleted
+            ? `${formatMinuteCount(entry.durationMinutes)}${formatDiff(
+                diff ?? 0
+              )}`
+            : item.kind === "meeting-active"
+              ? formatDuration(currentTopicActiveSeconds)
+              : formatMinuteCount(entry.durationMinutes)}
+        </span>
+        <span className="minutes-day-view-range">
+          {formatAgendaTime(entry.start)} - {formatAgendaTime(entry.end)}
+        </span>
+      </>
+    );
+  };
 
   const handleFocusTopic = (topicId: string) => {
     void setFocusedTopic({ meetingId: meeting.id, topicId });
@@ -1119,6 +1282,9 @@ export const MeetingMinutes = () => {
       >
         <div className="minutes-agenda-pane-header">
           <h2>Agenda</h2>
+          <span className="minutes-agenda-pane-subtitle">
+            Starting {formatAgendaTime(meeting.date)}
+          </span>
           <button
             className="minutes-agenda-pane-close"
             aria-label={isAgendaPaneOpen ? "Close agenda" : "Open agenda"}
@@ -1129,192 +1295,135 @@ export const MeetingMinutes = () => {
             <span aria-hidden="true">{isAgendaPaneOpen ? ">>" : "<<"}</span>
           </button>
         </div>
-        {completedMinutes.length > 0 && (
-          <div className="minutes-agenda-group">
-            <h3 className="minutes-agenda-heading">Completed</h3>
-            <ol className="minutes-list minutes-agenda-list">
-              {completedAgendaItems.map((item) => {
-                const minute = item.minute;
-                const topic = minute.topic;
-                const planned =
-                  topic?.plannedTopic?.durationMinutes ?? topic?.durationMinutes;
-                const actual = minute.durationMinutes;
-                const diff = planned !== undefined ? actual - planned : null;
-                return (
-                  <li key={item.key} className="minutes-agenda-menu-row">
-                    <button
-                      className={`minutes-agenda-menu-item minutes-agenda-completed-item${selectedTopicId === item.topic.id ? " is-selected" : ""}`}
-                      onClick={() => handleFocusTopic(item.topic.id)}
-                    >
-                      <span className="minutes-agenda-menu-title">{topic?.title ?? "(unknown)"}</span>
-                      <span className="minutes-agenda-menu-meta">
-                        {actual} min actual
-                        {planned !== undefined && ` / ${planned} min planned`}
-                        {diff !== null && diff !== 0 && (
-                          <span className={diff > 0 ? "overtime" : "undertime"}>
-                            {" "}
-                            ({diff > 0 ? "+" : ""}
-                            {diff})
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        )}
+        <div
+          className="minutes-day-view-grid"
+          style={timelineGridStyle(agendaSlotCount)}
+        >
+          {agendaTimeSlots.map((slot) => (
+            <div
+              key={slot.key}
+              className="minutes-day-view-tick"
+              style={{ gridRow: slot.gridLine }}
+            >
+              <span>{slot.label}</span>
+            </div>
+          ))}
+          {completedAgendaItems.map((item) => {
+            const entry = timelineEntryByKey.get(item.key);
+            if (!entry) return null;
+            return (
+              <button
+                key={item.key}
+                className={`minutes-day-view-event minutes-agenda-completed-item${selectedTopicId === item.topic.id ? " is-selected" : ""}`}
+                style={timelineEventStyle(entry.startSlot, entry.slotSpan)}
+                onClick={() => handleFocusTopic(item.topic.id)}
+              >
+                {renderTimelineButtonContent(entry)}
+              </button>
+            );
+          })}
 
-        {meetingActiveTopic && meetingActiveAgendaItem && (
-          <div className="minutes-agenda-group">
-            <h3 className="minutes-agenda-heading">Current</h3>
+          {meetingActiveAgendaItem && (
             <button
-              className={`minutes-agenda-menu-item minutes-agenda-current-item is-meeting-active${selectedTopicId === meetingActiveAgendaItem.topic.id ? " is-selected" : ""}`}
+              className={`minutes-day-view-event minutes-agenda-current-item is-meeting-active${selectedTopicId === meetingActiveAgendaItem.topic.id ? " is-selected" : ""}`}
+              style={timelineEventStyle(
+                timelineEntryByKey.get(meetingActiveAgendaItem.key)
+                  ?.startSlot ?? 0,
+                timelineEntryByKey.get(meetingActiveAgendaItem.key)
+                  ?.slotSpan ?? 1
+              )}
               onClick={() => handleFocusTopic(meetingActiveAgendaItem.topic.id)}
             >
-              <span className="minutes-agenda-current-kicker">Now discussing</span>
-              <span className="minutes-remaining-title">{meetingActiveTopic.title}</span>
-              <span className="minutes-remaining-duration">
-                {meetingActiveTopic.durationMinutes ?? "?"} min planned
-              </span>
-            </button>
-          </div>
-        )}
-
-        <div className="minutes-agenda-group">
-          <h3 className="minutes-agenda-heading">Remaining</h3>
-        {remainingTopics.length === 0 ? (
-          <p>No remaining topics.</p>
-        ) : (
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="minutes-remaining">
-              {(provided) => (
-                <ul
-                  className="minutes-remaining-list"
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                >
-                  {remainingTopics.map((topic, index) => (
-                    <Draggable key={topic.id} draggableId={topic.id} index={index}>
-                      {(provided, snapshot) => (
-                        <li
-                          className={`minutes-remaining-item${selectedTopicId === topic.id ? " is-selected" : ""}${snapshot.isDragging ? " dragging" : ""}`}
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => handleFocusTopic(topic.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              handleFocusTopic(topic.id);
-                            }
-                          }}
-                        >
-                          <span
-                            className="drag-handle"
-                            {...provided.dragHandleProps}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            ⠿
-                          </span>
-                          <div className="minutes-agenda-menu-content">
-                            <span className="minutes-agenda-menu-title">{topic.title}</span>
-                            <span className="minutes-agenda-menu-meta">{topic.durationMinutes ?? "?"} min planned</span>
-                          </div>
-                          <button
-                            className="btn-small btn-primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void makeActive({
-                                meetingId: meeting.id,
-                                topicId: topic.id,
-                              });
-                            }}
-                            disabled={!meetingActiveTopic}
-                          >
-                            Make Active
-                          </button>
-                          <button
-                            className="btn-small btn-danger"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void updateTopic({
-                                meetingId: meeting.id,
-                                list: "liveAgenda",
-                                topicId: topic.id,
-                                deferred: true,
-                              });
-                            }}
-                          >
-                            Skip
-                          </button>
-                        </li>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ul>
+              {renderTimelineButtonContent(
+                timelineEntryByKey.get(meetingActiveAgendaItem.key)!
               )}
-            </Droppable>
-          </DragDropContext>
-        )}
-        </div>
+            </button>
+          )}
 
-        {deferredTopics.length > 0 && (
-          <div className="minutes-agenda-group">
-            <h3 className="minutes-deferred-heading">Deferred</h3>
-            <ul className="minutes-remaining-list">
-              {deferredTopics.map((topic) => (
-                <li
-                  key={topic.id}
-                  className={`minutes-remaining-item minutes-deferred-item${selectedTopicId === topic.id ? " is-selected" : ""}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleFocusTopic(topic.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleFocusTopic(topic.id);
-                    }
+          {remainingTopics.length > 0 ? (
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="minutes-remaining">
+                {(provided) => (
+                  <ul
+                    className="minutes-day-view-list"
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    {remainingAgendaItems.map((item, index) => {
+                      const entry = timelineEntryByKey.get(item.key);
+                      if (!entry) return null;
+                      const topic = item.topic;
+                      return (
+                        <Draggable key={topic.id} draggableId={topic.id} index={index}>
+                          {(provided, snapshot) => (
+                            <li
+                              className={`minutes-day-view-draggable${selectedTopicId === topic.id ? " is-selected" : ""}${snapshot.isDragging ? " dragging" : ""}`}
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              style={{
+                                ...provided.draggableProps.style,
+                                ...timelineEventStyle(entry.startSlot, entry.slotSpan),
+                              }}
+                            >
+                              <div
+                                className={`minutes-day-view-event${selectedTopicId === topic.id ? " is-selected" : ""}`}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => handleFocusTopic(topic.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    handleFocusTopic(topic.id);
+                                  }
+                                }}
+                              >
+                                <span
+                                  className="drag-handle"
+                                  {...provided.dragHandleProps}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  ⠿
+                                </span>
+                                {renderTimelineButtonContent(entry)}
+                              </div>
+                            </li>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {provided.placeholder}
+                  </ul>
+                )}
+              </Droppable>
+            </DragDropContext>
+          ) : (
+            <p className="minutes-day-view-empty">No remaining topics.</p>
+          )}
+
+          {deferredAgendaItems.map((item) => {
+            const entry = timelineEntryByKey.get(item.key);
+            if (!entry) return null;
+            const topic = item.topic;
+            return (
+              <div
+                key={item.key}
+                className={`minutes-day-view-event minutes-deferred-item${selectedTopicId === topic.id ? " is-selected" : ""}`}
+                style={timelineEventStyle(entry.startSlot, entry.slotSpan)}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleFocusTopic(topic.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleFocusTopic(topic.id);
+                  }
                   }}
                 >
-                  <div
-                    className="minutes-agenda-menu-content"
-                  >
-                    <span className="minutes-agenda-menu-title">{topic.title}</span>
-                    <span className="minutes-agenda-menu-meta">{topic.durationMinutes ?? "?"} min planned</span>
-                  </div>
-                  <button
-                    className="btn-small btn-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void makeActive({ meetingId: meeting.id, topicId: topic.id });
-                    }}
-                    disabled={!meetingActiveTopic}
-                  >
-                    Make Active
-                  </button>
-                  <button
-                    className="btn-small btn-danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void updateTopic({
-                        meetingId: meeting.id,
-                        list: "liveAgenda",
-                        topicId: topic.id,
-                        deferred: true,
-                      });
-                    }}
-                  >
-                    Skip
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                  {renderTimelineButtonContent(entry)}
+              </div>
+            );
+          })}
+        </div>
 
         {showAddTopic ? (
           <div className="minutes-add-topic-form">
