@@ -56,7 +56,7 @@ The app is served at [http://localhost:5173](http://localhost:5173).
 
 ### Testing
 
-Execute the test suite with [Vitest](https://vitest.dev/):
+Run the static test checks:
 
 ```bash
 yarn test
