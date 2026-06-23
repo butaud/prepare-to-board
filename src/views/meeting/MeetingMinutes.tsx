@@ -653,6 +653,8 @@ export const MeetingMinutes = () => {
   const me = useLoadedAccount();
 
   const [now, setNow] = useState(() => new Date());
+  const [selectedAgendaItemId, setSelectedAgendaItemId] = useState<string | null>(null);
+  const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicDuration, setNewTopicDuration] = useState<number>(5);
   const [showAddTopic, setShowAddTopic] = useState(false);
@@ -675,40 +677,30 @@ export const MeetingMinutes = () => {
     return () => clearInterval(id);
   }, []);
 
-  // Derive current topic id before any early returns so hook count stays stable
+  // Derive the meeting-active topic before any early returns so hook count stays stable.
+  // "Meeting active" means the topic currently being discussed in the live meeting.
+  // "Selected" means the agenda item the minute taker has opened in the detail pane.
   const liveAgenda = meeting.liveAgenda ?? [];
   const minutes = meeting.minutes ?? [];
   const completedCount = minutes.filter((m) => m !== null).length;
-  const currentTopicIndex = liveAgenda.findIndex(
+  const meetingActiveTopicIndex = liveAgenda.findIndex(
     (topic, index) =>
       index >= completedCount && !topic.cancelled && !topic.deferred
   );
-  const currentTopic: Topic | null =
-    currentTopicIndex === -1 ? null : liveAgenda[currentTopicIndex];
+  const meetingActiveTopic: Topic | null =
+    meetingActiveTopicIndex === -1 ? null : liveAgenda[meetingActiveTopicIndex];
   const remainingStartIndex =
-    currentTopicIndex === -1 ? completedCount : currentTopicIndex + 1;
-  const currentTopicId = currentTopic?.id ?? null;
+    meetingActiveTopicIndex === -1 ? completedCount : meetingActiveTopicIndex + 1;
+  const meetingActiveTopicId = meetingActiveTopic?.id ?? null;
 
   useEffect(() => {
     setNoteFormType(null);
-  }, [currentTopicId]);
+    setEditingCurrentNoteId(null);
+  }, [meetingActiveTopicId]);
 
   const isOfficer = me?.canWrite(meeting);
 
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
-
-  // Completed meeting view
-  if (meeting.status === "completed") {
-    return <PostMeetingMinutes />;
-  }
-
-  if (meeting.status !== "live") {
-    return <p>Meeting has not started yet.</p>;
-  }
-
-  if (!isOfficer) {
-    return <p>You do not have permission to take minutes.</p>;
-  }
 
   const liveStartTime = meeting.liveStartTime;
 
@@ -782,6 +774,85 @@ export const MeetingMinutes = () => {
 
   const completedMinutes = minutes.filter((m) => m !== null);
 
+  type CompletedAgendaMenuItem =
+    {
+      key: string;
+      kind: "completed";
+      topic: Topic;
+      minute: NonNullable<(typeof completedMinutes)[number]>;
+    };
+  type AgendaMenuItem =
+    | CompletedAgendaMenuItem
+    | {
+        key: string;
+        kind: "meeting-active" | "remaining" | "deferred";
+        topic: Topic;
+      };
+
+  const completedAgendaItems: CompletedAgendaMenuItem[] = completedMinutes.map((minute) => ({
+    key: `completed:${minute.id}`,
+    kind: "completed",
+    topic: minute.topic,
+    minute,
+  }));
+  const meetingActiveAgendaItem: AgendaMenuItem | null = meetingActiveTopic
+    ? {
+        key: `meeting-active:${meetingActiveTopic.id}`,
+        kind: "meeting-active",
+        topic: meetingActiveTopic,
+      }
+    : null;
+  const remainingAgendaItems: AgendaMenuItem[] = remainingTopics.map((topic) => ({
+    key: `remaining:${topic.id}`,
+    kind: "remaining",
+    topic,
+  }));
+  const deferredAgendaItems: AgendaMenuItem[] = deferredTopics.map((topic) => ({
+    key: `deferred:${topic.id}`,
+    kind: "deferred",
+    topic,
+  }));
+  const agendaMenuItems = [
+    ...completedAgendaItems,
+    ...(meetingActiveAgendaItem ? [meetingActiveAgendaItem] : []),
+    ...remainingAgendaItems,
+    ...deferredAgendaItems,
+  ];
+  const selectedAgendaItem =
+    agendaMenuItems.find((item) => item.key === selectedAgendaItemId) ??
+    meetingActiveAgendaItem ??
+    agendaMenuItems[0] ??
+    null;
+
+  useEffect(() => {
+    if (!agendaMenuItems.length) {
+      if (selectedAgendaItemId !== null) {
+        setSelectedAgendaItemId(null);
+      }
+      return;
+    }
+    if (!selectedAgendaItemId || !agendaMenuItems.some((item) => item.key === selectedAgendaItemId)) {
+      setSelectedAgendaItemId((meetingActiveAgendaItem ?? agendaMenuItems[0]).key);
+    }
+  }, [
+    selectedAgendaItemId,
+    meetingActiveAgendaItem?.key,
+    agendaMenuItems.map((item) => item.key).join("|"),
+  ]);
+
+  // Completed meeting view
+  if (meeting.status === "completed") {
+    return <PostMeetingMinutes />;
+  }
+
+  if (meeting.status !== "live") {
+    return <p>Meeting has not started yet.</p>;
+  }
+
+  if (!isOfficer) {
+    return <p>You do not have permission to take minutes.</p>;
+  }
+
   const formatDurationOvertime = (seconds: number, plannedMinutes: number) => {
     const formatted = formatDuration(seconds);
     if (seconds > plannedMinutes * 60) {
@@ -790,144 +861,230 @@ export const MeetingMinutes = () => {
     return <span>{formatted}</span>;
   };
 
+  const renderEditableDuration = (topic: Topic) =>
+    editingTopicId === topic.id ? (
+      <input
+        className="inline-duration-input"
+        type="number"
+        min={1}
+        value={editingDuration}
+        ref={(el) => el?.select()}
+        onChange={(e) => setEditingDuration(e.target.value)}
+        onBlur={() => {
+          const v = parseInt(editingDuration);
+          if (!isNaN(v) && v > 0) {
+            void updateTopic({
+              meetingId: meeting.id,
+              list: "liveAgenda",
+              topicId: topic.id,
+              durationMinutes: v,
+            });
+          }
+          setEditingTopicId(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") setEditingTopicId(null);
+        }}
+      />
+    ) : (
+      <span
+        onDoubleClick={() => {
+          setEditingTopicId(topic.id);
+          setEditingDuration(String(topic.durationMinutes ?? ""));
+        }}
+        title="Double-click to edit"
+      >
+        {topic.durationMinutes ?? "?"} min
+      </span>
+    );
+
+  const handleSelectAgendaItem = (key: string) => {
+    setSelectedAgendaItemId(key);
+    if (window.matchMedia("(max-width: 600px)").matches) {
+      setIsAgendaPaneOpen(false);
+    }
+  };
+
   return (
     <div className="meeting-minutes">
-      {/* Current Topic */}
-      <section className="minutes-section minutes-current-section">
-        <h2>Current Topic</h2>
-        {currentTopic ? (
+      <section className="minutes-section minutes-topic-detail-section">
+        {selectedAgendaItem ? (
           <div className="minutes-current-topic">
-            <h3>{currentTopic.title}</h3>
+            <h2>
+              {selectedAgendaItem.kind === "meeting-active"
+                ? "Active Topic"
+                : selectedAgendaItem.kind === "completed"
+                  ? "Completed Topic"
+                  : selectedAgendaItem.kind === "deferred"
+                    ? "Deferred Topic"
+                    : "Planned Topic"}
+            </h2>
+            <h3>{selectedAgendaItem.topic.title}</h3>
             <div className="minutes-current-meta">
               <span>
                 Planned:{" "}
-                {editingTopicId === currentTopic.id ? (
-                  <input
-                    className="inline-duration-input"
-                    type="number"
-                    min={1}
-                    value={editingDuration}
-                    ref={(el) => el?.select()}
-                    onChange={(e) => setEditingDuration(e.target.value)}
-                    onBlur={() => {
-                      const v = parseInt(editingDuration);
-                      if (!isNaN(v) && v > 0) {
-                        void updateTopic({
-                          meetingId: meeting.id,
-                          list: "liveAgenda",
-                          topicId: currentTopic.id,
-                          durationMinutes: v,
-                        });
-                      }
-                      setEditingTopicId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
-                      if (e.key === "Escape") setEditingTopicId(null);
-                    }}
-                  />
-                ) : (
-                  <span
-                    onDoubleClick={() => {
-                      setEditingTopicId(currentTopic.id);
-                      setEditingDuration(String(currentTopic.durationMinutes ?? ""));
-                    }}
-                    title="Double-click to edit"
-                  >
-                    {currentTopic.durationMinutes ?? "?"} min
+                {selectedAgendaItem.kind === "completed" ? (
+                  <span>
+                    {selectedAgendaItem.topic.plannedTopic?.durationMinutes ??
+                      selectedAgendaItem.topic.durationMinutes ??
+                      "?"} min
                   </span>
+                ) : (
+                  renderEditableDuration(selectedAgendaItem.topic)
                 )}
               </span>
-              <span className="minutes-timer">
-                Active:{" "}
-                {formatDurationOvertime(
-                  currentTopicActiveSeconds,
-                  currentTopic.durationMinutes ?? 0
-                )}
-              </span>
+              {selectedAgendaItem.kind === "meeting-active" && (
+                <span className="minutes-timer">
+                  Active:{" "}
+                  {formatDurationOvertime(
+                    currentTopicActiveSeconds,
+                    selectedAgendaItem.topic.durationMinutes ?? 0
+                  )}
+                </span>
+              )}
+              {selectedAgendaItem.kind === "completed" && (
+                <span className="minutes-timer">
+                  Actual: {selectedAgendaItem.minute.durationMinutes} min
+                </span>
+              )}
             </div>
 
-            <div className="minutes-actions">
-              <button className="btn-primary" onClick={handleCompleteTopic}>
-                Complete Topic
-              </button>
-              <button className="btn-secondary" onClick={handleSkipTopic}>
-                Skip Topic
-              </button>
-            </div>
+            {selectedAgendaItem.kind === "meeting-active" && (
+              <div className="minutes-actions">
+                <button className="btn-primary" onClick={handleCompleteTopic}>
+                  Complete Topic
+                </button>
+                <button className="btn-secondary" onClick={handleSkipTopic}>
+                  Skip Topic
+                </button>
+              </div>
+            )}
 
-            {/* Notes section */}
-            <div className="minutes-notes-section">
-              <h4>Notes for this topic</h4>
-
-              {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
-                <EditableNote
-                  key={note.id}
-                  note={note}
-                  members={members}
-                  isEditing={editingCurrentNoteId === note.id}
-                  onStartEdit={() => {
-                    setNoteFormType(null);
-                    setEditingCurrentNoteId(note.id);
-                  }}
-                  onStopEdit={() => setEditingCurrentNoteId(null)}
-                  onUpdate={(updatedNote) =>
-                    void updateCurrentNote({
+            {selectedAgendaItem.kind === "remaining" && (
+              <div className="minutes-actions">
+                <button
+                  className="btn-primary"
+                  onClick={() =>
+                    void makeActive({
                       meetingId: meeting.id,
-                      noteId: note.id,
-                      note: toStoredNote(updatedNote),
+                      topicId: selectedAgendaItem.topic.id,
                     })
                   }
-                  onDelete={() => {
-                    void removeCurrentNote({ meetingId: meeting.id, index: i });
-                  }}
-                />
-              ))}
+                  disabled={!meetingActiveTopic}
+                >
+                  Make Active
+                </button>
+                <button
+                  className="btn-secondary"
+                  onClick={() =>
+                    void updateTopic({
+                      meetingId: meeting.id,
+                      list: "liveAgenda",
+                      topicId: selectedAgendaItem.topic.id,
+                      deferred: true,
+                    })
+                  }
+                >
+                  Skip Topic
+                </button>
+              </div>
+            )}
 
-              {!noteFormType && !editingCurrentNoteId && (
-                <div className="minutes-note-add-buttons">
-                  <button className="btn-small btn-secondary" onClick={() => setNoteFormType("text")}>+ Text</button>
-                  <button className="btn-small btn-secondary" onClick={() => setNoteFormType("action_item")}>+ Action Item</button>
-                  <button className="btn-small btn-secondary" onClick={() => setNoteFormType("motion")}>+ Motion</button>
-                </div>
-              )}
+            {selectedAgendaItem.kind === "deferred" && (
+              <div className="minutes-actions">
+                <button
+                  className="btn-primary"
+                  onClick={() =>
+                    void makeActive({
+                      meetingId: meeting.id,
+                      topicId: selectedAgendaItem.topic.id,
+                    })
+                  }
+                  disabled={!meetingActiveTopic}
+                >
+                  Make Active
+                </button>
+              </div>
+            )}
 
-              {noteFormType === "text" && (
-                <TextNoteForm
-                  onAdd={(pn) => {
-                    void addCurrentNote({
-                      meetingId: meeting.id,
-                      note: toStoredNote(pn),
-                    }).then(() => setNoteFormType(null));
-                  }}
-                  onCancel={() => setNoteFormType(null)}
-                />
-              )}
-              {noteFormType === "action_item" && (
-                <ActionItemForm
-                  onAdd={(pn) => {
-                    void addCurrentNote({
-                      meetingId: meeting.id,
-                      note: toStoredNote(pn),
-                    }).then(() => setNoteFormType(null));
-                  }}
-                  onCancel={() => setNoteFormType(null)}
-                  members={members}
-                />
-              )}
-              {noteFormType === "motion" && (
-                <MotionForm
-                  onAdd={(pn) => {
-                    void addCurrentNote({
-                      meetingId: meeting.id,
-                      note: toStoredNote(pn),
-                    }).then(() => setNoteFormType(null));
-                  }}
-                  onCancel={() => setNoteFormType(null)}
-                  members={members}
-                />
-              )}
-            </div>
+            {selectedAgendaItem.kind === "completed" && (
+              <CompletedMinuteNotes minute={selectedAgendaItem.minute} meeting={meeting} members={members} />
+            )}
+
+            {selectedAgendaItem.kind === "meeting-active" && (
+              <div className="minutes-notes-section">
+                <h4>Notes for this topic</h4>
+
+                {(meeting.currentNotes ?? []).filter((n) => n !== null).map((note, i) => (
+                  <EditableNote
+                    key={note.id}
+                    note={note}
+                    members={members}
+                    isEditing={editingCurrentNoteId === note.id}
+                    onStartEdit={() => {
+                      setNoteFormType(null);
+                      setEditingCurrentNoteId(note.id);
+                    }}
+                    onStopEdit={() => setEditingCurrentNoteId(null)}
+                    onUpdate={(updatedNote) =>
+                      void updateCurrentNote({
+                        meetingId: meeting.id,
+                        noteId: note.id,
+                        note: toStoredNote(updatedNote),
+                      })
+                    }
+                    onDelete={() => {
+                      void removeCurrentNote({ meetingId: meeting.id, index: i });
+                    }}
+                  />
+                ))}
+
+                {!noteFormType && !editingCurrentNoteId && (
+                  <div className="minutes-note-add-buttons">
+                    <button className="btn-small btn-secondary" onClick={() => setNoteFormType("text")}>+ Text</button>
+                    <button className="btn-small btn-secondary" onClick={() => setNoteFormType("action_item")}>+ Action Item</button>
+                    <button className="btn-small btn-secondary" onClick={() => setNoteFormType("motion")}>+ Motion</button>
+                  </div>
+                )}
+
+                {noteFormType === "text" && (
+                  <TextNoteForm
+                    onAdd={(pn) => {
+                      void addCurrentNote({
+                        meetingId: meeting.id,
+                        note: toStoredNote(pn),
+                      }).then(() => setNoteFormType(null));
+                    }}
+                    onCancel={() => setNoteFormType(null)}
+                  />
+                )}
+                {noteFormType === "action_item" && (
+                  <ActionItemForm
+                    onAdd={(pn) => {
+                      void addCurrentNote({
+                        meetingId: meeting.id,
+                        note: toStoredNote(pn),
+                      }).then(() => setNoteFormType(null));
+                    }}
+                    onCancel={() => setNoteFormType(null)}
+                    members={members}
+                  />
+                )}
+                {noteFormType === "motion" && (
+                  <MotionForm
+                    onAdd={(pn) => {
+                      void addCurrentNote({
+                        meetingId: meeting.id,
+                        note: toStoredNote(pn),
+                      }).then(() => setNoteFormType(null));
+                    }}
+                    onCancel={() => setNoteFormType(null)}
+                    members={members}
+                  />
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <p>All topics have been covered. You can end the meeting.</p>
@@ -935,25 +1092,47 @@ export const MeetingMinutes = () => {
       </section>
 
       {/* Agenda */}
-      <aside className="minutes-section minutes-topic-tray" aria-label="Meeting agenda tray">
-        <h2>Agenda</h2>
+      <button
+        className={`minutes-agenda-pane-backdrop${isAgendaPaneOpen ? " is-open" : ""}`}
+        aria-label="Dismiss agenda"
+        onClick={() => setIsAgendaPaneOpen(false)}
+      />
+      <aside
+        id="minutes-agenda-pane"
+        className={`minutes-section minutes-topic-tray${isAgendaPaneOpen ? " is-open" : ""}`}
+        aria-label="Meeting agenda tray"
+      >
+        <div className="minutes-agenda-pane-header">
+          <h2>Agenda</h2>
+          <button
+            className="minutes-agenda-pane-close"
+            aria-label={isAgendaPaneOpen ? "Close agenda" : "Open agenda"}
+            aria-expanded={isAgendaPaneOpen}
+            aria-controls="minutes-agenda-pane"
+            onClick={() => setIsAgendaPaneOpen((open) => !open)}
+          >
+            <span aria-hidden="true">{isAgendaPaneOpen ? ">>" : "<<"}</span>
+          </button>
+        </div>
         {completedMinutes.length > 0 && (
           <div className="minutes-agenda-group">
             <h3 className="minutes-agenda-heading">Completed</h3>
             <ol className="minutes-list minutes-agenda-list">
-              {completedMinutes.map((minute, idx) => {
+              {completedAgendaItems.map((item) => {
+                const minute = item.minute;
                 const topic = minute.topic;
                 const planned =
                   topic?.plannedTopic?.durationMinutes ?? topic?.durationMinutes;
                 const actual = minute.durationMinutes;
                 const diff = planned !== undefined ? actual - planned : null;
                 return (
-                  <li key={idx} className="minutes-item minutes-agenda-completed-item">
-                    <div className="minutes-item-header">
-                      <span className="minutes-item-title">
-                        {topic?.title ?? "(unknown)"}
-                      </span>
-                      <span className="minutes-item-duration">
+                  <li key={item.key} className="minutes-agenda-menu-row">
+                    <button
+                      className={`minutes-agenda-menu-item minutes-agenda-completed-item${selectedAgendaItem?.key === item.key ? " is-selected" : ""}`}
+                      onClick={() => handleSelectAgendaItem(item.key)}
+                    >
+                      <span className="minutes-agenda-menu-title">{topic?.title ?? "(unknown)"}</span>
+                      <span className="minutes-agenda-menu-meta">
                         {actual} min actual
                         {planned !== undefined && ` / ${planned} min planned`}
                         {diff !== null && diff !== 0 && (
@@ -964,11 +1143,7 @@ export const MeetingMinutes = () => {
                           </span>
                         )}
                       </span>
-                    </div>
-                    {topic?.outcome && (
-                      <div className="minutes-item-notes">{topic.outcome}</div>
-                    )}
-                    <CompletedMinuteNotes minute={minute} meeting={meeting} members={members} />
+                    </button>
                   </li>
                 );
               })}
@@ -976,16 +1151,19 @@ export const MeetingMinutes = () => {
           </div>
         )}
 
-        {currentTopic && (
+        {meetingActiveTopic && meetingActiveAgendaItem && (
           <div className="minutes-agenda-group">
             <h3 className="minutes-agenda-heading">Current</h3>
-            <div className="minutes-agenda-current-item">
+            <button
+              className={`minutes-agenda-menu-item minutes-agenda-current-item is-meeting-active${selectedAgendaItem?.key === meetingActiveAgendaItem.key ? " is-selected" : ""}`}
+              onClick={() => handleSelectAgendaItem(meetingActiveAgendaItem.key)}
+            >
               <span className="minutes-agenda-current-kicker">Now discussing</span>
-              <span className="minutes-remaining-title">{currentTopic.title}</span>
+              <span className="minutes-remaining-title">{meetingActiveTopic.title}</span>
               <span className="minutes-remaining-duration">
-                {currentTopic.durationMinutes ?? "?"} min planned
+                {meetingActiveTopic.durationMinutes ?? "?"} min planned
               </span>
-            </div>
+            </button>
           </div>
         )}
 
@@ -1011,45 +1189,13 @@ export const MeetingMinutes = () => {
                           {...provided.draggableProps}
                         >
                           <span className="drag-handle" {...provided.dragHandleProps}>⠿</span>
-                          <span className="minutes-remaining-title">{topic.title}</span>
-                          <span className="minutes-remaining-duration">
-                            {editingTopicId === topic.id ? (
-                              <input
-                                className="inline-duration-input"
-                                type="number"
-                                min={1}
-                                value={editingDuration}
-                                ref={(el) => el?.select()}
-                                onChange={(e) => setEditingDuration(e.target.value)}
-                                onBlur={() => {
-                                  const v = parseInt(editingDuration);
-                                  if (!isNaN(v) && v > 0) {
-                                    void updateTopic({
-                                      meetingId: meeting.id,
-                                      list: "liveAgenda",
-                                      topicId: topic.id,
-                                      durationMinutes: v,
-                                    });
-                                  }
-                                  setEditingTopicId(null);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") e.currentTarget.blur();
-                                  if (e.key === "Escape") setEditingTopicId(null);
-                                }}
-                              />
-                            ) : (
-                              <span
-                                onDoubleClick={() => {
-                                  setEditingTopicId(topic.id);
-                                  setEditingDuration(String(topic.durationMinutes ?? ""));
-                                }}
-                                title="Double-click to edit"
-                              >
-                                {topic.durationMinutes ?? "?"} min
-                              </span>
-                            )}
-                          </span>
+                          <button
+                            className={`minutes-agenda-menu-item${selectedAgendaItem?.key === `remaining:${topic.id}` ? " is-selected" : ""}`}
+                            onClick={() => handleSelectAgendaItem(`remaining:${topic.id}`)}
+                          >
+                            <span className="minutes-agenda-menu-title">{topic.title}</span>
+                            <span className="minutes-agenda-menu-meta">{topic.durationMinutes ?? "?"} min planned</span>
+                          </button>
                           <button
                             className="btn-small btn-primary"
                             onClick={() =>
@@ -1058,7 +1204,7 @@ export const MeetingMinutes = () => {
                                 topicId: topic.id,
                               })
                             }
-                            disabled={!currentTopic}
+                            disabled={!meetingActiveTopic}
                           >
                             Make Active
                           </button>
@@ -1093,16 +1239,19 @@ export const MeetingMinutes = () => {
             <ul className="minutes-remaining-list">
               {deferredTopics.map((topic) => (
                 <li key={topic.id} className="minutes-remaining-item minutes-deferred-item">
-                  <span className="minutes-remaining-title">{topic.title}</span>
-                  <span className="minutes-remaining-duration">
-                    {topic.durationMinutes ?? "?"} min
-                  </span>
+                  <button
+                    className={`minutes-agenda-menu-item${selectedAgendaItem?.key === `deferred:${topic.id}` ? " is-selected" : ""}`}
+                    onClick={() => handleSelectAgendaItem(`deferred:${topic.id}`)}
+                  >
+                    <span className="minutes-agenda-menu-title">{topic.title}</span>
+                    <span className="minutes-agenda-menu-meta">{topic.durationMinutes ?? "?"} min planned</span>
+                  </button>
                   <button
                     className="btn-small btn-primary"
                     onClick={() =>
                       void makeActive({ meetingId: meeting.id, topicId: topic.id })
                     }
-                    disabled={!currentTopic}
+                    disabled={!meetingActiveTopic}
                   >
                     Make Active
                   </button>
