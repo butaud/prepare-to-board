@@ -901,7 +901,7 @@ export const MeetingMinutes = () => {
 
   const handleSelectAgendaItem = (key: string) => {
     setSelectedAgendaItemId(key);
-    if (window.matchMedia("(max-width: 600px)").matches) {
+    if (window.matchMedia("(max-width: 750px)").matches) {
       setIsAgendaPaneOpen(false);
     }
   };
@@ -1184,40 +1184,54 @@ export const MeetingMinutes = () => {
                     <Draggable key={topic.id} draggableId={topic.id} index={index}>
                       {(provided, snapshot) => (
                         <li
-                          className={`minutes-remaining-item${snapshot.isDragging ? " dragging" : ""}`}
+                          className={`minutes-remaining-item${selectedAgendaItem?.key === `remaining:${topic.id}` ? " is-selected" : ""}${snapshot.isDragging ? " dragging" : ""}`}
                           ref={provided.innerRef}
                           {...provided.draggableProps}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleSelectAgendaItem(`remaining:${topic.id}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleSelectAgendaItem(`remaining:${topic.id}`);
+                            }
+                          }}
                         >
-                          <span className="drag-handle" {...provided.dragHandleProps}>⠿</span>
-                          <button
-                            className={`minutes-agenda-menu-item${selectedAgendaItem?.key === `remaining:${topic.id}` ? " is-selected" : ""}`}
-                            onClick={() => handleSelectAgendaItem(`remaining:${topic.id}`)}
+                          <span
+                            className="drag-handle"
+                            {...provided.dragHandleProps}
+                            onClick={(e) => e.stopPropagation()}
                           >
+                            ⠿
+                          </span>
+                          <div className="minutes-agenda-menu-content">
                             <span className="minutes-agenda-menu-title">{topic.title}</span>
                             <span className="minutes-agenda-menu-meta">{topic.durationMinutes ?? "?"} min planned</span>
-                          </button>
+                          </div>
                           <button
                             className="btn-small btn-primary"
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               void makeActive({
                                 meetingId: meeting.id,
                                 topicId: topic.id,
-                              })
-                            }
+                              });
+                            }}
                             disabled={!meetingActiveTopic}
                           >
                             Make Active
                           </button>
                           <button
                             className="btn-small btn-danger"
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               void updateTopic({
                                 meetingId: meeting.id,
                                 list: "liveAgenda",
                                 topicId: topic.id,
                                 deferred: true,
-                              })
-                            }
+                              });
+                            }}
                           >
                             Skip
                           </button>
@@ -1238,33 +1252,46 @@ export const MeetingMinutes = () => {
             <h3 className="minutes-deferred-heading">Deferred</h3>
             <ul className="minutes-remaining-list">
               {deferredTopics.map((topic) => (
-                <li key={topic.id} className="minutes-remaining-item minutes-deferred-item">
-                  <button
-                    className={`minutes-agenda-menu-item${selectedAgendaItem?.key === `deferred:${topic.id}` ? " is-selected" : ""}`}
-                    onClick={() => handleSelectAgendaItem(`deferred:${topic.id}`)}
+                <li
+                  key={topic.id}
+                  className={`minutes-remaining-item minutes-deferred-item${selectedAgendaItem?.key === `deferred:${topic.id}` ? " is-selected" : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleSelectAgendaItem(`deferred:${topic.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleSelectAgendaItem(`deferred:${topic.id}`);
+                    }
+                  }}
+                >
+                  <div
+                    className="minutes-agenda-menu-content"
                   >
                     <span className="minutes-agenda-menu-title">{topic.title}</span>
                     <span className="minutes-agenda-menu-meta">{topic.durationMinutes ?? "?"} min planned</span>
-                  </button>
+                  </div>
                   <button
                     className="btn-small btn-primary"
-                    onClick={() =>
-                      void makeActive({ meetingId: meeting.id, topicId: topic.id })
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void makeActive({ meetingId: meeting.id, topicId: topic.id });
+                    }}
                     disabled={!meetingActiveTopic}
                   >
                     Make Active
                   </button>
                   <button
                     className="btn-small btn-danger"
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       void updateTopic({
                         meetingId: meeting.id,
                         list: "liveAgenda",
                         topicId: topic.id,
                         deferred: true,
-                      })
-                    }
+                      });
+                    }}
                   >
                     Skip
                   </button>
