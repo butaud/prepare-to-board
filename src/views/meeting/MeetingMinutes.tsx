@@ -1185,6 +1185,23 @@ export const MeetingMinutes = () => {
     gridLine: index + 1,
   }));
 
+  const getAgendaConnectionPath = (connection: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }) => {
+    const controlOffset = Math.max(
+      36,
+      Math.min(160, Math.abs(connection.x2 - connection.x1) * 0.45)
+    );
+    return `M ${connection.x1} ${connection.y1} C ${
+      connection.x1 + controlOffset
+    } ${connection.y1}, ${connection.x2 - controlOffset} ${connection.y2}, ${
+      connection.x2
+    } ${connection.y2}`;
+  };
+
   const findAgendaTopicElement = (topicId: string): HTMLElement | null => {
     const pane = agendaPaneRef.current;
     if (!pane) return null;
@@ -1221,11 +1238,6 @@ export const MeetingMinutes = () => {
   }, [selectedTopicId, agendaTimelineEntries.length]);
 
   useEffect(() => {
-    if (window.matchMedia("(max-width: 750px)").matches) {
-      setAgendaConnections([]);
-      return;
-    }
-
     let frameId = 0;
     const updateConnections = () => {
       if (window.matchMedia("(max-width: 750px)").matches) {
@@ -1250,14 +1262,12 @@ export const MeetingMinutes = () => {
         const sourceRect = source.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
         const paneRect = agendaPaneRef.current?.getBoundingClientRect();
-        if (
-          paneRect &&
-          (targetRect.bottom < paneRect.top || targetRect.top > paneRect.bottom)
-        ) {
-          return;
-        }
         const y1 = sourceRect.top + sourceRect.height / 2 - layoutRect.top;
-        const y2 = targetRect.top + targetRect.height / 2 - layoutRect.top;
+        const targetCenterY = targetRect.top + targetRect.height / 2;
+        const cappedTargetY = paneRect
+          ? Math.min(Math.max(targetCenterY, paneRect.top), paneRect.bottom)
+          : targetCenterY;
+        const y2 = cappedTargetY - layoutRect.top;
         nextConnections.push({
           key,
           x1: sourceRect.right - layoutRect.left,
@@ -1614,38 +1624,36 @@ export const MeetingMinutes = () => {
           focusable="false"
         >
           {agendaConnections.map((connection) => (
-            <line
+            <path
               key={connection.key}
               className={`minutes-agenda-connection-line is-${connection.variant}`}
-              x1={connection.x1}
-              y1={connection.y1}
-              x2={connection.x2}
-              y2={connection.y2}
+              d={getAgendaConnectionPath(connection)}
             />
           ))}
         </svg>
       )}
-      {shouldShowActiveTopicBanner && meetingActiveTopic && (
-        <button
-          ref={activeBannerRef}
-          type="button"
-          className="minutes-active-topic-banner"
-          onClick={() => handleFocusTopic(meetingActiveTopic.id, true)}
+      <div className="minutes-topic-main">
+        {shouldShowActiveTopicBanner && meetingActiveTopic && (
+          <button
+            ref={activeBannerRef}
+            type="button"
+            className="minutes-active-topic-banner"
+            onClick={() => handleFocusTopic(meetingActiveTopic.id, true)}
+          >
+            <span className="minutes-active-topic-banner-label">
+              Active topic
+            </span>
+            <span className="minutes-active-topic-banner-title">
+              {meetingActiveTopic.title}
+            </span>
+          </button>
+        )}
+        <section
+          ref={topicDetailRef}
+          className="minutes-section minutes-topic-detail-section"
         >
-          <span className="minutes-active-topic-banner-label">
-            Active topic
-          </span>
-          <span className="minutes-active-topic-banner-title">
-            {meetingActiveTopic.title}
-          </span>
-        </button>
-      )}
-      <section
-        ref={topicDetailRef}
-        className="minutes-section minutes-topic-detail-section"
-      >
-        {selectedAgendaItem ? (
-          <div className="minutes-current-topic">
+          {selectedAgendaItem ? (
+            <div className="minutes-current-topic">
             <h2>
               {selectedAgendaItem.kind === "meeting-active"
                 ? "Active Topic"
@@ -1821,11 +1829,12 @@ export const MeetingMinutes = () => {
                 )}
               </div>
             )}
-          </div>
-        ) : (
-          <p>All topics have been covered. You can end the meeting.</p>
-        )}
-      </section>
+            </div>
+          ) : (
+            <p>All topics have been covered. You can end the meeting.</p>
+          )}
+        </section>
+      </div>
 
       {/* Agenda */}
       <button
