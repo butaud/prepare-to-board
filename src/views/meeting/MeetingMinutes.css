@@ -1216,12 +1216,15 @@
   }
 
   .minutes-agenda-pane-header {
+    position: static;
     display: flex;
     align-items: center;
     justify-content: flex-start;
     gap: 12px;
+    z-index: auto;
     margin: 0 0 14px;
     padding: 0;
+    background: transparent;
   }
 
   .minutes-agenda-pane-header h2 {
