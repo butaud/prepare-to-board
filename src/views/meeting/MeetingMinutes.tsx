@@ -741,10 +741,17 @@ export const MeetingMinutes = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
 
+  const minutesLayoutRef = useRef<HTMLDivElement | null>(null);
+  const topicDetailRef = useRef<HTMLElement | null>(null);
+  const activeBannerRef = useRef<HTMLButtonElement | null>(null);
   const agendaPaneRef = useRef<HTMLElement | null>(null);
+  const hasScrolledInitialTopicIntoViewRef = useRef(false);
   const [now, setNow] = useState(() => new Date());
   const focusedTopicId = meeting.focusedTopicId ?? null;
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
+  const [agendaConnections, setAgendaConnections] = useState<
+    { key: string; x1: number; y1: number; x2: number; y2: number; variant: "active" | "selected" }[]
+  >([]);
   const [agendaSlotMinutes, setAgendaSlotMinutes] = useState(
     AGENDA_BASE_SLOT_MINUTES
   );
@@ -1038,6 +1045,10 @@ export const MeetingMinutes = () => {
     agendaMenuItems[0] ??
     null;
   const selectedTopicId = selectedAgendaItem?.topic.id ?? null;
+  const isSelectedTopicActive =
+    selectedTopicId !== null && selectedTopicId === meetingActiveTopicId;
+  const shouldShowActiveTopicBanner =
+    Boolean(meetingActiveTopicId) && !isSelectedTopicActive;
   const hasFocusedAgendaTopic = focusedTopicId
     ? agendaMenuItems.some((item) => item.topic.id === focusedTopicId)
     : false;
@@ -1173,6 +1184,141 @@ export const MeetingMinutes = () => {
     ),
     gridLine: index + 1,
   }));
+
+  const findAgendaTopicElement = (topicId: string): HTMLElement | null => {
+    const pane = agendaPaneRef.current;
+    if (!pane) return null;
+    return (
+      Array.from(
+        pane.querySelectorAll<HTMLElement>("[data-agenda-topic-id]")
+      ).find((element) => element.dataset.agendaTopicId === topicId) ?? null
+    );
+  };
+
+  const scrollAgendaTopicIntoView = (topicId: string) => {
+    window.requestAnimationFrame(() => {
+      findAgendaTopicElement(topicId)?.scrollIntoView({
+        block: "center",
+        inline: "nearest",
+      });
+    });
+  };
+
+  useEffect(() => {
+    if (!selectedTopicId || hasScrolledInitialTopicIntoViewRef.current) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const selectedElement = findAgendaTopicElement(selectedTopicId);
+      if (!selectedElement) return;
+      selectedElement.scrollIntoView({
+        block: "center",
+        inline: "nearest",
+      });
+      hasScrolledInitialTopicIntoViewRef.current = true;
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [selectedTopicId, agendaTimelineEntries.length]);
+
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 750px)").matches) {
+      setAgendaConnections([]);
+      return;
+    }
+
+    let frameId = 0;
+    const updateConnections = () => {
+      if (window.matchMedia("(max-width: 750px)").matches) {
+        setAgendaConnections([]);
+        return;
+      }
+
+      const layout = minutesLayoutRef.current;
+      if (!layout) return;
+
+      const layoutRect = layout.getBoundingClientRect();
+      const nextConnections: typeof agendaConnections = [];
+      const addConnection = (
+        key: string,
+        source: HTMLElement | null,
+        topicId: string | null,
+        variant: "active" | "selected"
+      ) => {
+        if (!source || !topicId) return;
+        const target = findAgendaTopicElement(topicId);
+        if (!target) return;
+        const sourceRect = source.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const paneRect = agendaPaneRef.current?.getBoundingClientRect();
+        if (
+          paneRect &&
+          (targetRect.bottom < paneRect.top || targetRect.top > paneRect.bottom)
+        ) {
+          return;
+        }
+        const y1 = sourceRect.top + sourceRect.height / 2 - layoutRect.top;
+        const y2 = targetRect.top + targetRect.height / 2 - layoutRect.top;
+        nextConnections.push({
+          key,
+          x1: sourceRect.right - layoutRect.left,
+          y1,
+          x2: targetRect.left - layoutRect.left,
+          y2,
+          variant,
+        });
+      };
+
+      addConnection(
+        "selected",
+        topicDetailRef.current,
+        selectedTopicId,
+        isSelectedTopicActive ? "active" : "selected"
+      );
+      if (shouldShowActiveTopicBanner) {
+        addConnection(
+          "active",
+          activeBannerRef.current,
+          meetingActiveTopicId,
+          "active"
+        );
+      }
+
+      setAgendaConnections(nextConnections);
+    };
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateConnections);
+    };
+
+    scheduleUpdate();
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, true);
+
+    const resizeObserver = new ResizeObserver(scheduleUpdate);
+    [
+      minutesLayoutRef.current,
+      topicDetailRef.current,
+      activeBannerRef.current,
+      agendaPaneRef.current,
+    ].forEach((element) => {
+      if (element) resizeObserver.observe(element);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      resizeObserver.disconnect();
+    };
+  }, [
+    selectedTopicId,
+    meetingActiveTopicId,
+    isSelectedTopicActive,
+    shouldShowActiveTopicBanner,
+    agendaTimelineEntries.length,
+    agendaSlotMinutes,
+    isAgendaPaneOpen,
+  ]);
 
   useEffect(() => {
     if (!isOfficer) return;
@@ -1449,16 +1595,55 @@ export const MeetingMinutes = () => {
     );
   };
 
-  const handleFocusTopic = (topicId: string) => {
+  const handleFocusTopic = (topicId: string, scrollAgenda = false) => {
     void setFocusedTopic({ meetingId: meeting.id, topicId });
+    if (scrollAgenda) {
+      scrollAgendaTopicIntoView(topicId);
+    }
     if (window.matchMedia("(max-width: 750px)").matches) {
       setIsAgendaPaneOpen(false);
     }
   };
 
   return (
-    <div className="meeting-minutes">
-      <section className="minutes-section minutes-topic-detail-section">
+    <div className="meeting-minutes" ref={minutesLayoutRef}>
+      {agendaConnections.length > 0 && (
+        <svg
+          className="minutes-agenda-connections"
+          aria-hidden="true"
+          focusable="false"
+        >
+          {agendaConnections.map((connection) => (
+            <line
+              key={connection.key}
+              className={`minutes-agenda-connection-line is-${connection.variant}`}
+              x1={connection.x1}
+              y1={connection.y1}
+              x2={connection.x2}
+              y2={connection.y2}
+            />
+          ))}
+        </svg>
+      )}
+      {shouldShowActiveTopicBanner && meetingActiveTopic && (
+        <button
+          ref={activeBannerRef}
+          type="button"
+          className="minutes-active-topic-banner"
+          onClick={() => handleFocusTopic(meetingActiveTopic.id, true)}
+        >
+          <span className="minutes-active-topic-banner-label">
+            Active topic
+          </span>
+          <span className="minutes-active-topic-banner-title">
+            {meetingActiveTopic.title}
+          </span>
+        </button>
+      )}
+      <section
+        ref={topicDetailRef}
+        className="minutes-section minutes-topic-detail-section"
+      >
         {selectedAgendaItem ? (
           <div className="minutes-current-topic">
             <h2>
@@ -1720,6 +1905,7 @@ export const MeetingMinutes = () => {
               <button
                 key={item.key}
                 className={`minutes-day-view-event minutes-agenda-completed-item${selectedTopicId === item.topic.id ? " is-selected" : ""}`}
+                data-agenda-topic-id={item.topic.id}
                 style={timelineDisplayEventStyle(
                   entry.startSlot,
                   entry.slotSpan,
@@ -1741,6 +1927,7 @@ export const MeetingMinutes = () => {
               return (
                 <button
                   className={`minutes-day-view-event minutes-agenda-current-item is-meeting-active${selectedTopicId === meetingActiveAgendaItem.topic.id ? " is-selected" : ""}`}
+                  data-agenda-topic-id={meetingActiveAgendaItem.topic.id}
                   style={timelineDisplayEventStyle(
                     entry.startSlot,
                     entry.slotSpan,
@@ -1797,6 +1984,7 @@ export const MeetingMinutes = () => {
                               >
                               <div
                                 className={`minutes-day-view-event${selectedTopicId === topic.id ? " is-selected" : ""}`}
+                                data-agenda-topic-id={topic.id}
                                 role="button"
                                 tabIndex={0}
                                 style={{ height: `${entry.displayHeightPx}px` }}
@@ -1841,6 +2029,7 @@ export const MeetingMinutes = () => {
               <div
                 key={item.key}
                 className={`minutes-day-view-event minutes-deferred-item${selectedTopicId === topic.id ? " is-selected" : ""}`}
+                data-agenda-topic-id={topic.id}
                 style={timelineDisplayEventStyle(
                   entry.startSlot,
                   entry.slotSpan,

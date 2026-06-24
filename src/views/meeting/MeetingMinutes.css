@@ -9,6 +9,29 @@
   position: relative;
 }
 
+.minutes-agenda-connections {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.minutes-agenda-connection-line {
+  stroke: var(--secondary-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.minutes-agenda-connection-line.is-active {
+  stroke: var(--primary-color);
+  stroke-width: 3;
+  opacity: 0.9;
+}
+
 .meeting-minutes-completed {
   max-width: 900px;
   margin: 0 auto;
@@ -25,6 +48,8 @@
 }
 
 .minutes-section {
+  position: relative;
+  z-index: 1;
   background: var(--primary-color-subtle);
   border-radius: 8px;
   padding: 20px 24px;
@@ -56,9 +81,52 @@
   grid-column: 1;
 }
 
+.meeting-minutes button.minutes-active-topic-banner {
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--primary-color);
+  border: 0;
+  border-radius: 8px;
+  color: var(--button-foreground);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.meeting-minutes button.minutes-active-topic-banner:hover {
+  background: var(--primary-color);
+  color: var(--button-foreground);
+  filter: brightness(1.04);
+}
+
+.minutes-active-topic-banner-label {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.82;
+  text-transform: uppercase;
+}
+
+.minutes-active-topic-banner-title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .minutes-topic-tray {
   grid-column: 2;
-  grid-row: 1;
+  grid-row: 1 / span 2;
   position: sticky;
   top: 16px;
   box-sizing: border-box;
