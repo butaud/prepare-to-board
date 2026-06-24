@@ -1307,11 +1307,22 @@ export const MeetingMinutes = () => {
         if (!target) return null;
         const sourceRect = source.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
-        const paneRect = agendaPaneRef.current?.getBoundingClientRect();
+        const pane = agendaPaneRef.current;
+        const paneRect = pane?.getBoundingClientRect();
+        const paneHeaderRect = pane
+          ?.querySelector<HTMLElement>(".minutes-agenda-pane-header")
+          ?.getBoundingClientRect();
         const y1 = sourceRect.top + sourceRect.height / 2 - layoutRect.top;
         const targetCenterY = targetRect.top + targetRect.height / 2;
+        const paneVisibleTop =
+          paneRect && paneHeaderRect
+            ? Math.max(paneRect.top, paneHeaderRect.bottom + 8)
+            : paneRect?.top;
         const cappedTargetY = paneRect
-          ? Math.min(Math.max(targetCenterY, paneRect.top), paneRect.bottom)
+          ? Math.min(
+              Math.max(targetCenterY, paneVisibleTop ?? paneRect.top),
+              paneRect.bottom
+            )
           : targetCenterY;
         const y2 = cappedTargetY - layoutRect.top;
         const targetX =
