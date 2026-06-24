@@ -180,6 +180,7 @@ When screenshots are needed, prefer a temporary Playwright spec that:
 ## Auth Handling
 
 - Reuse `.auth/*.json` storage states when they exist.
+- New Clerk E2E users should use emails containing `+clerk_test`; Clerk accepts `424242` as the fake email confirmation code for those test accounts.
 - Use `E2E_REFRESH_AUTH=true` when cached states are stale, when auth behavior changed, or before a multi-user review if the previous run unexpectedly landed on a signed-out page.
 - If Clerk hosted sign-in fails while refreshing auth, report it as a blocker for auth refresh rather than printing secrets or repeatedly retrying.
 - Clerk password inputs are not reliably exposed as ARIA textboxes; use `input[name="password"], input[type="password"]` in auth helpers.

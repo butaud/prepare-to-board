@@ -68,6 +68,26 @@ Run browser-based end-to-end checks with [Playwright](https://playwright.dev/):
 yarn test:e2e
 ```
 
+Authenticated E2E checks use Clerk test users configured in `.env.e2e.local`.
+Create three users in the same Clerk development/test instance used by `.env`:
+admin, officer, and member. Each email address should include `+clerk_test`
+before the `@`, for example `prepare-admin+clerk_test@example.com`. Clerk
+recognizes that marker during email confirmation and accepts the fake
+confirmation code `424242`, marking the user as a test account. Store the
+credentials with these variable names:
+
+```env
+E2E_ADMIN_EMAIL=prepare-admin+clerk_test@example.com
+E2E_ADMIN_PASSWORD=replace-me
+E2E_OFFICER_EMAIL=prepare-officer+clerk_test@example.com
+E2E_OFFICER_PASSWORD=replace-me
+E2E_MEMBER_EMAIL=prepare-member+clerk_test@example.com
+E2E_MEMBER_PASSWORD=replace-me
+```
+
+Playwright caches signed-in sessions in `.auth/*.json`. Delete those files or
+run with `E2E_REFRESH_AUTH=true` after changing the test users or passwords.
+
 For feature-oriented E2E and visual review, use the reviewer brief in
 [`docs/agents/e2e-review-agent.md`](docs/agents/e2e-review-agent.md). It
 describes how to turn a plain-English feature request into realistic browser
