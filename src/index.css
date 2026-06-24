@@ -22,6 +22,9 @@
   --shadow-color-strong: rgba(0, 0, 0, 0.3);
 
   --semitransparent: hsla(0, 0%, 90%, 0.8);
+
+  --border-color: hsl(217, 30%, 87%);
+  --border-color-subtle: hsl(217, 20%, 93%);
 }
 
 /* dark mode */
@@ -30,7 +33,7 @@
     --font-color: hsl(0, 0%, 98%);
     --background-color: hsl(0, 0%, 10%);
 
-    --button-foreground: hsl(0, 0%, 2%);
+    --button-foreground: hsl(0, 0%, 98%);
 
     --primary-color: hsl(217, 65%, 55%);
     --primary-color-light: hsl(217, 65%, 35%);
@@ -48,6 +51,9 @@
     --shadow-color: rgba(0, 0, 0, 0.1);
     --shadow-color-strong: rgba(0, 0, 0, 0.3);
     --semitransparent: hsla(0, 0%, 10%, 0.2);
+
+    --border-color: hsl(217, 20%, 23%);
+    --border-color-subtle: hsl(217, 15%, 18%);
   }
 }
 
@@ -99,28 +105,31 @@ input[type="submit"] {
   outline: 0;
   text-align: center;
   cursor: pointer;
-  padding: 0px 12px;
-  border-radius: 2px;
+  padding: 0px 14px;
+  border-radius: 5px;
   height: var(--button-height);
   background-color: var(--primary-color);
   color: var(--button-foreground);
   font-size: var(--font-size);
-  font-weight: 400;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   box-sizing: border-box;
-  border: 2px solid var(--secondary-color);
-  box-shadow: 0 4px 8px var(--shadow-color);
+  border: 1px solid transparent;
+  box-shadow: 0 1px 3px var(--shadow-color);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
     background-color: var(--primary-color-light);
-    box-shadow: 0 4px 8px var(--shadow-color-strong);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   }
 
   &:disabled {
     background-color: var(--primary-color-subtle);
     color: var(--font-color);
-    border: 2px solid var(--primary-color-subtle);
+    border: 1px solid transparent;
     box-shadow: none;
     cursor: default;
+    opacity: 0.75;
   }
 }
 
@@ -129,14 +138,15 @@ input[type="button"].disabled,
 input[type="submit"].disabled {
   background-color: var(--primary-color-subtle);
   color: var(--font-color);
-  border: 2px solid var(--primary-color-subtle);
+  border: 1px solid transparent;
   box-shadow: none;
   cursor: not-allowed;
+  opacity: 0.75;
 
   &:hover {
     background-color: var(--primary-color-subtle);
     color: var(--font-color);
-    border: 2px solid var(--primary-color-subtle);
+    border: 1px solid transparent;
     box-shadow: none;
   }
 }
@@ -146,19 +156,19 @@ input[type="button"].danger,
 input[type="submit"].danger {
   background-color: var(--danger-color);
   color: var(--button-foreground);
-  border: 2px solid var(--danger-color-strong);
-  box-shadow: 0 4px 8px var(--shadow-color);
+  border: 1px solid var(--danger-color-strong);
+  box-shadow: 0 1px 3px var(--shadow-color);
 
   &:hover:not(:disabled) {
     background-color: var(--danger-color-strong);
-    border: 2px solid var(--danger-color);
-    box-shadow: 0 4px 8px var(--shadow-color-strong);
+    border: 1px solid var(--danger-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   }
 
   &:disabled {
     background-color: var(--danger-color-subtle);
     color: var(--font-color);
-    border: 2px solid var(--danger-color-subtle);
+    border: 1px solid transparent;
     box-shadow: none;
     cursor: default;
   }
@@ -178,6 +188,32 @@ input[type="submit"].subtle {
     background-color: transparent;
     box-shadow: none;
   }
+}
+
+button.btn-secondary,
+input[type="button"].btn-secondary,
+input[type="submit"].btn-secondary {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color-light);
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    background-color: var(--primary-color-subtle);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: none;
+  }
+}
+
+button.btn-small,
+input[type="button"].btn-small,
+input[type="submit"].btn-small {
+  height: auto;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  line-height: 1.4;
 }
 
 a {
@@ -203,12 +239,13 @@ li {
 
 input[type="text"],
 input[type="email"],
-input[type="password"] {
+input[type="password"],
+input[type="number"] {
   display: inline-block;
   outline: 0;
   cursor: text;
   padding: 0px 12px;
-  border-radius: 2px;
+  border-radius: 5px;
   min-width: 80px;
   height: var(--input-height);
   background-color: var(--background-color);
@@ -216,19 +253,22 @@ input[type="password"] {
   font-size: var(--font-size);
   font-weight: 400;
   box-sizing: border-box;
-  border: 2px solid var(--primary-color-light);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type="text"]:focus,
 input[type="email"]:focus,
-input[type="password"]:focus {
-  border: 2px solid var(--primary-color);
-  box-shadow: 0 4px 8px var(--shadow-color);
+input[type="password"]:focus,
+input[type="number"]:focus {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-subtle);
 }
 
 input[type="text"]:disabled,
 input[type="email"]:disabled,
-input[type="password"]:disabled {
+input[type="password"]:disabled,
+input[type="number"]:disabled {
   background-color: var(--semitransparent);
   color: var(--font-color);
 }
@@ -239,7 +279,7 @@ select {
   text-align: center;
   cursor: pointer;
   padding: 0px 12px;
-  border-radius: 2px;
+  border-radius: 5px;
   min-width: 80px;
   height: var(--select-height);
   background-color: var(--background-color);
@@ -247,5 +287,11 @@ select {
   font-size: var(--font-size);
   font-weight: 400;
   box-sizing: border-box;
-  border: 2px solid var(--primary-color-light);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.15s ease;
+}
+
+select:focus {
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-subtle);
 }

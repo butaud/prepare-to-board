@@ -76,57 +76,60 @@ export const Manage = () => {
         <InviteUserDialog closeDialog={() => setInviteDialogOpen(false)} organization={org} />
       )}
       {isAdmin && (
-        <>
+        <div className="manage-section">
           <h3>Organization Details</h3>
           <EditOrganization organization={org} />
-        </>
-      )}
-      <h3>Organization Members</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Title</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {org.memberships.length === 0 && unclaimedBoardMembers.length === 0 && (
-            <tr>
-              <td colSpan={3}>No members yet.</td>
-            </tr>
-          )}
-          {org.memberships.map((member) => {
-            const boardMember = org.members.find((bm) => bm.accountId === member.userId);
-            claimedMemberIds.add(member.userId);
-            return (
-              <MemberNode
-                key={member.userId}
-                id={member.userId}
-                org={org}
-                startingRole={member.role}
-                name={member.name}
-                isSelf={member.userId === me.id}
-                isAdmin={isAdmin}
-                boardMember={boardMember}
-              />
-            );
-          })}
-          {unclaimedBoardMembers.map((bm) => (
-            <UnclaimedBoardMemberRow key={bm.id} boardMember={bm} isAdmin={isAdmin} />
-          ))}
-        </tbody>
-      </table>
-      {isAdmin && (
-        <div className="manage-actions">
-          <button onClick={() => setInviteDialogOpen(true)}>
-            <SlPlus />
-            Invite a new user
-          </button>
-          <AddBoardMemberForm org={org} />
         </div>
       )}
-      <p>
+      <div className="manage-section">
+        <h3>Organization Members</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Title</th>
+              <th>Role</th>
+              {isAdmin && <th></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {org.memberships.length === 0 && unclaimedBoardMembers.length === 0 && (
+              <tr>
+                <td colSpan={isAdmin ? 4 : 3}>No members yet.</td>
+              </tr>
+            )}
+            {org.memberships.map((member) => {
+              const boardMember = org.members.find((bm) => bm.accountId === member.userId);
+              claimedMemberIds.add(member.userId);
+              return (
+                <MemberNode
+                  key={member.userId}
+                  id={member.userId}
+                  org={org}
+                  startingRole={member.role}
+                  name={member.name}
+                  isSelf={member.userId === me.id}
+                  isAdmin={isAdmin}
+                  boardMember={boardMember}
+                />
+              );
+            })}
+            {unclaimedBoardMembers.map((bm) => (
+              <UnclaimedBoardMemberRow key={bm.id} boardMember={bm} isAdmin={isAdmin} />
+            ))}
+          </tbody>
+        </table>
+        {isAdmin && (
+          <div className="manage-actions">
+            <button onClick={() => setInviteDialogOpen(true)}>
+              <SlPlus />
+              Invite a new user
+            </button>
+            <AddBoardMemberForm org={org} />
+          </div>
+        )}
+      </div>
+      <p className="manage-note">
         Note: If a user has removed the organization from their list, they may
         not be able to see it even if they are in the list above. If that
         happens, they can use the same invite link as a new user to get access

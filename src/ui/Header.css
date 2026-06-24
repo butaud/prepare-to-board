@@ -1,12 +1,15 @@
 header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 20px;
 
-  border-bottom: 1px solid var(--secondary-color);
-  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 4px var(--shadow-color);
+  padding: 8px 0;
 
   .start {
+    flex: 0 0 auto;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -14,18 +17,19 @@ header {
     .brand {
       display: flex;
       flex-direction: row;
+      align-items: center;
+      gap: 8px;
 
-      max-width: 200px;
       img {
-        width: 50px;
-        height: 50px;
-        border-radius: 25px;
+        width: 40px;
+        height: 40px;
+        border-radius: 20px;
       }
 
       h3 {
-        margin: 0 5px;
+        margin: 0;
         cursor: pointer;
-        min-width: 100px;
+        white-space: nowrap;
 
         a {
           color: var(--primary-color);
@@ -50,12 +54,12 @@ header {
   }
 
   nav {
-    width: 100%;
+    flex: 1 1 auto;
     display: flex;
     flex-direction: row;
     justify-content: start;
     align-items: center;
-    gap: 20px;
+    gap: 4px;
     font-size: 1.1rem;
     font-weight: 500;
 
@@ -63,12 +67,26 @@ header {
       display: flex;
       align-items: center;
       text-wrap: nowrap;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: background-color 0.15s ease, color 0.15s ease;
 
       svg {
-        margin-right: 5px;
+        margin-right: 6px;
       }
 
-      @media screen and (max-width: 925px) {
+      &:hover {
+        background-color: var(--primary-color-subtle);
+      }
+
+      &.active,
+      &.active:hover {
+        background-color: var(--primary-color-subtle);
+        color: var(--font-color);
+        font-weight: 600;
+      }
+
+      @media screen and (max-width: 1195px) {
         .name {
           display: none;
         }
@@ -77,12 +95,13 @@ header {
   }
 
   .end {
+    flex: 0 1 auto;
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 5px;
+    gap: 12px;
     .organization-selector {
-      flex: 0 1 400px;
+      flex: 0 1 220px;
       min-width: 100px;
     }
     .dev-create-meeting {

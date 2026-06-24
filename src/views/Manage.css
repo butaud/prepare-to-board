@@ -1,25 +1,107 @@
 .manage {
-  span.me {
-    font-weight: bold;
+  padding-top: 4px;
+  max-width: 860px;
+
+  .manage-section {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px var(--shadow-color);
   }
 
   h3 {
-    margin: 10px 0;
+    margin: 0 0 16px 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--primary-color);
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--secondary-color);
+    display: flex;
+    align-items: center;
   }
 
   table {
-    border-collapse: separate;
-    border-spacing: 10px;
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+
+    thead th {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--primary-color-light);
+      padding: 0 12px 8px 0;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    thead th:last-child {
+      width: 60px;
+    }
 
     tr.member {
-      font-size: 0.9em;
+      font-size: 0.95em;
+      transition: background-color 0.1s ease;
+
+      &:hover {
+        background-color: var(--primary-color-subtle);
+      }
     }
+
     td {
-      height: calc(var(--button-height) + 2px);
+      padding: 8px 12px 8px 0;
+      border-bottom: 1px solid var(--border-color-subtle);
+      height: auto;
+      vertical-align: middle;
+    }
+
+    td:last-child {
+      text-align: right;
+      padding-right: 0;
     }
 
     td.me {
-      font-weight: bold;
+      font-weight: 600;
     }
+  }
+
+  .manage-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color-subtle);
+    flex-wrap: wrap;
+  }
+
+  .add-board-member-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background-color: var(--primary-color-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+  }
+
+  span.me {
+    font-weight: 600;
+  }
+
+  .unclaimed-member td {
+    opacity: 0.65;
+  }
+
+  .manage-note {
+    font-size: 0.8em;
+    color: var(--primary-color-light);
+    font-style: italic;
+    margin-top: 0;
   }
 }

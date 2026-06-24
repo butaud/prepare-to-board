@@ -287,17 +287,6 @@
   flex-wrap: wrap;
 }
 
-.present-add-topic-form input[type="text"],
-.present-add-topic-form input[type="number"] {
-  height: var(--input-height);
-  background-color: var(--background-color);
-  color: var(--font-color);
-  border: 2px solid var(--primary-color-light);
-  border-radius: 2px;
-  padding: 0 8px;
-  font-size: var(--font-size);
-}
-
 .present-add-topic-form input[type="text"] {
   flex: 1;
   min-width: 140px;
@@ -386,8 +375,8 @@
   font-size: inherit;
   background-color: var(--background-color);
   color: var(--font-color);
-  border: 2px solid var(--primary-color);
-  border-radius: 2px;
+  border: 1px solid var(--primary-color);
+  border-radius: 5px;
   text-align: right;
 }
 
