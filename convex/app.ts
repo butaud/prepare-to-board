@@ -166,7 +166,7 @@ const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
     })),
     liveStartTime: meeting.liveStartTime,
     currentNotes: meeting.currentNotes?.map((note) => serializeNote(note, members)),
-    focusedTopicId: meeting.focusedTopicId,
+    highlightedTopicId: meeting.highlightedTopicId ?? meeting.focusedTopicId,
   };
 };
 
@@ -392,12 +392,13 @@ export const startMeeting = mutation({
       liveAgenda,
       minutes: [],
       currentNotes: [],
-      focusedTopicId: liveAgenda.find((topic) => !topic.cancelled && !topic.deferred)?.id,
+      highlightedTopicId: undefined,
+      focusedTopicId: undefined,
     });
   },
 });
 
-export const setFocusedTopic = mutation({
+const setHighlightedTopicMutation = mutation({
   args: { meetingId: v.id("meetings"), topicId: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
@@ -410,9 +411,15 @@ export const setFocusedTopic = mutation({
     ) {
       throw new ConvexError("Topic not found");
     }
-    await ctx.db.patch(args.meetingId, { focusedTopicId: args.topicId });
+    await ctx.db.patch(args.meetingId, {
+      highlightedTopicId: args.topicId,
+      focusedTopicId: undefined,
+    });
   },
 });
+
+export const setHighlightedTopic = setHighlightedTopicMutation;
+export const setFocusedTopic = setHighlightedTopicMutation;
 
 export const updateLiveStartTime = mutation({
   args: { meetingId: v.id("meetings"), liveStartTime: v.number() },
@@ -546,7 +553,9 @@ export const skipTopic = mutation({
     await ctx.db.patch(args.meetingId, {
       liveAgenda,
       currentNotes: [],
-      focusedTopicId: liveAgenda.find((candidate) => !candidate.cancelled && !candidate.deferred)?.id,
+      highlightedTopicId:
+        meeting.highlightedTopicId === topic.id ? undefined : meeting.highlightedTopicId,
+      focusedTopicId: undefined,
     });
   },
 });
@@ -569,7 +578,11 @@ export const makeActive = mutation({
     liveAgenda.push({ ...currentTopic, deferred: true });
     await ctx.db.patch(args.meetingId, {
       liveAgenda,
-      focusedTopicId: targetTopic.id,
+      highlightedTopicId:
+        meeting.highlightedTopicId === targetTopic.id
+          ? undefined
+          : meeting.highlightedTopicId,
+      focusedTopicId: undefined,
     });
   },
 });
@@ -604,11 +617,9 @@ export const advanceTopic = mutation({
         },
       ],
       currentNotes: [],
-      focusedTopicId:
-        meeting.liveAgenda.find(
-          (candidate, index) =>
-            index > currentIndex && !candidate.cancelled && !candidate.deferred
-        )?.id ?? topic.id,
+      highlightedTopicId:
+        meeting.highlightedTopicId === topic.id ? undefined : meeting.highlightedTopicId,
+      focusedTopicId: undefined,
     });
   },
 });

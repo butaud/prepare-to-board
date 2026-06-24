@@ -82,7 +82,7 @@ export type Meeting = {
   minutes: Minute[];
   liveStartTime?: Date;
   currentNotes?: Note[];
-  focusedTopicId?: Id;
+  highlightedTopicId?: Id;
 };
 
 export type Organization = {

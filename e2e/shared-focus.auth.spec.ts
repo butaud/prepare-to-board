@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { allTestUsersConfigured } from "./test-users";
 
-test.skip(!allTestUsersConfigured, "Shared focus review needs admin, officer, and member Clerk test users.");
+test.skip(!allTestUsersConfigured, "Shared highlight review needs admin, officer, and member Clerk test users.");
 test.setTimeout(120_000);
 
-test("present view follows the topic focused by the minute taker", async ({
+test("present view follows the topic highlighted by the minute taker", async ({
   browser,
   baseURL,
 }) => {
@@ -14,9 +14,9 @@ test("present view follows the topic focused by the minute taker", async ({
   );
 
   const runId = Date.now().toString(36);
-  let orgName = `E2E Focus Board ${runId}`;
-  const firstTopic = `Opening Focus ${runId}`;
-  const secondTopic = `Treasurer Focus ${runId}`;
+  let orgName = `E2E Highlight Board ${runId}`;
+  const firstTopic = `Opening Highlight ${runId}`;
+  const secondTopic = `Treasurer Highlight ${runId}`;
   const dateSeed = Date.now();
   const meetingDate = new Date(
     2090 + (dateSeed % 100),
@@ -113,7 +113,14 @@ test("present view follows the topic focused by the minute taker", async ({
   await expect(member.getByRole("button", { name: "Take Minutes" })).toHaveCount(0);
   await expect(memberFirstTopic).toHaveAttribute("aria-expanded", "true");
 
-  await officer.getByRole("button", { name: new RegExp(secondTopic) }).click();
+  const officerAgendaTopic = (topic: string) =>
+    officer.locator(".minutes-day-view-event").filter({ hasText: topic });
+
+  await officerAgendaTopic(secondTopic).click();
+  await expect(adminFirstTopic).toHaveAttribute("aria-expanded", "true");
+  await expect(memberFirstTopic).toHaveAttribute("aria-expanded", "true");
+
+  await officer.getByRole("button", { name: "Highlight for everyone" }).click();
   await expect(adminSecondTopic).toHaveAttribute("aria-expanded", "true", {
     timeout: 15_000,
   });
@@ -123,7 +130,8 @@ test("present view follows the topic focused by the minute taker", async ({
   });
   await expect(memberFirstTopic).toHaveAttribute("aria-expanded", "false");
 
-  await officer.getByRole("button", { name: new RegExp(firstTopic) }).click();
+  await officerAgendaTopic(firstTopic).click();
+  await expect(officer.getByRole("button", { name: "Highlight for everyone" })).toHaveCount(0);
   await expect(adminFirstTopic).toHaveAttribute("aria-expanded", "true", {
     timeout: 15_000,
   });
@@ -132,6 +140,19 @@ test("present view follows the topic focused by the minute taker", async ({
     timeout: 15_000,
   });
   await expect(memberSecondTopic).toHaveAttribute("aria-expanded", "false");
+
+  await officerAgendaTopic(secondTopic).click();
+  await officer.getByRole("button", { name: "Highlight for everyone" }).click();
+  await expect(adminSecondTopic).toHaveAttribute("aria-expanded", "true", {
+    timeout: 15_000,
+  });
+  await officer.getByRole("button", { name: "Unhighlight" }).click();
+  await expect(adminFirstTopic).toHaveAttribute("aria-expanded", "true", {
+    timeout: 15_000,
+  });
+  await expect(memberFirstTopic).toHaveAttribute("aria-expanded", "true", {
+    timeout: 15_000,
+  });
 
   await adminContext.close();
   await officerContext.close();

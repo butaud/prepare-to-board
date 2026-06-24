@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
@@ -38,8 +38,12 @@ export const MeetingPresent = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
   const [now, setNow] = useState(() => new Date());
-  const focusedTopicId = meeting.focusedTopicId ?? null;
-  const setFocusedTopic = useMutation(api.app.setFocusedTopic);
+  const selectedAgendaItemRef = useRef<HTMLLIElement | null>(null);
+  const highlightedTopicId =
+    meeting.highlightedTopicId ??
+    (meeting as typeof meeting & { focusedTopicId?: string }).focusedTopicId ??
+    null;
+  const setHighlightedTopic = useMutation(api.app.setFocusedTopic);
   const isOfficer = me.canWrite(meeting);
 
   useEffect(() => {
@@ -143,44 +147,43 @@ export const MeetingPresent = () => {
     ...(nowItem ? [nowItem] : []),
     ...upcomingItems,
   ];
-  const focusedItem =
-    allItems.find((item) => item.topic.id === focusedTopicId) ??
+  const highlightedItem =
+    allItems.find((item) => item.topic.id === highlightedTopicId) ??
     nowItem ??
     allItems[0] ??
     null;
-  const selectedTopicId = focusedItem?.topic.id ?? null;
-  const hasFocusedAgendaTopic = focusedTopicId
-    ? allItems.some((item) => item.topic.id === focusedTopicId)
+  const selectedTopicId = highlightedItem?.topic.id ?? null;
+  const hasHighlightedAgendaTopic = highlightedTopicId
+    ? allItems.some((item) => item.topic.id === highlightedTopicId)
     : false;
-  const fallbackFocusedTopicId = (nowItem ?? allItems[0])?.topic.id ?? null;
+
+  useEffect(() => {
+    selectedAgendaItemRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+  }, [selectedTopicId]);
 
   useEffect(() => {
     if (!isOfficer) return;
-    if (!allItems.length) {
-      if (focusedTopicId) {
-        void setFocusedTopic({ meetingId: meeting.id, topicId: undefined });
-      }
-      return;
-    }
-    if (!hasFocusedAgendaTopic && fallbackFocusedTopicId) {
-      void setFocusedTopic({
-        meetingId: meeting.id,
-        topicId: fallbackFocusedTopicId,
-      });
+    if (highlightedTopicId && !hasHighlightedAgendaTopic) {
+      void setHighlightedTopic({ meetingId: meeting.id, topicId: undefined });
     }
   }, [
     isOfficer,
-    focusedTopicId,
-    hasFocusedAgendaTopic,
-    allItems.length,
-    fallbackFocusedTopicId,
+    highlightedTopicId,
+    hasHighlightedAgendaTopic,
     meeting.id,
-    setFocusedTopic,
+    setHighlightedTopic,
   ]);
 
-  const focusTopic = (topicId: string) => {
+  const highlightTopic = (topicId: string) => {
     if (!isOfficer) return;
-    void setFocusedTopic({ meetingId: meeting.id, topicId });
+    void setHighlightedTopic({
+      meetingId: meeting.id,
+      topicId: topicId === currentTopic?.id ? undefined : topicId,
+    });
   };
 
   const renderAgendaItem = (item: PresentAgendaItem) => {
@@ -197,12 +200,16 @@ export const MeetingPresent = () => {
       item.activeSeconds > (topic.durationMinutes ?? 0) * 60;
 
     return (
-      <li key={`${item.section}:${topic.id}`} className="present-agenda-row">
+      <li
+        key={`${item.section}:${topic.id}`}
+        ref={isFocused ? selectedAgendaItemRef : undefined}
+        className="present-agenda-row"
+      >
         <button
           className={`present-agenda-item${item.section === "now" ? " is-meeting-active" : ""}${isFocused ? " is-focused" : ""}`}
           aria-expanded={isFocused}
           disabled={!isOfficer}
-          onClick={() => focusTopic(topic.id)}
+          onClick={() => highlightTopic(topic.id)}
         >
           <span className="present-item-main">
             <span className="present-topic-title">{topic.title}</span>

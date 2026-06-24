@@ -95,6 +95,10 @@
   border-left: 4px solid var(--primary-color);
 }
 
+.minutes-topic-detail-section.is-highlighted {
+  border-left-color: var(--secondary-color);
+}
+
 .meeting-minutes button.minutes-active-topic-banner {
   position: relative;
   z-index: 1;

@@ -89,6 +89,7 @@ export default defineSchema({
     minutes: v.array(minute),
     liveStartTime: v.optional(v.number()),
     currentNotes: v.optional(v.array(note)),
+    highlightedTopicId: v.optional(v.string()),
     focusedTopicId: v.optional(v.string()),
   }).index("by_org", ["organizationId"]),
 });

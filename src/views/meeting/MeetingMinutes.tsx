@@ -750,7 +750,13 @@ export const MeetingMinutes = () => {
   const agendaPaneViewportTopRef = useRef<number | null>(null);
   const hasScrolledInitialTopicIntoViewRef = useRef(false);
   const [now, setNow] = useState(() => new Date());
-  const focusedTopicId = meeting.focusedTopicId ?? null;
+  const highlightedTopicId =
+    meeting.highlightedTopicId ??
+    (meeting as Meeting & { focusedTopicId?: string }).focusedTopicId ??
+    null;
+  const [locallySelectedTopicId, setLocallySelectedTopicId] = useState<
+    string | null
+  >(null);
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
   const [isAgendaPaneSettling, setIsAgendaPaneSettling] = useState(false);
   const [agendaSlotMinutes, setAgendaSlotMinutes] = useState(
@@ -858,7 +864,7 @@ export const MeetingMinutes = () => {
   const addCurrentNote = useMutation(api.app.addCurrentNote);
   const updateCurrentNote = useMutation(api.app.updateCurrentNote);
   const removeCurrentNote = useMutation(api.app.removeCurrentNote);
-  const setFocusedTopic = useMutation(api.app.setFocusedTopic);
+  const setHighlightedTopic = useMutation(api.app.setFocusedTopic);
   const updateLiveStartTime = useMutation(api.app.updateLiveStartTime);
   const updateMinuteDuration = useMutation(api.app.updateMinuteDuration);
 
@@ -1075,19 +1081,24 @@ export const MeetingMinutes = () => {
     ...deferredAgendaItems,
   ];
   const selectedAgendaItem =
-    agendaMenuItems.find((item) => item.topic.id === focusedTopicId) ??
+    agendaMenuItems.find((item) => item.topic.id === locallySelectedTopicId) ??
     meetingActiveAgendaItem ??
     agendaMenuItems[0] ??
     null;
   const selectedTopicId = selectedAgendaItem?.topic.id ?? null;
   const isSelectedTopicActive =
     selectedTopicId !== null && selectedTopicId === meetingActiveTopicId;
+  const isSelectedTopicHighlighted =
+    selectedTopicId !== null && selectedTopicId === highlightedTopicId;
   const shouldShowActiveTopicBanner =
     Boolean(meetingActiveTopicId) && !isSelectedTopicActive;
-  const hasFocusedAgendaTopic = focusedTopicId
-    ? agendaMenuItems.some((item) => item.topic.id === focusedTopicId)
+  const hasLocalSelectedAgendaTopic = locallySelectedTopicId
+    ? agendaMenuItems.some((item) => item.topic.id === locallySelectedTopicId)
     : false;
-  const fallbackFocusedTopicId =
+  const hasHighlightedAgendaTopic = highlightedTopicId
+    ? agendaMenuItems.some((item) => item.topic.id === highlightedTopicId)
+    : false;
+  const fallbackSelectedTopicId =
     (meetingActiveAgendaItem ?? agendaMenuItems[0])?.topic.id ?? null;
 
   type AgendaTimelineEntry = {
@@ -1400,26 +1411,28 @@ export const MeetingMinutes = () => {
 
   useEffect(() => {
     if (!isOfficer) return;
-    if (!agendaMenuItems.length) {
-      if (focusedTopicId) {
-        void setFocusedTopic({ meetingId: meeting.id, topicId: undefined });
-      }
-      return;
-    }
-    if (!hasFocusedAgendaTopic && fallbackFocusedTopicId) {
-      void setFocusedTopic({
-        meetingId: meeting.id,
-        topicId: fallbackFocusedTopicId,
-      });
+    if (!agendaMenuItems.length) return;
+    if (!hasLocalSelectedAgendaTopic && fallbackSelectedTopicId) {
+      setLocallySelectedTopicId(fallbackSelectedTopicId);
     }
   }, [
     isOfficer,
-    focusedTopicId,
-    hasFocusedAgendaTopic,
+    hasLocalSelectedAgendaTopic,
     agendaMenuItems.length,
-    fallbackFocusedTopicId,
+    fallbackSelectedTopicId,
+  ]);
+
+  useEffect(() => {
+    if (!isOfficer) return;
+    if (highlightedTopicId && !hasHighlightedAgendaTopic) {
+      void setHighlightedTopic({ meetingId: meeting.id, topicId: undefined });
+    }
+  }, [
+    isOfficer,
+    highlightedTopicId,
+    hasHighlightedAgendaTopic,
     meeting.id,
-    setFocusedTopic,
+    setHighlightedTopic,
   ]);
 
   // Completed meeting view
@@ -1673,14 +1686,29 @@ export const MeetingMinutes = () => {
     );
   };
 
-  const handleFocusTopic = (topicId: string, scrollAgenda = false) => {
-    void setFocusedTopic({ meetingId: meeting.id, topicId });
+  const handleSelectTopic = (topicId: string, scrollAgenda = false) => {
+    setLocallySelectedTopicId(topicId);
+    if (topicId === meetingActiveTopicId) {
+      if (highlightedTopicId) {
+        void setHighlightedTopic({ meetingId: meeting.id, topicId: undefined });
+      }
+    } else if (highlightedTopicId && highlightedTopicId !== topicId) {
+      void setHighlightedTopic({ meetingId: meeting.id, topicId });
+    }
     if (scrollAgenda) {
       scrollAgendaTopicIntoView(topicId);
     }
     if (window.matchMedia("(max-width: 750px)").matches) {
       setIsAgendaPaneOpen(false);
     }
+  };
+
+  const handleToggleHighlightSelectedTopic = () => {
+    if (!selectedTopicId || isSelectedTopicActive) return;
+    void setHighlightedTopic({
+      meetingId: meeting.id,
+      topicId: isSelectedTopicHighlighted ? undefined : selectedTopicId,
+    });
   };
 
   return (
@@ -1709,7 +1737,7 @@ export const MeetingMinutes = () => {
             ref={activeBannerRef}
             type="button"
             className="minutes-active-topic-banner"
-            onClick={() => handleFocusTopic(meetingActiveTopic.id, true)}
+            onClick={() => handleSelectTopic(meetingActiveTopic.id, true)}
           >
             <span className="minutes-active-topic-banner-label">
               Active topic
@@ -1721,7 +1749,7 @@ export const MeetingMinutes = () => {
         )}
         <section
           ref={topicDetailRef}
-          className="minutes-section minutes-topic-detail-section"
+          className={`minutes-section minutes-topic-detail-section${isSelectedTopicHighlighted ? " is-highlighted" : ""}`}
         >
           {selectedAgendaItem ? (
             <div className="minutes-current-topic">
@@ -1764,6 +1792,21 @@ export const MeetingMinutes = () => {
                 </span>
               )}
             </div>
+
+            {!isSelectedTopicActive && (
+              <div className="minutes-actions minutes-highlight-actions">
+                <button
+                  className={
+                    isSelectedTopicHighlighted ? "btn-secondary" : "btn-primary"
+                  }
+                  onClick={handleToggleHighlightSelectedTopic}
+                >
+                  {isSelectedTopicHighlighted
+                    ? "Unhighlight"
+                    : "Highlight for everyone"}
+                </button>
+              </div>
+            )}
 
             {selectedAgendaItem.kind === "meeting-active" && (
               <div className="minutes-actions">
@@ -2009,7 +2052,7 @@ export const MeetingMinutes = () => {
                   entry.displayHeightPx
                 )}
                 title={getTimelineEntryTitle(entry)}
-                onClick={() => handleFocusTopic(item.topic.id)}
+                onClick={() => handleSelectTopic(item.topic.id)}
               >
                 {renderTimelineButtonContent(entry)}
               </button>
@@ -2032,7 +2075,7 @@ export const MeetingMinutes = () => {
                   )}
                   title={getTimelineEntryTitle(entry)}
                   onClick={() =>
-                    handleFocusTopic(meetingActiveAgendaItem.topic.id)
+                    handleSelectTopic(meetingActiveAgendaItem.topic.id)
                   }
                 >
                   {renderTimelineButtonContent(entry)}
@@ -2085,11 +2128,11 @@ export const MeetingMinutes = () => {
                                 tabIndex={0}
                                 style={{ height: `${entry.displayHeightPx}px` }}
                                 title={getTimelineEntryTitle(entry)}
-                                onClick={() => handleFocusTopic(topic.id)}
+                                onClick={() => handleSelectTopic(topic.id)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     e.preventDefault();
-                                    handleFocusTopic(topic.id);
+                                    handleSelectTopic(topic.id);
                                   }
                                 }}
                               >
@@ -2135,11 +2178,11 @@ export const MeetingMinutes = () => {
                 role="button"
                 tabIndex={0}
                 title={getTimelineEntryTitle(entry)}
-                onClick={() => handleFocusTopic(topic.id)}
+                onClick={() => handleSelectTopic(topic.id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    handleFocusTopic(topic.id);
+                    handleSelectTopic(topic.id);
                   }
                   }}
                 >
