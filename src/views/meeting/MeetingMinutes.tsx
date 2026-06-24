@@ -774,9 +774,7 @@ export const MeetingMinutes = () => {
       }) as Meeting | undefined | null;
       if (!currentMeeting) return;
       const topic: Topic = {
-        id:
-          (args.clientTopicId as string | undefined) ??
-          `optimistic-${Date.now().toString(36)}`,
+        id: `optimistic-${Date.now().toString(36)}`,
         title: args.title as string,
         durationMinutes: args.durationMinutes as number | undefined,
       };
@@ -967,16 +965,12 @@ export const MeetingMinutes = () => {
 
   const handleAddTopic = () => {
     if (!newTopicTitle.trim()) return;
-    const clientTopicId = `topic:${Date.now().toString(36)}:${Math.random()
-      .toString(36)
-      .slice(2)}`;
     void addTopic({
       meetingId: meeting.id,
       list: "liveAgenda",
       title: newTopicTitle.trim(),
       durationMinutes: newTopicDuration,
       insertAfterTopicId: addingAfterTopicId ?? undefined,
-      clientTopicId,
     });
     setNewTopicTitle("");
     setNewTopicDuration(5);

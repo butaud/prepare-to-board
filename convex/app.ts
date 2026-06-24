@@ -441,14 +441,13 @@ export const addTopic = mutation({
     title: v.string(),
     durationMinutes: v.optional(v.number()),
     insertAfterTopicId: v.optional(v.string()),
-    clientTopicId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
     const topic = {
-      id: args.clientTopicId ?? id(),
+      id: id(),
       title: args.title,
       durationMinutes: args.durationMinutes,
     };
