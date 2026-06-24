@@ -775,7 +775,14 @@ export const MeetingMinutes = () => {
   const advanceTopic = useMutation(api.app.advanceTopic);
   const skipTopic = useMutation(api.app.skipTopic);
   const addTopic = useMutation(api.app.addTopic).withOptimisticUpdate(
-    (localStore, args) => {
+    (localStore, rawArgs) => {
+      const args = rawArgs as {
+        durationMinutes?: number;
+        insertAfterTopicId?: string;
+        list: "plannedAgenda" | "liveAgenda";
+        meetingId: string;
+        title: string;
+      };
       if (args.list !== "liveAgenda") return;
       const currentMeeting = localStore.getQuery(api.app.meeting, {
         meetingId: args.meetingId,
@@ -783,8 +790,8 @@ export const MeetingMinutes = () => {
       if (!currentMeeting) return;
       const topic: Topic = {
         id: `optimistic-${Date.now().toString(36)}`,
-        title: args.title as string,
-        durationMinutes: args.durationMinutes as number | undefined,
+        title: args.title,
+        durationMinutes: args.durationMinutes,
       };
       const topics = [...currentMeeting.liveAgenda];
       const afterIndex = args.insertAfterTopicId
@@ -820,7 +827,12 @@ export const MeetingMinutes = () => {
   );
   const updateTopic = useMutation(api.app.updateTopic);
   const reorderTopics = useMutation(api.app.reorderTopics).withOptimisticUpdate(
-    (localStore, args) => {
+    (localStore, rawArgs) => {
+      const args = rawArgs as {
+        list: "plannedAgenda" | "liveAgenda";
+        meetingId: string;
+        topicIds: string[];
+      };
       if (args.list !== "liveAgenda") return;
       const currentMeeting = localStore.getQuery(api.app.meeting, {
         meetingId: args.meetingId,
@@ -829,7 +841,7 @@ export const MeetingMinutes = () => {
       const byId = new Map(
         currentMeeting.liveAgenda.map((topic: Topic) => [topic.id, topic])
       );
-      const reordered = (args.topicIds as string[])
+      const reordered = args.topicIds
         .map((topicId: string) => byId.get(topicId))
         .filter((topic: Topic | undefined): topic is Topic => Boolean(topic));
       localStore.setQuery(

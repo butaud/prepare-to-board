@@ -4,7 +4,7 @@ import { PendingNote } from "../util/data";
 
 type ReactNode = React.ReactNode;
 
-export function renderMarkdown(text: string): ReactNode[] {
+function renderMarkdown(text: string): ReactNode[] {
   // Parse the string into React nodes handling **bold**, *italic*, _italic_, [text](url)
   const nodes: ReactNode[] = [];
   let remaining = text;
