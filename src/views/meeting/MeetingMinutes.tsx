@@ -752,6 +752,7 @@ export const MeetingMinutes = () => {
   const [now, setNow] = useState(() => new Date());
   const focusedTopicId = meeting.focusedTopicId ?? null;
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
+  const [isAgendaPaneSettling, setIsAgendaPaneSettling] = useState(false);
   const [agendaSlotMinutes, setAgendaSlotMinutes] = useState(
     AGENDA_BASE_SLOT_MINUTES
   );
@@ -853,6 +854,14 @@ export const MeetingMinutes = () => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    setIsAgendaPaneSettling(true);
+    const timeoutId = window.setTimeout(() => {
+      setIsAgendaPaneSettling(false);
+    }, 220);
+    return () => window.clearTimeout(timeoutId);
+  }, [isAgendaPaneOpen]);
 
   useEffect(() => {
     const pane = agendaPaneRef.current;
@@ -1237,6 +1246,7 @@ export const MeetingMinutes = () => {
 
   useEffect(() => {
     if (!selectedTopicId || hasScrolledInitialTopicIntoViewRef.current) return;
+    if (window.matchMedia("(max-width: 750px)").matches) return;
 
     const frameId = window.requestAnimationFrame(() => {
       const selectedElement = findAgendaTopicElement(selectedTopicId);
@@ -1265,7 +1275,8 @@ export const MeetingMinutes = () => {
       path.classList.remove("is-hidden");
     };
     const updateConnections = () => {
-      if (window.matchMedia("(max-width: 750px)").matches) {
+      const isMobile = window.matchMedia("(max-width: 750px)").matches;
+      if (isMobile && (isAgendaPaneOpen || isAgendaPaneSettling)) {
         hideConnection(selectedConnectionRef.current);
         hideConnection(activeConnectionRef.current);
         return;
@@ -1291,10 +1302,14 @@ export const MeetingMinutes = () => {
           ? Math.min(Math.max(targetCenterY, paneRect.top), paneRect.bottom)
           : targetCenterY;
         const y2 = cappedTargetY - layoutRect.top;
+        const targetX =
+          isMobile && !isAgendaPaneOpen && paneRect
+            ? paneRect.left - layoutRect.left
+            : targetRect.left - layoutRect.left;
         return {
           x1: sourceRect.right - layoutRect.left,
           y1,
-          x2: targetRect.left - layoutRect.left,
+          x2: targetX,
           y2,
         };
       };
@@ -1329,6 +1344,7 @@ export const MeetingMinutes = () => {
     };
 
     scheduleUpdate();
+    const postTransitionUpdateId = window.setTimeout(scheduleUpdate, 220);
     window.addEventListener("resize", scheduleUpdate);
     window.addEventListener("scroll", scheduleUpdate, true);
 
@@ -1344,6 +1360,7 @@ export const MeetingMinutes = () => {
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      window.clearTimeout(postTransitionUpdateId);
       window.removeEventListener("resize", scheduleUpdate);
       window.removeEventListener("scroll", scheduleUpdate, true);
       resizeObserver.disconnect();
@@ -1355,6 +1372,7 @@ export const MeetingMinutes = () => {
     agendaTimelineEntries.length,
     agendaSlotMinutes,
     isAgendaPaneOpen,
+    isAgendaPaneSettling,
   ]);
 
   useEffect(() => {
@@ -1645,7 +1663,9 @@ export const MeetingMinutes = () => {
   return (
     <div className="meeting-minutes" ref={minutesLayoutRef}>
       <svg
-        className="minutes-agenda-connections"
+        className={`minutes-agenda-connections${
+          isAgendaPaneOpen || isAgendaPaneSettling ? " is-tray-open" : ""
+        }`}
         aria-hidden="true"
         focusable="false"
       >
@@ -1875,6 +1895,22 @@ export const MeetingMinutes = () => {
         id="minutes-agenda-pane"
         className={`minutes-section minutes-topic-tray${isAgendaPaneOpen ? " is-open" : ""}`}
         aria-label="Meeting agenda tray"
+        onClick={() => {
+          if (window.matchMedia("(max-width: 750px)").matches && !isAgendaPaneOpen) {
+            setIsAgendaPaneOpen(true);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (
+            window.matchMedia("(max-width: 750px)").matches &&
+            !isAgendaPaneOpen &&
+            (event.key === "Enter" || event.key === " ")
+          ) {
+            event.preventDefault();
+            setIsAgendaPaneOpen(true);
+          }
+        }}
+        tabIndex={isAgendaPaneOpen ? undefined : 0}
       >
         <div className="minutes-agenda-pane-header">
           <h2>Agenda</h2>

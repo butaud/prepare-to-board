@@ -1162,6 +1162,14 @@
     overflow-x: clip;
   }
 
+  .minutes-agenda-connections {
+    z-index: 22;
+  }
+
+  .minutes-agenda-connections.is-tray-open {
+    display: none;
+  }
+
   .meeting-minutes button.minutes-agenda-pane-backdrop {
     position: absolute;
     inset: 0;
@@ -1201,7 +1209,7 @@
     box-sizing: border-box;
     min-height: 100%;
     max-height: none;
-    padding: 16px 16px 16px 64px;
+    padding: 16px;
     overflow: auto;
     border-radius: 0;
     box-shadow: -6px 0 20px var(--shadow-color-strong);
@@ -1211,6 +1219,7 @@
   }
 
   .minutes-topic-tray.is-open {
+    padding-left: 64px;
     transform: translateX(0);
     pointer-events: auto;
   }
@@ -1260,11 +1269,61 @@
   }
 
   .minutes-topic-tray:not(.is-open) {
+    border-left: 2px solid var(--primary-color);
+    cursor: pointer;
     overflow: hidden;
   }
 
+  .minutes-topic-tray:not(.is-open):hover,
+  .minutes-topic-tray:not(.is-open):focus-visible {
+    border-left-color: var(--secondary-color);
+    box-shadow: -8px 0 22px var(--shadow-color-strong);
+  }
+
+  .minutes-topic-tray:not(.is-open)::before {
+    content: "<<";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    z-index: 12;
+    display: inline-flex;
+    width: 42px;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--primary-color-subtle) 78%, transparent);
+    color: var(--primary-color);
+    font-size: 0.82rem;
+    font-weight: 700;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .minutes-topic-tray:not(.is-open):hover::before,
+  .minutes-topic-tray:not(.is-open):focus-visible::before {
+    background: color-mix(in srgb, var(--primary-color) 16%, var(--primary-color-subtle));
+    color: var(--secondary-color);
+  }
+
+  .minutes-topic-tray:not(.is-open) .minutes-agenda-pane-header {
+    display: none;
+  }
+
+  .minutes-topic-tray:not(.is-open) .minutes-day-view-grid {
+    opacity: 0.58;
+    pointer-events: none;
+    transform: translateX(-66px);
+  }
+
+  .minutes-topic-tray:not(.is-open) .minutes-agenda-insertion-button {
+    opacity: 0;
+  }
+
+  .minutes-topic-tray:not(.is-open) .minutes-agenda-pane-close {
+    display: none;
+  }
+
   .minutes-topic-tray:not(.is-open) .minutes-agenda-pane-header h2,
-  .minutes-topic-tray:not(.is-open) .minutes-agenda-group,
   .minutes-topic-tray:not(.is-open) > .btn-secondary,
   .minutes-topic-tray:not(.is-open) > .minutes-add-topic-form {
     visibility: hidden;
