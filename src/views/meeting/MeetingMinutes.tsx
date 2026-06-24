@@ -747,6 +747,7 @@ export const MeetingMinutes = () => {
   const agendaPaneRef = useRef<HTMLElement | null>(null);
   const selectedConnectionRef = useRef<SVGPathElement | null>(null);
   const activeConnectionRef = useRef<SVGPathElement | null>(null);
+  const agendaPaneViewportTopRef = useRef<number | null>(null);
   const hasScrolledInitialTopicIntoViewRef = useRef(false);
   const [now, setNow] = useState(() => new Date());
   const focusedTopicId = meeting.focusedTopicId ?? null;
@@ -857,7 +858,19 @@ export const MeetingMinutes = () => {
     const pane = agendaPaneRef.current;
     if (!pane) return;
 
-    const updateSlotMinutes = () => {
+    const updateAgendaPaneMetrics = (remeasurePaneTop = false) => {
+      if (remeasurePaneTop || agendaPaneViewportTopRef.current === null) {
+        agendaPaneViewportTopRef.current = Math.max(
+          16,
+          pane.getBoundingClientRect().top
+        );
+      }
+      const paneTop = agendaPaneViewportTopRef.current;
+      const paneMaxHeight = Math.max(
+        AGENDA_SLOT_HEIGHT_PX,
+        window.innerHeight - paneTop - 24
+      );
+      pane.style.setProperty("--agenda-pane-max-height", `${paneMaxHeight}px`);
       const header = pane.querySelector<HTMLElement>(
         ".minutes-agenda-pane-header"
       );
@@ -866,7 +879,7 @@ export const MeetingMinutes = () => {
         pane.querySelector<HTMLElement>(":scope > .btn-secondary");
       const availableHeight = Math.max(
         AGENDA_SLOT_HEIGHT_PX,
-        pane.clientHeight -
+        paneMaxHeight -
           (header?.offsetHeight ?? 0) -
           (footer?.offsetHeight ?? 0) -
           28
@@ -877,20 +890,22 @@ export const MeetingMinutes = () => {
       });
     };
 
-    updateSlotMinutes();
+    updateAgendaPaneMetrics(true);
     if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", updateSlotMinutes);
+      const handleResize = () => updateAgendaPaneMetrics(true);
+      window.addEventListener("resize", handleResize);
       return () => {
-        window.removeEventListener("resize", updateSlotMinutes);
+        window.removeEventListener("resize", handleResize);
       };
     }
 
-    const resizeObserver = new ResizeObserver(updateSlotMinutes);
+    const resizeObserver = new ResizeObserver(() => updateAgendaPaneMetrics());
     resizeObserver.observe(pane);
-    window.addEventListener("resize", updateSlotMinutes);
+    const handleResize = () => updateAgendaPaneMetrics(true);
+    window.addEventListener("resize", handleResize);
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("resize", updateSlotMinutes);
+      window.removeEventListener("resize", handleResize);
     };
   }, [addingAfterTopicId, hoveredInsertionAfterTopicId]);
 

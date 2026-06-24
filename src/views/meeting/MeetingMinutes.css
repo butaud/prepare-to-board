@@ -144,7 +144,7 @@
   top: 16px;
   box-sizing: border-box;
   width: 100%;
-  max-height: calc(100vh - 32px);
+  max-height: var(--agenda-pane-max-height, calc(100vh - 32px));
   overflow-x: hidden;
   overflow-y: auto;
   padding-right: 22px;
@@ -161,9 +161,18 @@
   margin-bottom: 4px;
 }
 
+.minutes-agenda-pane-header {
+  position: sticky;
+  top: -20px;
+  z-index: 10;
+  margin: -20px -2px 14px 0;
+  padding: 20px 0 2px;
+  background: var(--primary-color-subtle);
+}
+
 .minutes-agenda-pane-subtitle {
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   color: var(--font-color);
   font-size: 0.82rem;
   opacity: 0.65;
@@ -1211,7 +1220,8 @@
     align-items: center;
     justify-content: flex-start;
     gap: 12px;
-    margin-bottom: 14px;
+    margin: 0 0 14px;
+    padding: 0;
   }
 
   .minutes-agenda-pane-header h2 {
