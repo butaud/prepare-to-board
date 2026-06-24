@@ -33,6 +33,10 @@
   opacity: 0.36;
 }
 
+.minutes-agenda-connection-line.is-hidden {
+  opacity: 0;
+}
+
 .meeting-minutes-completed {
   max-width: 900px;
   margin: 0 auto;

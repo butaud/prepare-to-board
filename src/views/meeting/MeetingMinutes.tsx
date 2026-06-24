@@ -745,13 +745,12 @@ export const MeetingMinutes = () => {
   const topicDetailRef = useRef<HTMLElement | null>(null);
   const activeBannerRef = useRef<HTMLButtonElement | null>(null);
   const agendaPaneRef = useRef<HTMLElement | null>(null);
+  const selectedConnectionRef = useRef<SVGPathElement | null>(null);
+  const activeConnectionRef = useRef<SVGPathElement | null>(null);
   const hasScrolledInitialTopicIntoViewRef = useRef(false);
   const [now, setNow] = useState(() => new Date());
   const focusedTopicId = meeting.focusedTopicId ?? null;
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
-  const [agendaConnections, setAgendaConnections] = useState<
-    { key: string; x1: number; y1: number; x2: number; y2: number; variant: "active" | "selected" }[]
-  >([]);
   const [agendaSlotMinutes, setAgendaSlotMinutes] = useState(
     AGENDA_BASE_SLOT_MINUTES
   );
@@ -1239,9 +1238,21 @@ export const MeetingMinutes = () => {
 
   useEffect(() => {
     let frameId = 0;
+    const hideConnection = (path: SVGPathElement | null) => {
+      path?.classList.add("is-hidden");
+    };
+    const showConnection = (
+      path: SVGPathElement | null,
+      connection: { x1: number; y1: number; x2: number; y2: number }
+    ) => {
+      if (!path) return;
+      path.setAttribute("d", getAgendaConnectionPath(connection));
+      path.classList.remove("is-hidden");
+    };
     const updateConnections = () => {
       if (window.matchMedia("(max-width: 750px)").matches) {
-        setAgendaConnections([]);
+        hideConnection(selectedConnectionRef.current);
+        hideConnection(activeConnectionRef.current);
         return;
       }
 
@@ -1249,16 +1260,13 @@ export const MeetingMinutes = () => {
       if (!layout) return;
 
       const layoutRect = layout.getBoundingClientRect();
-      const nextConnections: typeof agendaConnections = [];
-      const addConnection = (
-        key: string,
+      const getConnection = (
         source: HTMLElement | null,
-        topicId: string | null,
-        variant: "active" | "selected"
-      ) => {
-        if (!source || !topicId) return;
+        topicId: string | null
+      ): { x1: number; y1: number; x2: number; y2: number } | null => {
+        if (!source || !topicId) return null;
         const target = findAgendaTopicElement(topicId);
-        if (!target) return;
+        if (!target) return null;
         const sourceRect = source.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
         const paneRect = agendaPaneRef.current?.getBoundingClientRect();
@@ -1268,32 +1276,37 @@ export const MeetingMinutes = () => {
           ? Math.min(Math.max(targetCenterY, paneRect.top), paneRect.bottom)
           : targetCenterY;
         const y2 = cappedTargetY - layoutRect.top;
-        nextConnections.push({
-          key,
+        return {
           x1: sourceRect.right - layoutRect.left,
           y1,
           x2: targetRect.left - layoutRect.left,
           y2,
-          variant,
-        });
+        };
       };
 
-      addConnection(
-        "selected",
+      const selectedConnection = getConnection(
         topicDetailRef.current,
-        selectedTopicId,
-        isSelectedTopicActive ? "active" : "selected"
+        selectedTopicId
       );
-      if (shouldShowActiveTopicBanner) {
-        addConnection(
-          "active",
-          activeBannerRef.current,
-          meetingActiveTopicId,
-          "active"
-        );
+      if (selectedConnection) {
+        showConnection(selectedConnectionRef.current, selectedConnection);
+      } else {
+        hideConnection(selectedConnectionRef.current);
       }
 
-      setAgendaConnections(nextConnections);
+      if (shouldShowActiveTopicBanner) {
+        const activeConnection = getConnection(
+          activeBannerRef.current,
+          meetingActiveTopicId
+        );
+        if (activeConnection) {
+          showConnection(activeConnectionRef.current, activeConnection);
+        } else {
+          hideConnection(activeConnectionRef.current);
+        }
+      } else {
+        hideConnection(activeConnectionRef.current);
+      }
     };
     const scheduleUpdate = () => {
       window.cancelAnimationFrame(frameId);
@@ -1323,7 +1336,6 @@ export const MeetingMinutes = () => {
   }, [
     selectedTopicId,
     meetingActiveTopicId,
-    isSelectedTopicActive,
     shouldShowActiveTopicBanner,
     agendaTimelineEntries.length,
     agendaSlotMinutes,
@@ -1617,21 +1629,22 @@ export const MeetingMinutes = () => {
 
   return (
     <div className="meeting-minutes" ref={minutesLayoutRef}>
-      {agendaConnections.length > 0 && (
-        <svg
-          className="minutes-agenda-connections"
-          aria-hidden="true"
-          focusable="false"
-        >
-          {agendaConnections.map((connection) => (
-            <path
-              key={connection.key}
-              className={`minutes-agenda-connection-line is-${connection.variant}`}
-              d={getAgendaConnectionPath(connection)}
-            />
-          ))}
-        </svg>
-      )}
+      <svg
+        className="minutes-agenda-connections"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          ref={selectedConnectionRef}
+          className={`minutes-agenda-connection-line${
+            isSelectedTopicActive ? " is-active" : ""
+          } is-hidden`}
+        />
+        <path
+          ref={activeConnectionRef}
+          className="minutes-agenda-connection-line is-active is-hidden"
+        />
+      </svg>
       <div className="minutes-topic-main">
         {shouldShowActiveTopicBanner && meetingActiveTopic && (
           <button
