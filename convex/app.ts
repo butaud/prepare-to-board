@@ -440,16 +440,33 @@ export const addTopic = mutation({
     list: v.union(v.literal("plannedAgenda"), v.literal("liveAgenda")),
     title: v.string(),
     durationMinutes: v.optional(v.number()),
+    insertAfterTopicId: v.optional(v.string()),
+    clientTopicId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const topic = {
+      id: args.clientTopicId ?? id(),
+      title: args.title,
+      durationMinutes: args.durationMinutes,
+    };
+    const topics = [...meeting[args.list]];
+    const afterIndex = args.insertAfterTopicId
+      ? topics.findIndex((candidate) => candidate.id === args.insertAfterTopicId)
+      : -1;
+    const liveMinimumIndex =
+      args.list === "liveAgenda" && meeting.status === "live"
+        ? currentLiveTopicIndex(meeting) + 1
+        : 0;
+    const insertIndex =
+      afterIndex === -1
+        ? topics.length
+        : Math.max(afterIndex + 1, liveMinimumIndex);
+    topics.splice(insertIndex, 0, topic);
     await ctx.db.patch(args.meetingId, {
-      [args.list]: [
-        ...meeting[args.list],
-        { id: id(), title: args.title, durationMinutes: args.durationMinutes },
-      ],
+      [args.list]: topics,
     });
   },
 });

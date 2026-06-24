@@ -44,6 +44,8 @@ const AGENDA_SLOT_HEIGHT_PX = 72;
 const AGENDA_TARGET_VISIBLE_MINUTES = 90;
 const AGENDA_EVENT_MIN_HEIGHT_PX = 14;
 const AGENDA_EVENT_GAP_PX = 3;
+const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
+const AGENDA_INSERTION_FORM_GAP_PX = 230;
 
 const timelineGridStyle = (slotCount: number): CSSProperties =>
   ({ "--slot-count": slotCount }) as CSSProperties;
@@ -68,6 +70,17 @@ const timelineDisplayEventStyle = (
   ({
     ...timelineEventStyle(startSlot, slotSpan, displayTopPx),
     height: `${displayHeightPx}px`,
+  }) as CSSProperties;
+
+const insertionCursorStyle = (topPx: number): CSSProperties =>
+  ({
+    top: `${topPx}px`,
+    height: `${AGENDA_INSERTION_RESERVED_HEIGHT_PX}px`,
+  }) as CSSProperties;
+
+const insertionFormStyle = (): CSSProperties =>
+  ({
+    top: `${AGENDA_INSERTION_RESERVED_HEIGHT_PX + 4}px`,
   }) as CSSProperties;
 
 const floorToAgendaSlot = (date: Date, slotMinutes: number): Date => {
@@ -737,7 +750,11 @@ export const MeetingMinutes = () => {
   );
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicDuration, setNewTopicDuration] = useState<number>(5);
-  const [showAddTopic, setShowAddTopic] = useState(false);
+  const [addingAfterTopicId, setAddingAfterTopicId] = useState<string | null>(
+    null
+  );
+  const [hoveredInsertionAfterTopicId, setHoveredInsertionAfterTopicId] =
+    useState<string | null>(null);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
   const [editingMinuteId, setEditingMinuteId] = useState<string | null>(null);
@@ -749,7 +766,52 @@ export const MeetingMinutes = () => {
   const [editingCurrentNoteId, setEditingCurrentNoteId] = useState<string | null>(null);
   const advanceTopic = useMutation(api.app.advanceTopic);
   const skipTopic = useMutation(api.app.skipTopic);
-  const addTopic = useMutation(api.app.addTopic);
+  const addTopic = useMutation(api.app.addTopic).withOptimisticUpdate(
+    (localStore, args) => {
+      if (args.list !== "liveAgenda") return;
+      const currentMeeting = localStore.getQuery(api.app.meeting, {
+        meetingId: args.meetingId,
+      }) as Meeting | undefined | null;
+      if (!currentMeeting) return;
+      const topic: Topic = {
+        id:
+          (args.clientTopicId as string | undefined) ??
+          `optimistic-${Date.now().toString(36)}`,
+        title: args.title as string,
+        durationMinutes: args.durationMinutes as number | undefined,
+      };
+      const topics = [...currentMeeting.liveAgenda];
+      const afterIndex = args.insertAfterTopicId
+        ? topics.findIndex(
+            (candidate: Topic) => candidate.id === args.insertAfterTopicId
+          )
+        : -1;
+      const completedCount = currentMeeting.minutes.filter(
+        (minute) => minute !== null
+      ).length;
+      const currentIndex = topics.findIndex(
+        (candidate: Topic, index: number) =>
+          index >= completedCount && !candidate.cancelled && !candidate.deferred
+      );
+      const liveMinimumIndex =
+        currentMeeting.status === "live" && currentIndex !== -1
+          ? currentIndex + 1
+          : 0;
+      const insertIndex =
+        afterIndex === -1
+          ? topics.length
+          : Math.max(afterIndex + 1, liveMinimumIndex);
+      topics.splice(insertIndex, 0, topic);
+      localStore.setQuery(
+        api.app.meeting,
+        { meetingId: args.meetingId },
+        {
+          ...currentMeeting,
+          liveAgenda: topics,
+        }
+      );
+    }
+  );
   const updateTopic = useMutation(api.app.updateTopic);
   const reorderTopics = useMutation(api.app.reorderTopics).withOptimisticUpdate(
     (localStore, args) => {
@@ -796,7 +858,7 @@ export const MeetingMinutes = () => {
         ".minutes-agenda-pane-header"
       );
       const footer =
-        pane.querySelector<HTMLElement>(".minutes-add-topic-form") ??
+        pane.querySelector<HTMLElement>(":scope > .minutes-add-topic-form") ??
         pane.querySelector<HTMLElement>(":scope > .btn-secondary");
       const availableHeight = Math.max(
         AGENDA_SLOT_HEIGHT_PX,
@@ -826,7 +888,7 @@ export const MeetingMinutes = () => {
       resizeObserver.disconnect();
       window.removeEventListener("resize", updateSlotMinutes);
     };
-  }, [showAddTopic]);
+  }, [addingAfterTopicId, hoveredInsertionAfterTopicId]);
 
   // Derive the meeting-active topic before any early returns so hook count stays stable.
   // "Meeting active" means the topic currently being discussed in the live meeting.
@@ -905,15 +967,21 @@ export const MeetingMinutes = () => {
 
   const handleAddTopic = () => {
     if (!newTopicTitle.trim()) return;
+    const clientTopicId = `topic:${Date.now().toString(36)}:${Math.random()
+      .toString(36)
+      .slice(2)}`;
     void addTopic({
       meetingId: meeting.id,
       list: "liveAgenda",
       title: newTopicTitle.trim(),
       durationMinutes: newTopicDuration,
+      insertAfterTopicId: addingAfterTopicId ?? undefined,
+      clientTopicId,
     });
     setNewTopicTitle("");
     setNewTopicDuration(5);
-    setShowAddTopic(false);
+    setAddingAfterTopicId(null);
+    setHoveredInsertionAfterTopicId(null);
   };
 
   // Remaining topics (after current), split into deferred and upcoming
@@ -1063,6 +1131,12 @@ export const MeetingMinutes = () => {
   const timelineEntryByKey = new Map(
     agendaTimelineEntries.map((entry) => [entry.item.key, entry])
   );
+  const getInsertionGap = (topicId: string) => {
+    if (topicId === addingAfterTopicId) {
+      return AGENDA_INSERTION_FORM_GAP_PX;
+    }
+    return AGENDA_INSERTION_RESERVED_HEIGHT_PX;
+  };
   let packedAgendaBottom = 0;
   agendaTimelineEntries.forEach((entry, index) => {
     const actualTop = entry.startSlot * AGENDA_SLOT_HEIGHT_PX;
@@ -1085,7 +1159,10 @@ export const MeetingMinutes = () => {
     );
     entry.displayTopPx = displayTop;
     entry.displayHeightPx = displayHeight;
-    packedAgendaBottom = displayTop + displayHeight + AGENDA_EVENT_GAP_PX;
+    const insertionGap =
+      entry.item.kind === "completed" ? 0 : getInsertionGap(entry.item.topic.id);
+    packedAgendaBottom =
+      displayTop + displayHeight + AGENDA_EVENT_GAP_PX + insertionGap;
   });
   const agendaSlotCount = Math.max(
     1,
@@ -1279,6 +1356,104 @@ export const MeetingMinutes = () => {
     `${entry.item.topic.title} (${formatAgendaTime(entry.start)} - ${formatAgendaTime(
       entry.end
     )})`;
+
+  const renderAddTopicForm = (
+    className = "minutes-add-topic-form",
+    style?: CSSProperties
+  ) => (
+    <div className={className} style={style}>
+      <h4>Add Topic</h4>
+      <div className="minutes-form-row">
+        <label htmlFor="new-topic-title">Title:</label>
+        <input
+          id="new-topic-title"
+          type="text"
+          value={newTopicTitle}
+          onChange={(e) => setNewTopicTitle(e.target.value)}
+          placeholder="Topic title"
+          autoFocus
+        />
+      </div>
+      <div className="minutes-form-row">
+        <label htmlFor="new-topic-duration">Duration (min):</label>
+        <input
+          id="new-topic-duration"
+          type="number"
+          min={1}
+          value={newTopicDuration}
+          onChange={(e) => setNewTopicDuration(Number(e.target.value))}
+        />
+      </div>
+      <div className="minutes-actions">
+        <button className="btn-primary" onClick={handleAddTopic}>
+          Add
+        </button>
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            setAddingAfterTopicId(null);
+            setHoveredInsertionAfterTopicId(null);
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderInsertionCursor = (entry: AgendaTimelineEntry) => {
+    if (entry.item.kind === "completed") return null;
+    const topicId = entry.item.topic.id;
+    const insertionTop =
+      entry.displayTopPx + entry.displayHeightPx + AGENDA_EVENT_GAP_PX;
+    const isAddingHere = addingAfterTopicId === topicId;
+    const isHoveredHere = hoveredInsertionAfterTopicId === topicId;
+    return (
+      <div
+        key={`insert:${entry.item.key}`}
+        className={`minutes-agenda-insertion-slot${
+          isAddingHere ? " is-open" : ""
+        }${isHoveredHere ? " is-hovered" : ""}`}
+        style={insertionCursorStyle(insertionTop)}
+        onMouseEnter={() => setHoveredInsertionAfterTopicId(topicId)}
+        onMouseLeave={() => {
+          if (addingAfterTopicId !== topicId) {
+            setHoveredInsertionAfterTopicId((current) =>
+              current === topicId ? null : current
+            );
+          }
+        }}
+        onFocus={() => setHoveredInsertionAfterTopicId(topicId)}
+        onBlur={(event) => {
+          if (
+            addingAfterTopicId !== topicId &&
+            !event.currentTarget.contains(event.relatedTarget as Node | null)
+          ) {
+            setHoveredInsertionAfterTopicId((current) =>
+              current === topicId ? null : current
+            );
+          }
+        }}
+      >
+        <button
+          className="minutes-agenda-insertion-button"
+          type="button"
+          aria-label={`Add topic after ${entry.item.topic.title}`}
+          onClick={() => {
+            setAddingAfterTopicId(topicId);
+            setHoveredInsertionAfterTopicId(topicId);
+          }}
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+        {isAddingHere &&
+          renderAddTopicForm(
+            "minutes-add-topic-form minutes-add-topic-form-inline",
+            insertionFormStyle()
+          )}
+      </div>
+    );
+  };
 
   const handleFocusTopic = (topicId: string) => {
     void setFocusedTopic({ meetingId: meeting.id, topicId });
@@ -1693,52 +1868,9 @@ export const MeetingMinutes = () => {
               </div>
             );
           })}
-        </div>
 
-        {showAddTopic ? (
-          <div className="minutes-add-topic-form">
-            <h4>Add Topic</h4>
-            <div className="minutes-form-row">
-              <label htmlFor="new-topic-title">Title:</label>
-              <input
-                id="new-topic-title"
-                type="text"
-                value={newTopicTitle}
-                onChange={(e) => setNewTopicTitle(e.target.value)}
-                placeholder="Topic title"
-                autoFocus
-              />
-            </div>
-            <div className="minutes-form-row">
-              <label htmlFor="new-topic-duration">Duration (min):</label>
-              <input
-                id="new-topic-duration"
-                type="number"
-                min={1}
-                value={newTopicDuration}
-                onChange={(e) => setNewTopicDuration(Number(e.target.value))}
-              />
-            </div>
-            <div className="minutes-actions">
-              <button className="btn-primary" onClick={handleAddTopic}>
-                Add
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={() => setShowAddTopic(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            className="btn-secondary"
-            onClick={() => setShowAddTopic(true)}
-          >
-            + Add Topic
-          </button>
-        )}
+          {agendaTimelineEntries.map(renderInsertionCursor)}
+        </div>
       </aside>
 
     </div>
