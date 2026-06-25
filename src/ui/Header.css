@@ -86,7 +86,7 @@ header {
         font-weight: 600;
       }
 
-      @media screen and (max-width: 1195px) {
+      @media screen and (max-width: 1235px) {
         .name {
           display: none;
         }
