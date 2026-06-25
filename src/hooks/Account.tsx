@@ -61,7 +61,11 @@ export const useLoadAccount = () => {
 
   useEffect(() => {
     if (!shouldLoadAccount) return;
-    void ensureCurrentUser({ name: user?.fullName ?? user?.primaryEmailAddress?.emailAddress });
+    const email = user?.primaryEmailAddress?.emailAddress;
+    void ensureCurrentUser({
+      name: user?.fullName ?? email,
+      email,
+    });
   }, [ensureCurrentUser, shouldLoadAccount, user?.fullName, user?.primaryEmailAddress?.emailAddress]);
 
   const me = useMemo(() => hydrateAccount(serverAccount ?? null), [serverAccount]);

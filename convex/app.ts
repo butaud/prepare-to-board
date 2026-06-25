@@ -57,6 +57,60 @@ const membershipFor = async (
     )
     .unique();
 
+const normalizeEmail = (email?: string) => {
+  const trimmed = email?.trim().toLowerCase();
+  return trimmed || undefined;
+};
+
+const ensureBoardMemberForUser = async (
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  user: Doc<"users">,
+  email?: string
+) => {
+  const members = await ctx.db
+    .query("boardMembers")
+    .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
+    .collect();
+  if (members.some((member) => member.accountId === user._id)) return;
+
+  const normalizedEmail = normalizeEmail(email);
+  const matchingUnclaimedMember = normalizedEmail
+    ? members.find(
+        (member) =>
+          !member.accountId && normalizeEmail(member.email) === normalizedEmail
+      )
+    : undefined;
+
+  if (matchingUnclaimedMember) {
+    await ctx.db.patch(matchingUnclaimedMember._id, { accountId: user._id });
+    return;
+  }
+
+  await ctx.db.insert("boardMembers", {
+    organizationId,
+    name: user.name,
+    email: normalizedEmail,
+    accountId: user._id,
+  });
+};
+
+const ensureBoardMembersForUser = async (
+  ctx: MutationCtx,
+  user: Doc<"users">,
+  email?: string
+) => {
+  const memberships = await ctx.db
+    .query("memberships")
+    .withIndex("by_user", (q) => q.eq("userId", user._id))
+    .collect();
+  await Promise.all(
+    memberships.map((membership) =>
+      ensureBoardMemberForUser(ctx, membership.organizationId, user, email)
+    )
+  );
+};
+
 const requireRole = async (
   ctx: Ctx,
   organizationId: Id<"organizations">,
@@ -177,12 +231,13 @@ const currentLiveTopicIndex = (meeting: Doc<"meetings">) =>
   );
 
 export const ensureCurrentUser = mutation({
-  args: { name: v.optional(v.string()) },
+  args: { name: v.optional(v.string()), email: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const user = await getOrCreateCurrentUser(ctx, args.name);
     if (args.name && args.name !== user.name) {
       await ctx.db.patch(user._id, { name: args.name });
     }
+    await ensureBoardMembersForUser(ctx, user, args.email);
     return user._id;
   },
 });
@@ -271,6 +326,7 @@ export const createOrganization = mutation({
       userId: user._id,
       role: "admin",
     });
+    await ensureBoardMemberForUser(ctx, organizationId, user);
     await ctx.db.patch(user._id, { selectedOrganizationId: organizationId });
     return organizationId;
   },
@@ -295,6 +351,7 @@ export const updateOrganization = mutation({
 export const joinOrganization = mutation({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
     const user = await getOrCreateCurrentUser(ctx);
     const existing = await membershipFor(ctx, args.organizationId, user._id);
     if (!existing) {
@@ -304,6 +361,7 @@ export const joinOrganization = mutation({
         role: "reader",
       });
     }
+    await ensureBoardMemberForUser(ctx, args.organizationId, user, identity.email);
     await ctx.db.patch(user._id, { selectedOrganizationId: args.organizationId });
   },
 });

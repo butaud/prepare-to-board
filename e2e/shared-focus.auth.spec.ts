@@ -107,6 +107,7 @@ test("present view follows the topic highlighted by the minute taker", async ({
   const adminSecondTopic = admin.getByRole("button", { name: new RegExp(secondTopic) });
   const memberFirstTopic = member.getByRole("button", { name: new RegExp(firstTopic) });
   const memberSecondTopic = member.getByRole("button", { name: new RegExp(secondTopic) });
+  const actionItemText = `Prepare action item ${runId}`;
   await expect(adminFirstTopic).toHaveAttribute("aria-expanded", "true");
   await expect(member.getByRole("button", { name: "Present" })).toHaveCount(0);
   await expect(member.getByRole("button", { name: "Manage Agenda" })).toHaveCount(0);
@@ -115,6 +116,28 @@ test("present view follows the topic highlighted by the minute taker", async ({
 
   const officerAgendaTopic = (topic: string) =>
     officer.locator(".minutes-day-view-event").filter({ hasText: topic });
+
+  await officer.getByRole("button", { name: "+ Action Item" }).click();
+  await officer.getByPlaceholder("What needs to be done?").fill(actionItemText);
+  const assigneeSelect = officer.locator(".note-form select").first();
+  const adminAssigneeName = await assigneeSelect.locator("option").evaluateAll(
+    (options) =>
+      options
+        .map((option) => option.textContent?.trim())
+        .find((text) => text?.startsWith("Test A"))
+  );
+  expect(adminAssigneeName).toBeTruthy();
+  await expect(assigneeSelect).toContainText("Test Officer");
+  await assigneeSelect.selectOption({ label: "Test Officer" });
+  await officer.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(officer.getByText(actionItemText)).toBeVisible();
+  await expect(officer.getByText("Test Officer:")).toBeVisible();
+  await officer.getByRole("button", { name: "Edit note" }).click();
+  await officer.locator(".note-form select").first().selectOption({
+    label: adminAssigneeName!,
+  });
+  await officer.getByRole("button", { name: "Save" }).click();
+  await expect(officer.getByText(`${adminAssigneeName}:`)).toBeVisible();
 
   await officerAgendaTopic(secondTopic).click();
   await expect(adminFirstTopic).toHaveAttribute("aria-expanded", "true");
