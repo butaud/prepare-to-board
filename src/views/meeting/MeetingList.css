@@ -1,0 +1,101 @@
+.meeting-list {
+  padding-top: 4px;
+
+  .meeting-list-section {
+    margin-bottom: 28px;
+
+    h3 {
+      margin: 0 0 10px 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--primary-color);
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--secondary-color);
+    }
+
+    .empty-section {
+      color: var(--primary-color-light);
+      font-size: 0.9em;
+      font-style: italic;
+      margin: 0;
+    }
+  }
+
+  .meeting-list-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px var(--shadow-color);
+    text-decoration: none;
+    color: var(--font-color);
+    transition: background-color 0.1s ease, box-shadow 0.1s ease;
+
+    &:hover {
+      background-color: var(--primary-color-subtle);
+      box-shadow: 0 2px 8px var(--shadow-color);
+    }
+
+    &.live-card {
+      border-color: var(--primary-color-light);
+      background-color: var(--primary-color-subtle);
+    }
+
+    .card-date {
+      font-size: 0.95em;
+      font-weight: 500;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .card-detail {
+      font-size: 0.82em;
+      color: var(--primary-color-light);
+      white-space: nowrap;
+    }
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+
+    &.status-live {
+      background-color: var(--completed-color);
+      color: white;
+    }
+
+    &.status-published {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    &.status-draft {
+      background-color: var(--border-color);
+      color: var(--primary-color-light);
+    }
+
+    &.status-completed {
+      background-color: var(--border-color-subtle);
+      color: var(--primary-color-light);
+    }
+  }
+}
