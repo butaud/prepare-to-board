@@ -73,11 +73,32 @@ const motionStatusLabel: Record<string, string> = {
 
 const completedMotionStatuses = new Set(["passed", "failed", "tabled"]);
 
-interface NoteDisplayProps {
-  note: Note | PendingNote;
+const formatDueDate = (dueDate: number): string =>
+  new Date(dueDate).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+const isOverdue = (dueDate: number): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return dueDate < today.getTime();
+};
+
+export interface ActionItemCompletionControl {
+  /** Whether the current viewer is allowed to toggle completion. */
+  canToggle: boolean;
+  /** Called with a new completedOn timestamp, or undefined to reopen. */
+  onToggle: (completedOn: number | undefined) => void;
 }
 
-export const NoteDisplay = ({ note }: NoteDisplayProps) => {
+interface NoteDisplayProps {
+  note: Note | PendingNote;
+  completion?: ActionItemCompletionControl;
+}
+
+export const NoteDisplay = ({ note, completion }: NoteDisplayProps) => {
   if (note.type === "text") {
     return (
       <div className="note-text">
@@ -86,11 +107,43 @@ export const NoteDisplay = ({ note }: NoteDisplayProps) => {
     );
   }
   if (note.type === "action_item") {
+    const isComplete = note.completedOn !== undefined;
+    const overdue = !isComplete && note.dueDate !== undefined && isOverdue(note.dueDate);
+    const checkboxTitle = isComplete
+      ? `Completed ${formatDueDate(note.completedOn as number)}`
+      : completion?.canToggle
+        ? "Mark complete"
+        : undefined;
     return (
-      <div className="note-action-item">
-        <span className="note-action-checkbox">☐</span>
+      <div className={`note-action-item${isComplete ? " is-complete" : ""}`}>
+        <span
+          className={`note-action-checkbox${completion?.canToggle ? " is-interactive" : ""}`}
+          role={completion?.canToggle ? "checkbox" : undefined}
+          aria-checked={completion?.canToggle ? isComplete : undefined}
+          tabIndex={completion?.canToggle ? 0 : undefined}
+          title={checkboxTitle}
+          onClick={() => {
+            if (!completion?.canToggle) return;
+            completion.onToggle(isComplete ? undefined : Date.now());
+          }}
+          onKeyDown={(e) => {
+            if (!completion?.canToggle) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              completion.onToggle(isComplete ? undefined : Date.now());
+            }
+          }}
+        >
+          {isComplete ? "☑" : "☐"}
+        </span>
         {note.assignee?.name && <span className="note-action-assignee">{note.assignee.name}:</span>}
         <span>{note.text}</span>
+        {note.dueDate !== undefined && (
+          <span className={`note-action-due${overdue ? " is-overdue" : ""}`}>
+            {isComplete ? "" : overdue ? "Overdue: " : "Due "}
+            {formatDueDate(note.dueDate)}
+          </span>
+        )}
       </div>
     );
   }

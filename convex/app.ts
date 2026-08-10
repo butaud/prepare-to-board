@@ -129,6 +129,8 @@ const noteArg = v.object({
   text: v.string(),
   assigneeId: v.optional(v.string()),
   assigneeName: v.optional(v.string()),
+  dueDate: v.optional(v.number()),
+  completedOn: v.optional(v.number()),
   moverId: v.optional(v.string()),
   moverName: v.optional(v.string()),
   seconderId: v.optional(v.string()),
@@ -170,6 +172,8 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
             "",
         }
       : undefined,
+  dueDate: note.dueDate,
+  completedOn: note.completedOn,
   mover: note.mover,
   seconder: note.seconder,
   votesFor: note.votesFor,
@@ -798,6 +802,103 @@ export const removeMinuteNote = mutation({
           : minute
       ),
     });
+  },
+});
+
+const patchActionItemNote = (
+  meeting: Doc<"meetings">,
+  minuteId: string | undefined,
+  noteId: string,
+  patch: { dueDate?: number; completedOn?: number }
+) => {
+  const applyPatch = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number]) =>
+    note.id === noteId && note.type === "action_item"
+      ? { ...note, ...patch }
+      : note;
+
+  if (minuteId === undefined) {
+    return {
+      currentNotes: (meeting.currentNotes ?? []).map(applyPatch),
+    };
+  }
+  return {
+    minutes: meeting.minutes.map((minute) =>
+      minute.id === minuteId
+        ? { ...minute, notes: (minute.notes ?? []).map(applyPatch) }
+        : minute
+    ),
+  };
+};
+
+const findActionItemNote = (
+  meeting: Doc<"meetings">,
+  minuteId: string | undefined,
+  noteId: string
+) => {
+  const notes =
+    minuteId === undefined
+      ? (meeting.currentNotes ?? [])
+      : (meeting.minutes.find((minute) => minute.id === minuteId)?.notes ?? []);
+  return notes.find((note) => note.id === noteId && note.type === "action_item");
+};
+
+export const setActionItemCompletedOn = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    minuteId: v.optional(v.string()),
+    noteId: v.string(),
+    completedOn: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    const { user, membership } = await requireRole(ctx, meeting.organizationId, [
+      "admin",
+      "writer",
+      "reader",
+    ]);
+    const note = findActionItemNote(meeting, args.minuteId, args.noteId);
+    if (!note) throw new ConvexError("Action item not found");
+    if (membership.role === "reader") {
+      const members = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_org", (q) => q.eq("organizationId", meeting.organizationId))
+        .collect();
+      const isAssignee = members.some(
+        (member) => member._id === note.assigneeId && member.accountId === user._id
+      );
+      if (!isAssignee) {
+        throw new ConvexError("Only the assignee or an officer can update this action item");
+      }
+    }
+    await ctx.db.patch(
+      args.meetingId,
+      patchActionItemNote(meeting, args.minuteId, args.noteId, {
+        completedOn: args.completedOn,
+      })
+    );
+  },
+});
+
+export const updateActionItemDueDate = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    minuteId: v.optional(v.string()),
+    noteId: v.string(),
+    dueDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const note = findActionItemNote(meeting, args.minuteId, args.noteId);
+    if (!note) throw new ConvexError("Action item not found");
+    await ctx.db.patch(
+      args.meetingId,
+      patchActionItemNote(meeting, args.minuteId, args.noteId, {
+        dueDate: args.dueDate,
+      })
+    );
   },
 });
 

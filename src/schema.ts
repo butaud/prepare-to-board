@@ -21,6 +21,8 @@ export type ActionItemNote = {
   type: "action_item";
   text: string;
   assignee?: BoardMember;
+  dueDate: number;
+  completedOn?: number;
 };
 
 export type MotionNote = {
