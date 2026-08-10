@@ -1,6 +1,6 @@
 # Jobs to Be Done
 
-User stories for the three primary personas of Prepare to Board, organized by
+User stories for the four primary personas of Prepare to Board, organized by
 persona and by when they touch the app relative to a meeting. This is a
 planning document to guide gap analysis against the current implementation —
 it intentionally includes jobs that may already be covered, so it stands as a
@@ -37,7 +37,6 @@ complete map of the job rather than a backlog.
 
 - See the live agenda with time elapsed/remaining per topic and overall, to
   know if we're on pace.
-- Advance to / highlight the current topic for the room.
 - Reorder remaining (not-yet-covered) topics on the fly.
 - Cut/cancel a topic that won't fit.
 - Defer a topic to a future meeting instead of cutting it.
@@ -60,11 +59,11 @@ complete map of the job rather than a backlog.
 
 **Between meetings**
 
-- Maintain the board member roster (add/remove/edit contact info, titles).
-- Manage organization membership and roles (invite members, assign
-  admin/writer/reader).
+- Add a new person (board member, administration member, or other) to
+  reference in the minutes.
 - Distribute the published agenda/materials to the board.
-- Finalize and distribute the previous meeting's minutes once approved.
+- Distribute the previous meeting's minutes once they've been edited and
+  polished.
 - Clean up stale or misassigned action items.
 
 **Before the meeting**
@@ -79,9 +78,10 @@ complete map of the job rather than a backlog.
   as it moves through proposed → under discussion → passed/failed/tabled.
 - Record an action item on the fly and assign it to a member from the
   roster.
-- Highlight a topic for the room independent of which topic they're
-  currently taking notes for — i.e., decouple "what I'm editing" from "what
-  everyone sees highlighted."
+- Advance the meeting to the next topic and control which topic is
+  currently highlighted/live for the room, independent of which topic
+  they're currently taking notes for — i.e., decouple "what I'm editing"
+  from "what everyone sees highlighted."
 - Jump back to an earlier topic to fix a note/motion/vote count without
   losing their current place.
 - Add a late note to an earlier topic if something was missed, then return
@@ -92,16 +92,17 @@ complete map of the job rather than a backlog.
 
 **After the meeting**
 
-- Proofread/clean up minute text before publishing.
+- Edit and polish the minutes after the meeting.
 - Confirm no motion is left in an unresolved status.
 - Confirm every mentioned action item has an assignee.
-- Mark the meeting/minutes as finalized.
+- Export the finished minutes as a Word document.
 - Share/export the finished minutes.
 
 ## 3. Board Member — prepares, follows along, closes the loop
 
 **Between meetings**
 
+- Accept an invitation to join the organization and create my account.
 - See a personal dashboard of my open action items across all meetings.
 - Mark an action item complete with one obvious action.
 - Get a clear reminder for action items that are due soon or overdue.
@@ -132,6 +133,14 @@ complete map of the job rather than a backlog.
 - See new action items assigned to me from that meeting and mark them done
   when complete.
 - Browse past meetings/minutes, including my private notes.
+
+## 4. Board Admin — manages membership and access
+
+- Invite new users to join the organization.
+- Manage member roles (assign admin/writer/reader).
+- Manage organization accounts and permissions, making sure an invited
+  user's account links to their existing person identity instead of
+  creating a duplicate.
 
 ## Cross-cutting jobs
 
