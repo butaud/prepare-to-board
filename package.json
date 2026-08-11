@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/select-clerk-key.js",
+    "build": "node scripts/select-preview-env.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "tsc -b && tsc -p tsconfig.e2e.json --noEmit",
