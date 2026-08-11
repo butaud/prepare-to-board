@@ -6,12 +6,14 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
+import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { PendingNote } from "../../util/data";
 import { BoardMember, Meeting, Note, Topic } from "../../schema";
 import { api } from "../../convexClient";
 
+import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingMinutes.css";
 import { NoteDisplay } from "../../ui/NoteDisplay";
 
@@ -182,6 +184,11 @@ const ActionItemForm = ({
   const [selectedMemberId, setSelectedMemberId] = useState<string>(
     initialNote?.assignee?.id ?? ""
   );
+  const [dueDate, setDueDate] = useState<Date | null>(
+    initialNote?.dueDate ? new Date(initialNote.dueDate) : null
+  );
+  const canSubmit =
+    text.trim().length > 0 && dueDate !== null && selectedMemberId !== "";
   return (
     <div className="note-form">
       <h5 className="note-form-title">Action Item</h5>
@@ -197,25 +204,42 @@ const ActionItemForm = ({
         />
       </div>
       <div className="minutes-form-row">
-        <label>Assignee (optional):</label>
+        <label>Assignee:</label>
         <select
           value={selectedMemberId}
           onChange={(e) => setSelectedMemberId(e.target.value)}
           style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid var(--color-border, #ddd)" }}
         >
-          <option value="">— None —</option>
+          <option value="">Required</option>
           {members.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
       </div>
+      <div className="minutes-form-row">
+        <label>Due date:</label>
+        <DatePicker
+          selected={dueDate}
+          onChange={setDueDate}
+          dateFormat="M/d/yyyy"
+          placeholderText="Required"
+          popperProps={{ placement: "bottom", strategy: "fixed" }}
+        />
+      </div>
       <div className="minutes-actions">
         <button
           className="btn-primary"
+          disabled={!canSubmit}
           onClick={() => {
-            if (!text.trim()) return;
             const assignee = members.find((m) => m.id === selectedMemberId);
-            onAdd({ type: "action_item", text: text.trim(), assignee });
+            if (!canSubmit || !dueDate || !assignee) return;
+            onAdd({
+              type: "action_item",
+              text: text.trim(),
+              assignee,
+              dueDate: dueDate.getTime(),
+              completedOn: initialNote?.completedOn,
+            });
           }}
         >
           {submitLabel}
@@ -386,6 +410,8 @@ const toStoredNote = (note: PendingNote) => {
       text: note.text,
       assigneeId: note.assignee?.id,
       assigneeName: note.assignee?.name,
+      dueDate: note.dueDate,
+      completedOn: note.completedOn,
     };
   }
   if (note.type === "motion") {
@@ -570,6 +596,9 @@ const PostMeetingMinutes = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
   const isOfficer = me?.canWrite(meeting);
+  const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
+  const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
+  const setActionItemCompletedOn = useMutation(api.app.setActionItemCompletedOn);
   const minutes = meeting.minutes ?? [];
   const completedMinutes = minutes.filter((m) => m !== null);
 
@@ -632,7 +661,27 @@ const PostMeetingMinutes = () => {
                   {notes.length > 0 && (
                     <div className="minutes-item-structured-notes">
                       {notes.map((note, ni) => (
-                        <NoteDisplay key={ni} note={note} />
+                        <NoteDisplay
+                          key={ni}
+                          note={note}
+                          completion={
+                            note.type === "action_item"
+                              ? {
+                                  canToggle:
+                                    Boolean(isOfficer) ||
+                                    (note.assignee?.id !== undefined &&
+                                      note.assignee.id === myBoardMemberId),
+                                  onToggle: (completedOn) =>
+                                    void setActionItemCompletedOn({
+                                      meetingId: meeting.id,
+                                      minuteId: minute.id,
+                                      noteId: note.id,
+                                      completedOn,
+                                    }),
+                                }
+                              : undefined
+                          }
+                        />
                       ))}
                     </div>
                   )}

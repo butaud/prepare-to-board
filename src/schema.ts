@@ -20,7 +20,9 @@ export type ActionItemNote = {
   id: Id;
   type: "action_item";
   text: string;
-  assignee?: BoardMember;
+  assignee: BoardMember;
+  dueDate: number;
+  completedOn?: number;
 };
 
 export type MotionNote = {

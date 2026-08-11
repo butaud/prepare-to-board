@@ -9,6 +9,8 @@ const note = v.object({
   text: v.string(),
   assigneeId: v.optional(v.string()),
   assigneeName: v.optional(v.string()),
+  dueDate: v.optional(v.number()),
+  completedOn: v.optional(v.number()),
   moverId: v.optional(v.string()),
   moverName: v.optional(v.string()),
   seconderId: v.optional(v.string()),

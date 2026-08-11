@@ -1012,10 +1012,39 @@
   flex-shrink: 0;
 }
 
+.note-action-checkbox.is-interactive {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.note-action-checkbox.is-interactive:hover {
+  transform: scale(1.15);
+}
+
+.note-action-item.is-complete {
+  opacity: 0.75;
+}
+
+.note-action-item.is-complete .note-action-checkbox {
+  opacity: 1;
+  color: var(--primary-color);
+}
+
 .note-action-assignee {
   font-weight: 600;
   color: var(--primary-color);
   flex-shrink: 0;
+}
+
+.note-action-due {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666);
+  flex-shrink: 0;
+}
+
+.note-action-due.is-overdue {
+  color: #c0392b;
+  font-weight: 600;
 }
 
 .note-motion {

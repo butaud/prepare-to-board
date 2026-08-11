@@ -1,57 +1,14 @@
 import { Link } from "react-router-dom";
 import { CreateOrganization } from "../ui/forms/Organization";
-import {
-  getUserProfileFormalName,
-  type ActionItemNote,
-  type Meeting,
-} from "../schema";
+import { getUserProfileFormalName, type Meeting } from "../schema";
 import { useLoadedAccount } from "../hooks/Account";
+import { ActionItemRow } from "../ui/ActionItemRow";
+import {
+  extractActionItems,
+  formatRelativeMeetingDate,
+  meetingLink,
+} from "../util/actionItems";
 import "./Home.css";
-
-type ActionItemWithContext = ActionItemNote & {
-  meeting: Meeting;
-  topicTitle: string;
-};
-
-const formatMeetingDate = (date: Date): string => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const meetingDay = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  );
-  const diffDays = Math.round(
-    (meetingDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays === -1) return "Yesterday";
-  if (diffDays > 1 && diffDays <= 13) return `In ${diffDays} days`;
-  if (diffDays < -1 && diffDays >= -13) return `${Math.abs(diffDays)} days ago`;
-
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-};
-
-const extractActionItems = (meetings: Meeting[]): ActionItemWithContext[] =>
-  meetings.flatMap((meeting) =>
-    meeting.minutes.flatMap((minute) =>
-      (minute.notes ?? [])
-        .filter((note): note is ActionItemNote => note.type === "action_item")
-        .map((note) => ({ ...note, meeting, topicTitle: minute.topic.title }))
-    )
-  );
-
-const meetingLink = (meeting: Meeting): string => {
-  if (meeting.status === "live") return `/meetings/${meeting.id}/present`;
-  if (meeting.status === "completed") return `/meetings/${meeting.id}/minutes`;
-  return `/meetings/${meeting.id}`;
-};
 
 const StatusBadge = ({ status }: { status: Meeting["status"] }) => {
   const labels: Record<Meeting["status"], string> = {
@@ -79,7 +36,7 @@ const MeetingCard = ({
       className={`meeting-card${isLive ? " live-card" : ""}`}
     >
       <span className="meeting-card-date">
-        {formatMeetingDate(meeting.date)}
+        {formatRelativeMeetingDate(meeting.date)}
       </span>
       <span className="meeting-card-meta">
         <StatusBadge status={meeting.status} />
@@ -92,25 +49,6 @@ const MeetingCard = ({
     </Link>
   );
 };
-
-const ActionItemRow = ({ item }: { item: ActionItemWithContext }) => (
-  <div className="action-item">
-    <div className="action-item-text">{item.text}</div>
-    <div className="action-item-context">
-      {item.assignee ? (
-        <span className="action-item-assignee">{item.assignee.name}</span>
-      ) : (
-        <span>Unassigned</span>
-      )}
-      <span>·</span>
-      <Link to={meetingLink(item.meeting)}>
-        {formatMeetingDate(item.meeting.date)}
-      </Link>
-      <span>·</span>
-      <span>{item.topicTitle}</span>
-    </div>
-  </div>
-);
 
 export const Home = () => {
   const me = useLoadedAccount();
@@ -159,6 +97,7 @@ export const Home = () => {
     !!liveMeeting || upcomingMeetings.length > 0 || recentMeetings.length > 0;
 
   const myBoardMember = org.members.find((m) => m.accountId === me.id);
+  const isOfficer = me.canWrite(org);
   const allActionItems = extractActionItems(org.meetings);
 
   const myActionItems = myBoardMember
@@ -226,7 +165,7 @@ export const Home = () => {
             <div className="meeting-group">
               <p className="meeting-group-label">Assigned to me</p>
               {myActionItems.map((item) => (
-                <ActionItemRow key={item.id} item={item} />
+                <ActionItemRow key={item.id} item={item} canToggle />
               ))}
             </div>
           )}
@@ -234,7 +173,7 @@ export const Home = () => {
             <div className="meeting-group">
               <p className="meeting-group-label">From recent meetings</p>
               {otherRecentItems.map((item) => (
-                <ActionItemRow key={item.id} item={item} />
+                <ActionItemRow key={item.id} item={item} canToggle={isOfficer} />
               ))}
             </div>
           )}
