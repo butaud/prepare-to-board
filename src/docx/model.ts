@@ -16,7 +16,6 @@ export type SessionMetadata = {
   membersPresent: Person[];
   membersAbsent: Person[];
   administrationPresent: Person[];
-  othersReferenced: Person[];
   location: string;
   startTime: Date;
   organization: string;

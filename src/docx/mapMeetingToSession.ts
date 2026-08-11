@@ -107,7 +107,6 @@ export const mapMeetingToSession = (
       membersPresent: [],
       membersAbsent: [],
       administrationPresent: [],
-      othersReferenced: [],
       location: "",
       startTime,
       organization: organization.name,
