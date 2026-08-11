@@ -52,6 +52,18 @@
   margin: 0;
 }
 
+.minutes-completed-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.minutes-completed-header h2 {
+  margin: 0 0 4px 0;
+}
+
 .minutes-section {
   position: relative;
   z-index: 1;
@@ -139,6 +151,52 @@
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.integrity-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--danger-color-subtle);
+  border: 1px solid var(--danger-color);
+  border-radius: 8px;
+}
+
+.integrity-banner-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.integrity-banner-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--danger-color-strong);
+}
+
+.integrity-banner-group ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.integrity-issue-link {
+  display: inline;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.integrity-issue-link:hover {
+  color: var(--danger-color-strong);
 }
 
 .minutes-topic-tray {
@@ -609,6 +667,34 @@
 
 .minutes-day-view-range {
   display: none;
+}
+
+.minutes-day-view-notes-count {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  padding: 1px 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: var(--primary-color);
+  background: var(--primary-color-subtle);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.minutes-day-view-notes-count.is-empty {
+  color: var(--muted-color, var(--primary-color-light));
+  background: var(--border-color-subtle);
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.meeting-minutes .minutes-day-view-event.is-meeting-active .minutes-day-view-notes-count {
+  color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.85);
+  opacity: 1;
 }
 
 .minutes-day-view-actions {

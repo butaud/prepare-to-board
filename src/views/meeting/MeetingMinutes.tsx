@@ -15,7 +15,9 @@ import { api } from "../../convexClient";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingMinutes.css";
-import { NoteDisplay } from "../../ui/NoteDisplay";
+import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
+import { exportSessionToDocx } from "../../docx/doc";
+import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 
 const formatDuration = (totalSeconds: number): string => {
   const sign = totalSeconds < 0 ? "-" : "";
@@ -403,6 +405,98 @@ const MotionForm = ({
   );
 };
 
+// --- Integrity checks ---
+
+type IntegrityIssue = {
+  topicId: string;
+  topicTitle: string;
+  text: string;
+};
+
+type NotesByTopic = {
+  topicId: string;
+  topicTitle: string;
+  notes: Note[];
+};
+
+const UNRESOLVED_MOTION_STATUSES = new Set(["proposed", "under_discussion"]);
+
+const collectIntegrityIssues = (
+  groups: NotesByTopic[]
+): { unresolvedMotions: IntegrityIssue[]; unassignedActionItems: IntegrityIssue[] } => {
+  const unresolvedMotions: IntegrityIssue[] = [];
+  const unassignedActionItems: IntegrityIssue[] = [];
+  for (const group of groups) {
+    for (const note of group.notes) {
+      if (note.type === "motion" && UNRESOLVED_MOTION_STATUSES.has(note.status)) {
+        unresolvedMotions.push({
+          topicId: group.topicId,
+          topicTitle: group.topicTitle,
+          text: note.text,
+        });
+      }
+      if (note.type === "action_item" && !note.assignee) {
+        unassignedActionItems.push({
+          topicId: group.topicId,
+          topicTitle: group.topicTitle,
+          text: note.text,
+        });
+      }
+    }
+  }
+  return { unresolvedMotions, unassignedActionItems };
+};
+
+const IntegrityBanner = ({
+  unresolvedMotions,
+  unassignedActionItems,
+  onJump,
+}: {
+  unresolvedMotions: IntegrityIssue[];
+  unassignedActionItems: IntegrityIssue[];
+  onJump?: (topicId: string) => void;
+}) => {
+  if (unresolvedMotions.length === 0 && unassignedActionItems.length === 0) return null;
+
+  const renderIssue = (issue: IntegrityIssue, i: number) =>
+    onJump ? (
+      <li key={i}>
+        <button className="integrity-issue-link" onClick={() => onJump(issue.topicId)}>
+          <strong>{issue.topicTitle}:</strong> {issue.text}
+        </button>
+      </li>
+    ) : (
+      <li key={i}>
+        <a className="integrity-issue-link" href={`#minute-${issue.topicId}`}>
+          <strong>{issue.topicTitle}:</strong> {issue.text}
+        </a>
+      </li>
+    );
+
+  return (
+    <div className="integrity-banner">
+      {unresolvedMotions.length > 0 && (
+        <div className="integrity-banner-group">
+          <span className="integrity-banner-label">
+            {unresolvedMotions.length} motion{unresolvedMotions.length !== 1 ? "s" : ""} still
+            unresolved
+          </span>
+          <ul>{unresolvedMotions.map(renderIssue)}</ul>
+        </div>
+      )}
+      {unassignedActionItems.length > 0 && (
+        <div className="integrity-banner-group">
+          <span className="integrity-banner-label">
+            {unassignedActionItems.length} action item
+            {unassignedActionItems.length !== 1 ? "s" : ""} with no assignee
+          </span>
+          <ul>{unassignedActionItems.map(renderIssue)}</ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const toStoredNote = (note: PendingNote) => {
   if (note.type === "action_item") {
     return {
@@ -441,6 +535,7 @@ type EditableNoteProps = {
   onStopEdit: () => void;
   onUpdate: (note: PendingNote) => void;
   onDelete: () => void;
+  completion?: ActionItemCompletionControl;
 };
 
 const EditableNote = ({
@@ -451,6 +546,7 @@ const EditableNote = ({
   onStopEdit,
   onUpdate,
   onDelete,
+  completion,
 }: EditableNoteProps) => {
   if (isEditing) {
     const handleSave = (updatedNote: PendingNote) => {
@@ -492,7 +588,7 @@ const EditableNote = ({
 
   return (
     <div className="minutes-note-item">
-      <NoteDisplay note={note} />
+      <NoteDisplay note={note} completion={completion} />
       <button
         className="note-edit-btn"
         title="Edit note"
@@ -519,14 +615,24 @@ interface CompletedMinuteNotesProps {
   minute: NonNullable<NonNullable<ReturnType<typeof useMeeting>["minutes"]>[number]>;
   meeting: ReturnType<typeof useMeeting>;
   members: BoardMember[];
+  /** Whether the current viewer can toggle completion on any action item, not just their own. */
+  canToggleAny: boolean;
+  myBoardMemberId?: string;
 }
 
-const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotesProps) => {
+const CompletedMinuteNotes = ({
+  minute,
+  meeting,
+  members,
+  canToggleAny,
+  myBoardMemberId,
+}: CompletedMinuteNotesProps) => {
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const addMinuteNote = useMutation(api.app.addMinuteNote);
   const updateMinuteNote = useMutation(api.app.updateMinuteNote);
   const removeMinuteNote = useMutation(api.app.removeMinuteNote);
+  const setActionItemCompletedOn = useMutation(api.app.setActionItemCompletedOn);
 
   const addNoteToMinute = (pn: PendingNote) => {
     void addMinuteNote({
@@ -558,6 +664,22 @@ const CompletedMinuteNotes = ({ minute, meeting, members }: CompletedMinuteNotes
               noteId: note.id,
               note: toStoredNote(updatedNote),
             })
+          }
+          completion={
+            note.type === "action_item"
+              ? {
+                  canToggle:
+                    canToggleAny ||
+                    (note.assignee?.id !== undefined && note.assignee.id === myBoardMemberId),
+                  onToggle: (completedOn) =>
+                    void setActionItemCompletedOn({
+                      meetingId: meeting.id,
+                      minuteId: minute.id,
+                      noteId: note.id,
+                      completedOn,
+                    }),
+                }
+              : undefined
           }
           onDelete={() => {
             void removeMinuteNote({
@@ -611,18 +733,64 @@ const PostMeetingMinutes = () => {
     .filter((t) => t !== null)
     .filter((t) => !coveredTopicIds.has(t.id));
 
+  const organization = me.root.selectedOrganization;
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportDocx = async () => {
+    if (!organization) return;
+    setIsExporting(true);
+    try {
+      const session = mapMeetingToSession(meeting, organization);
+      const blob = await exportSessionToDocx(session);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = meeting.date.toISOString().slice(0, 10);
+      a.download = `Board Meeting Minutes - ${dateStr}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const integrityIssues = collectIntegrityIssues(
+    completedMinutes.map((minute) => ({
+      topicId: minute.topic?.id ?? minute.id,
+      topicTitle: minute.topic?.title ?? "(untitled)",
+      notes: minute.notes ? minute.notes.filter((n) => n !== null) : [],
+    }))
+  );
+
   // unplanned = live topics with no plannedTopic that have a minute
   return (
     <div className="meeting-minutes-completed">
-      <h2>Meeting Minutes</h2>
-      <p className="minutes-date">
-        {meeting.date.toLocaleDateString(undefined, {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </p>
+      <div className="minutes-completed-header">
+        <div>
+          <h2>Meeting Minutes</h2>
+          <p className="minutes-date">
+            {meeting.date.toLocaleDateString(undefined, {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+        <button
+          className="btn-secondary"
+          onClick={() => void handleExportDocx()}
+          disabled={isExporting || !organization}
+        >
+          {isExporting ? "Exporting…" : "Export as Word (.docx)"}
+        </button>
+      </div>
+
+      <IntegrityBanner
+        unresolvedMotions={integrityIssues.unresolvedMotions}
+        unassignedActionItems={integrityIssues.unassignedActionItems}
+      />
 
       <section className="minutes-section">
         <h3>Official Minutes</h3>
@@ -638,7 +806,7 @@ const PostMeetingMinutes = () => {
               const diff = planned !== undefined ? actual - planned : null;
               const notes = minute.notes ? minute.notes.filter((n) => n !== null) : [];
               return (
-                <li key={idx} className="minutes-item">
+                <li key={idx} id={`minute-${topic?.id ?? minute.id}`} className="minutes-item">
                   <div className="minutes-item-header">
                     <span className="minutes-item-title">
                       {topic?.title ?? "(unknown)"}
@@ -658,32 +826,41 @@ const PostMeetingMinutes = () => {
                   {topic?.outcome && (
                     <div className="minutes-item-notes">{topic.outcome}</div>
                   )}
-                  {notes.length > 0 && (
-                    <div className="minutes-item-structured-notes">
-                      {notes.map((note, ni) => (
-                        <NoteDisplay
-                          key={ni}
-                          note={note}
-                          completion={
-                            note.type === "action_item"
-                              ? {
-                                  canToggle:
-                                    Boolean(isOfficer) ||
-                                    (note.assignee?.id !== undefined &&
-                                      note.assignee.id === myBoardMemberId),
-                                  onToggle: (completedOn) =>
-                                    void setActionItemCompletedOn({
-                                      meetingId: meeting.id,
-                                      minuteId: minute.id,
-                                      noteId: note.id,
-                                      completedOn,
-                                    }),
-                                }
-                              : undefined
-                          }
-                        />
-                      ))}
-                    </div>
+                  {isOfficer ? (
+                    <CompletedMinuteNotes
+                      minute={minute}
+                      meeting={meeting}
+                      members={members}
+                      canToggleAny={Boolean(isOfficer)}
+                      myBoardMemberId={myBoardMemberId}
+                    />
+                  ) : (
+                    notes.length > 0 && (
+                      <div className="minutes-item-structured-notes">
+                        {notes.map((note, ni) => (
+                          <NoteDisplay
+                            key={ni}
+                            note={note}
+                            completion={
+                              note.type === "action_item"
+                                ? {
+                                    canToggle:
+                                      note.assignee?.id !== undefined &&
+                                      note.assignee.id === myBoardMemberId,
+                                    onToggle: (completedOn) =>
+                                      void setActionItemCompletedOn({
+                                        meetingId: meeting.id,
+                                        minuteId: minute.id,
+                                        noteId: note.id,
+                                        completedOn,
+                                      }),
+                                  }
+                                : undefined
+                            }
+                          />
+                        ))}
+                      </div>
+                    )
                   )}
                 </li>
               );
@@ -1009,6 +1186,8 @@ export const MeetingMinutes = () => {
   const isOfficer = me?.canWrite(meeting);
 
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
+  const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
+  const setActionItemCompletedOn = useMutation(api.app.setActionItemCompletedOn);
 
   const liveStartTime = meeting.liveStartTime;
   const meetingActualStartTime = liveStartTime ?? meeting.date;
@@ -1595,6 +1774,16 @@ export const MeetingMinutes = () => {
     setIsEditingMeetingStartTime(false);
   };
 
+  const notesCountForAgendaItem = (item: AgendaMenuItem): number => {
+    if (item.kind === "completed") {
+      return (item.minute.notes ?? []).filter((n) => n !== null).length;
+    }
+    if (item.kind === "meeting-active") {
+      return (meeting.currentNotes ?? []).filter((n) => n !== null).length;
+    }
+    return 0;
+  };
+
   const renderTimelineButtonContent = (entry: AgendaTimelineEntry) => {
     const { item } = entry;
     const topic = item.topic;
@@ -1611,6 +1800,7 @@ export const MeetingMinutes = () => {
           : item.kind === "deferred"
             ? "Deferred"
             : "Projected";
+    const notesCount = notesCountForAgendaItem(item);
 
     return (
       <>
@@ -1627,6 +1817,12 @@ export const MeetingMinutes = () => {
         </span>
         <span className="minutes-day-view-range">
           {formatAgendaTime(entry.start)} - {formatAgendaTime(entry.end)}
+        </span>
+        <span
+          className={`minutes-day-view-notes-count${notesCount === 0 ? " is-empty" : ""}`}
+          title={notesCount === 0 ? "No notes yet" : `${notesCount} note${notesCount !== 1 ? "s" : ""}`}
+        >
+          {notesCount === 0 ? "No notes" : `${notesCount} note${notesCount !== 1 ? "s" : ""}`}
         </span>
       </>
     );
@@ -1760,6 +1956,23 @@ export const MeetingMinutes = () => {
     });
   };
 
+  const integrityIssues = collectIntegrityIssues([
+    ...completedMinutes.map((minute) => ({
+      topicId: minute.topic?.id ?? minute.id,
+      topicTitle: minute.topic?.title ?? "(untitled)",
+      notes: minute.notes ? minute.notes.filter((n) => n !== null) : [],
+    })),
+    ...(meetingActiveTopic
+      ? [
+          {
+            topicId: meetingActiveTopic.id,
+            topicTitle: meetingActiveTopic.title,
+            notes: (meeting.currentNotes ?? []).filter((n) => n !== null),
+          },
+        ]
+      : []),
+  ]);
+
   return (
     <div className="meeting-minutes" ref={minutesLayoutRef}>
       <svg
@@ -1781,6 +1994,11 @@ export const MeetingMinutes = () => {
         />
       </svg>
       <div className="minutes-topic-main">
+        <IntegrityBanner
+          unresolvedMotions={integrityIssues.unresolvedMotions}
+          unassignedActionItems={integrityIssues.unassignedActionItems}
+          onJump={(topicId) => handleSelectTopic(topicId, true)}
+        />
         {shouldShowActiveTopicBanner && meetingActiveTopic && (
           <button
             ref={activeBannerRef}
@@ -1916,7 +2134,13 @@ export const MeetingMinutes = () => {
             )}
 
             {selectedAgendaItem.kind === "completed" && (
-              <CompletedMinuteNotes minute={selectedAgendaItem.minute} meeting={meeting} members={members} />
+              <CompletedMinuteNotes
+                minute={selectedAgendaItem.minute}
+                meeting={meeting}
+                members={members}
+                canToggleAny={Boolean(isOfficer)}
+                myBoardMemberId={myBoardMemberId}
+              />
             )}
 
             {selectedAgendaItem.kind === "meeting-active" && (
@@ -1940,6 +2164,22 @@ export const MeetingMinutes = () => {
                         noteId: note.id,
                         note: toStoredNote(updatedNote),
                       })
+                    }
+                    completion={
+                      note.type === "action_item"
+                        ? {
+                            canToggle:
+                              Boolean(isOfficer) ||
+                              (note.assignee?.id !== undefined &&
+                                note.assignee.id === myBoardMemberId),
+                            onToggle: (completedOn) =>
+                              void setActionItemCompletedOn({
+                                meetingId: meeting.id,
+                                noteId: note.id,
+                                completedOn,
+                              }),
+                          }
+                        : undefined
                     }
                     onDelete={() => {
                       void removeCurrentNote({ meetingId: meeting.id, index: i });
