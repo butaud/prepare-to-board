@@ -187,7 +187,8 @@ const ActionItemForm = ({
   const [dueDate, setDueDate] = useState<Date | null>(
     initialNote?.dueDate ? new Date(initialNote.dueDate) : null
   );
-  const canSubmit = text.trim().length > 0 && dueDate !== null;
+  const canSubmit =
+    text.trim().length > 0 && dueDate !== null && selectedMemberId !== "";
   return (
     <div className="note-form">
       <h5 className="note-form-title">Action Item</h5>
@@ -203,13 +204,13 @@ const ActionItemForm = ({
         />
       </div>
       <div className="minutes-form-row">
-        <label>Assignee (optional):</label>
+        <label>Assignee:</label>
         <select
           value={selectedMemberId}
           onChange={(e) => setSelectedMemberId(e.target.value)}
           style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid var(--color-border, #ddd)" }}
         >
-          <option value="">— None —</option>
+          <option value="">Required</option>
           {members.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
@@ -230,8 +231,8 @@ const ActionItemForm = ({
           className="btn-primary"
           disabled={!canSubmit}
           onClick={() => {
-            if (!canSubmit || !dueDate) return;
             const assignee = members.find((m) => m.id === selectedMemberId);
+            if (!canSubmit || !dueDate || !assignee) return;
             onAdd({
               type: "action_item",
               text: text.trim(),

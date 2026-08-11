@@ -20,7 +20,8 @@ export const ActionItemRow = ({
   return (
     <div className="action-item">
       <NoteDisplay
-        note={{ ...item, assignee: undefined }}
+        note={item}
+        hideAssignee
         completion={{
           canToggle,
           onToggle: (completedOn) =>

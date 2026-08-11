@@ -96,9 +96,11 @@ export interface ActionItemCompletionControl {
 interface NoteDisplayProps {
   note: Note | PendingNote;
   completion?: ActionItemCompletionControl;
+  /** Suppress the assignee prefix, for contexts that already show it nearby. */
+  hideAssignee?: boolean;
 }
 
-export const NoteDisplay = ({ note, completion }: NoteDisplayProps) => {
+export const NoteDisplay = ({ note, completion, hideAssignee }: NoteDisplayProps) => {
   if (note.type === "text") {
     return (
       <div className="note-text">
@@ -109,11 +111,11 @@ export const NoteDisplay = ({ note, completion }: NoteDisplayProps) => {
   if (note.type === "action_item") {
     const isComplete = note.completedOn !== undefined;
     const overdue = !isComplete && note.dueDate !== undefined && isOverdue(note.dueDate);
-    const checkboxTitle = isComplete
-      ? `Completed ${formatDueDate(note.completedOn as number)}`
-      : completion?.canToggle
-        ? "Mark complete"
-        : undefined;
+    const checkboxTitle = completion?.canToggle
+      ? isComplete
+        ? "Reopen"
+        : "Mark complete"
+      : undefined;
     return (
       <div className={`note-action-item${isComplete ? " is-complete" : ""}`}>
         <span
@@ -136,13 +138,21 @@ export const NoteDisplay = ({ note, completion }: NoteDisplayProps) => {
         >
           {isComplete ? "☑" : "☐"}
         </span>
-        {note.assignee?.name && <span className="note-action-assignee">{note.assignee.name}:</span>}
+        {!hideAssignee && note.assignee?.name && (
+          <span className="note-action-assignee">{note.assignee.name}:</span>
+        )}
         <span>{note.text}</span>
-        {note.dueDate !== undefined && (
-          <span className={`note-action-due${overdue ? " is-overdue" : ""}`}>
-            {isComplete ? "" : overdue ? "Overdue: " : "Due "}
-            {formatDueDate(note.dueDate)}
+        {isComplete ? (
+          <span className="note-action-due">
+            Completed on {formatDueDate(note.completedOn as number)}
           </span>
+        ) : (
+          note.dueDate !== undefined && (
+            <span className={`note-action-due${overdue ? " is-overdue" : ""}`}>
+              {overdue ? "Overdue — was due by " : "Due by "}
+              {formatDueDate(note.dueDate)}
+            </span>
+          )
         )}
       </div>
     );
