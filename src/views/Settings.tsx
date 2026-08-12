@@ -2,9 +2,11 @@ import { Organization } from "../schema";
 import { FC, useState } from "react";
 import "./Settings.css";
 import { SlBan, SlPlus } from "react-icons/sl";
+import { useMutation } from "convex/react";
 import { useLoadedAccount } from "../hooks/Account";
 import { CreateOrganization } from "../ui/forms/Organization";
 import { SubHeader } from "../ui/SubHeader";
+import { api } from "../convexClient";
 
 export const Settings = () => {
   return (
@@ -20,35 +22,40 @@ export const Settings = () => {
 
 export const ManageProfile = () => {
   const me = useLoadedAccount();
+  const updateProfile = useMutation(api.app.updateProfile);
+  const [name, setName] = useState(me.profile.name);
 
   return (
-    <div className="profile">
+    <form
+      className="profile"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void updateProfile({ name });
+      }}
+    >
       <div className="profile-field">
         <label htmlFor="name">Name</label>
         <input
           type="text"
-          id="firstName"
-          value={me.profile.name}
-          onChange={(e) => {
-            me.profile.name = e.target.value;
-          }}
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
       </div>
-    </div>
+      <button type="submit" disabled={name.trim() === ""}>
+        Save
+      </button>
+    </form>
   );
 };
 
 export const ManageOrganizations = () => {
   const me = useLoadedAccount();
+  const leaveOrganization = useMutation(api.app.leaveOrganization);
   const [isCreatingOrganization, setCreatingOrganization] = useState(false);
 
   const removeOrg = (organization: Organization) => {
-    const index = me.root.organizations.findIndex(
-      (org) => org.id === organization.id
-    );
-    if (index !== -1) {
-      me.root.organizations.splice(index, 1);
-    }
+    void leaveOrganization({ organizationId: organization.id });
   };
 
   return (

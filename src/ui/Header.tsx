@@ -1,7 +1,7 @@
 import "./Header.css";
 import { NavLink } from "react-router-dom";
 import { CgFileDocument } from "react-icons/cg";
-import { LuCalendarDays, LuListChecks, LuSettings2 } from "react-icons/lu";
+import { LuListChecks, LuSettings2 } from "react-icons/lu";
 import { LiaUsersCogSolid, LiaUsersSolid } from "react-icons/lia";
 import { MdOutlineScience } from "react-icons/md";
 import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
@@ -69,10 +69,6 @@ export const Header = () => {
             <NavLink to="/action-items">
               <LuListChecks />
               <span className="name">Action Items</span>
-            </NavLink>
-            <NavLink to="/calendar">
-              <LuCalendarDays />
-              <span className="name">Calendar</span>
             </NavLink>
             {isAdmin ? (
               <NavLink to="/manage">

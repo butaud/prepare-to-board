@@ -237,12 +237,41 @@ const currentLiveTopicIndex = (meeting: Doc<"meetings">) =>
 export const ensureCurrentUser = mutation({
   args: { name: v.optional(v.string()), email: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    // args.name only seeds the name for a brand-new user (see
+    // getOrCreateCurrentUser). It intentionally does not overwrite an
+    // existing user's name on every load, since that would clobber a name
+    // the user has since edited in Settings.
     const user = await getOrCreateCurrentUser(ctx, args.name);
-    if (args.name && args.name !== user.name) {
-      await ctx.db.patch(user._id, { name: args.name });
-    }
     await ensureBoardMembersForUser(ctx, user, args.email);
     return user._id;
+  },
+});
+
+export const updateProfile = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    await ctx.db.patch(user._id, { name: args.name });
+  },
+});
+
+export const leaveOrganization = mutation({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const membership = await membershipFor(ctx, args.organizationId, user._id);
+    if (membership) {
+      await ctx.db.delete(membership._id);
+    }
+    if (user.selectedOrganizationId === args.organizationId) {
+      const remaining = await ctx.db
+        .query("memberships")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .collect();
+      await ctx.db.patch(user._id, {
+        selectedOrganizationId: remaining[0]?.organizationId,
+      });
+    }
   },
 });
 
