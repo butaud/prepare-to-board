@@ -57,6 +57,7 @@ export const MeetingView = () => {
   const reorderTopics = useMutation(api.app.reorderTopics);
   const skipTopic = useMutation(api.app.skipTopic);
   const updateExpectedDuration = useMutation(api.app.updateExpectedDuration);
+  const updateMeetingDate = useMutation(api.app.updateMeetingDate);
   const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
     new Set()
   );
@@ -625,6 +626,11 @@ export const MeetingView = () => {
     });
   };
 
+  const handleStartDateChange = (picked: Date | null) => {
+    if (!picked) return;
+    void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() });
+  };
+
   const lastCompletedMeeting = [...(me.root.selectedOrganization?.meetings ?? [])]
     .filter((candidate) => candidate.status === "completed")
     .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
@@ -653,7 +659,43 @@ export const MeetingView = () => {
 
   return (
     <div className="meeting-view-content">
-      <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
+      <div className="plan-header">
+        <h3 className="plan-start-time">
+          Start Time:{" "}
+          {isOfficer ? (
+            <DatePicker
+              selected={meeting.date}
+              onChange={handleStartDateChange}
+              showTimeSelect
+              timeIntervals={5}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              popperProps={{ placement: "bottom", strategy: "fixed" }}
+              portalId="datepicker-portal"
+            />
+          ) : (
+            meeting.date.toLocaleString(undefined, {
+              dateStyle: "long",
+              timeStyle: "short",
+            })
+          )}
+        </h3>
+        <div className="agenda-plan-summary">
+          {meeting.plannedAgenda.length > 0 && (
+            <span>
+              {meeting.plannedAgenda.length} topic
+              {meeting.plannedAgenda.length !== 1 ? "s" : ""} ·{" "}
+              {formatMinutes(totalPlannedMinutes)} planned
+            </span>
+          )}
+          {targetEndTimeControl}
+          {isOverrun && (
+            <span className="overrun-warning">
+              ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+              over target
+            </span>
+          )}
+        </div>
+      </div>
       <div className="meeting-minutes plan-agenda-layout">
         <div className="minutes-topic-main">
           {isOfficer && carryForwardTopics.length > 0 && (
@@ -727,20 +769,6 @@ export const MeetingView = () => {
         >
           <div className="minutes-agenda-pane-header">
             <h2>Timeline</h2>
-            {meeting.plannedAgenda.length > 0 && (
-              <span className="minutes-agenda-pane-subtitle">
-                {meeting.plannedAgenda.length} topic
-                {meeting.plannedAgenda.length !== 1 ? "s" : ""} ·{" "}
-                {formatMinutes(totalPlannedMinutes)} planned
-              </span>
-            )}
-            {targetEndTimeControl}
-            {isOverrun && (
-              <span className="overrun-warning">
-                ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
-                over target
-              </span>
-            )}
             <button
               className="minutes-agenda-pane-close"
               aria-label={isPlanTimelineOpen ? "Close timeline" : "Open timeline"}

@@ -513,6 +513,16 @@ const setHighlightedTopicMutation = mutation({
 export const setHighlightedTopic = setHighlightedTopicMutation;
 export const setFocusedTopic = setHighlightedTopicMutation;
 
+export const updateMeetingDate = mutation({
+  args: { meetingId: v.id("meetings"), date: v.number() },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, { date: args.date });
+  },
+});
+
 export const updateLiveStartTime = mutation({
   args: { meetingId: v.id("meetings"), liveStartTime: v.number() },
   handler: async (ctx, args) => {
