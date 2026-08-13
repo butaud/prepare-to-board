@@ -225,6 +225,7 @@ const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
     liveStartTime: meeting.liveStartTime,
     currentNotes: meeting.currentNotes?.map((note) => serializeNote(note, members)),
     highlightedTopicId: meeting.highlightedTopicId ?? meeting.focusedTopicId,
+    expectedDurationMinutes: meeting.expectedDurationMinutes,
   };
 };
 
@@ -522,6 +523,18 @@ export const updateLiveStartTime = mutation({
   },
 });
 
+export const updateExpectedDuration = mutation({
+  args: { meetingId: v.id("meetings"), expectedDurationMinutes: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      expectedDurationMinutes: args.expectedDurationMinutes,
+    });
+  },
+});
+
 export const deleteMeeting = mutation({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, args) => {
@@ -575,7 +588,9 @@ export const updateTopic = mutation({
     topicId: v.string(),
     title: v.optional(v.string()),
     durationMinutes: v.optional(v.number()),
+    outcome: v.optional(v.string()),
     deferred: v.optional(v.boolean()),
+    cancelled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
@@ -588,7 +603,9 @@ export const updateTopic = mutation({
               ...topic,
               title: args.title ?? topic.title,
               durationMinutes: args.durationMinutes ?? topic.durationMinutes,
+              outcome: args.outcome ?? topic.outcome,
               deferred: args.deferred ?? topic.deferred,
+              cancelled: args.cancelled ?? topic.cancelled,
             }
           : topic
       ),

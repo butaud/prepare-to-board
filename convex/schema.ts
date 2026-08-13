@@ -93,5 +93,6 @@ export default defineSchema({
     currentNotes: v.optional(v.array(note)),
     highlightedTopicId: v.optional(v.string()),
     focusedTopicId: v.optional(v.string()),
+    expectedDurationMinutes: v.optional(v.number()),
   }).index("by_org", ["organizationId"]),
 });

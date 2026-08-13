@@ -85,6 +85,7 @@ export type Meeting = {
   liveStartTime?: Date;
   currentNotes?: Note[];
   highlightedTopicId?: Id;
+  expectedDurationMinutes?: number;
 };
 
 export type Organization = {

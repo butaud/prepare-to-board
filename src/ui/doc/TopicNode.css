@@ -36,12 +36,31 @@
       }
     }
 
+    .outcome {
+      margin-top: 4px;
+      font-size: 0.9em;
+      font-style: italic;
+      color: var(--secondary-color);
+
+      .outcome-display:empty::before {
+        content: "+ Add outcome/goal";
+        cursor: pointer;
+      }
+    }
+
     .topic-actions {
       position: absolute;
       display: flex;
       gap: 5px;
       right: 10px;
       top: 10px;
+    }
+
+    .topic-delete {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      visibility: hidden;
     }
   }
 
@@ -50,16 +69,21 @@
     border-style: dashed;
   }
 }
-/* Ensure the drag handle is visible on hover or on mobile */
+/* Ensure the drag handle and delete button are visible on hover or on mobile */
 .topic-node:hover .drag-handle,
 .topic-node:focus-within .drag-handle,
 .topic-node:active .drag-handle,
-.topic-node:focus .drag-handle {
+.topic-node:focus .drag-handle,
+.topic-node:hover .topic-delete,
+.topic-node:focus-within .topic-delete,
+.topic-node:active .topic-delete,
+.topic-node:focus .topic-delete {
   visibility: inherit;
 }
 
 @media (hover: none) {
-  .topic-node .drag-handle {
+  .topic-node .drag-handle,
+  .topic-node .topic-delete {
     visibility: inherit;
   }
 }

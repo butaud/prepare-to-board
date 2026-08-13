@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC } from "react";
 import { Topic, topicIsDraft } from "../../schema";
 
 import "./TopicNode.css";
@@ -14,7 +14,11 @@ export type TopicNodeProps = {
   onPublish?: () => void;
   onCancel?: () => void;
   onDelete?: () => void;
-  onUpdate?: (patch: { title?: string; durationMinutes?: number }) => void;
+  onUpdate?: (patch: {
+    title?: string;
+    durationMinutes?: number;
+    outcome?: string;
+  }) => void;
   canEdit?: boolean;
 };
 
@@ -29,7 +33,6 @@ export const TopicNode: FC<TopicNodeProps> = ({
   onUpdate,
   canEdit: canEditProp,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
   const canEdit = (canEditProp ?? !!onUpdate) && !locked;
   const isDraft = topicIsDraft(topic);
   return (
@@ -56,13 +59,7 @@ export const TopicNode: FC<TopicNodeProps> = ({
               </span>
             </div>
           )}
-          <div
-            className={["topic-header", isDraft ? "draft" : ""].join(" ")}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setIsEditing(true);
-            }}
-          >
+          <div className={["topic-header", isDraft ? "draft" : ""].join(" ")}>
             <EditableString
               as="h4"
               value={topic.title}
@@ -98,31 +95,33 @@ export const TopicNode: FC<TopicNodeProps> = ({
               />{" "}
               minutes
             </div>
-            {(isEditing || isDraft) && (
-              <div
-                className="topic-actions"
-                autoFocus
-                onBlur={() => setIsEditing(false)}
-                tabIndex={0}
-              >
-                {isDraft && (
-                  <>
-                    <button onClick={onPublish}>Publish</button>
-                    <button onClick={onCancel}>Cancel</button>
-                  </>
-                )}
-                {!isDraft && onDelete && (
-                  <button
-                    autoFocus
-                    className="danger"
-                    onClick={onDelete}
-                    aria-label="Delete Topic"
-                  >
-                    <MdDelete />
-                    Delete
-                  </button>
-                )}
+            {!isDraft && (canEdit || topic.outcome) && (
+              <div className="outcome">
+                <EditableString
+                  as="span"
+                  value={topic.outcome ?? ""}
+                  onValueChange={(newValue) => onUpdate?.({ outcome: newValue })}
+                  canEdit={canEdit}
+                  className="outcome-display"
+                  label="Outcome/Goal"
+                />
               </div>
+            )}
+            {isDraft && (
+              <div className="topic-actions">
+                <button onClick={onPublish}>Publish</button>
+                <button onClick={onCancel}>Cancel</button>
+              </div>
+            )}
+            {!isDraft && canEdit && onDelete && (
+              <button
+                className="topic-delete danger"
+                onClick={onDelete}
+                aria-label="Delete Topic"
+                title="Delete Topic"
+              >
+                <MdDelete />
+              </button>
             )}
           </div>
         </div>

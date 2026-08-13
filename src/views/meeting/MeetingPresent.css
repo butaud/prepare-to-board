@@ -276,6 +276,22 @@
   padding-left: 10px;
 }
 
+.present-cancelled-heading {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 12px 0 4px;
+}
+
+.present-cancelled-item {
+  opacity: 0.6;
+  border-left: 3px solid var(--danger-color-strong);
+  padding-left: 10px;
+  text-decoration: line-through;
+}
+
 .present-add-topic {
   margin-top: 12px;
 }

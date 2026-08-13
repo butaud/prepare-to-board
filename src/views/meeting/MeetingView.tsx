@@ -10,7 +10,7 @@ import { useMutation } from "convex/react";
 import { TopicList } from "../topic/TopicList";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
-import { computeProjectedEndTime } from "../../util/data";
+import { computeProjectedEndTime, computePlannedEndTime } from "../../util/data";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
@@ -33,6 +33,13 @@ const formatDuration = (totalSeconds: number): string => {
 const formatTime = (date: Date): string =>
   date.toLocaleTimeString(undefined, { timeStyle: "short" });
 
+const formatMinutes = (totalMinutes: number): string => {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+};
+
 export const MeetingView = () => {
   const me = useLoadedAccount();
   const meeting = useMeeting();
@@ -46,6 +53,13 @@ export const MeetingView = () => {
   const updateTopic = useMutation(api.app.updateTopic);
   const reorderTopics = useMutation(api.app.reorderTopics);
   const skipTopic = useMutation(api.app.skipTopic);
+  const updateExpectedDuration = useMutation(api.app.updateExpectedDuration);
+  const [isEditingExpectedDuration, setIsEditingExpectedDuration] =
+    useState(false);
+  const [expectedDurationDraft, setExpectedDurationDraft] = useState("");
+  const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -100,10 +114,11 @@ export const MeetingView = () => {
         )
       : 0;
 
-    const allRemaining = liveAgenda
+    const allRemainingRaw = liveAgenda
       .filter((t) => t !== null)
-      .slice(remainingStartIndex)
-      .filter((t) => !t.cancelled);
+      .slice(remainingStartIndex);
+    const cancelledTopics = allRemainingRaw.filter((t) => t.cancelled);
+    const allRemaining = allRemainingRaw.filter((t) => !t.cancelled);
     const remainingTopics = allRemaining.filter((t) => !t.deferred);
     const deferredTopics = allRemaining.filter((t) => t.deferred);
 
@@ -361,6 +376,19 @@ export const MeetingView = () => {
                                 >
                                   Defer
                                 </button>
+                                <button
+                                  className="btn-small danger"
+                                  onClick={() =>
+                                    void updateTopic({
+                                      meetingId: meeting.id,
+                                      list: "liveAgenda",
+                                      topicId: topic.id,
+                                      cancelled: true,
+                                    })
+                                  }
+                                >
+                                  Cancel
+                                </button>
                               </div>
                             </li>
                           )}
@@ -409,6 +437,41 @@ export const MeetingView = () => {
                               list: "liveAgenda",
                               topicId: topic.id,
                               deferred: false,
+                            })
+                          }
+                        >
+                          Restore
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+
+            {/* Cancelled topics — officers only */}
+            {isOfficer && cancelledTopics.length > 0 && (
+              <>
+                <h4 className="present-cancelled-heading">Cancelled</h4>
+                <ol className="present-topic-list">
+                  {cancelledTopics.map((topic) => (
+                    <li
+                      key={topic.id}
+                      className="present-topic-item present-cancelled-item"
+                    >
+                      <span className="present-topic-title">{topic.title}</span>
+                      <span className="present-topic-meta">
+                        {topic.durationMinutes ?? "?"} min
+                      </span>
+                      <div className="present-topic-actions">
+                        <button
+                          className="btn-small btn-secondary"
+                          onClick={() =>
+                            void updateTopic({
+                              meetingId: meeting.id,
+                              list: "liveAgenda",
+                              topicId: topic.id,
+                              cancelled: false,
                             })
                           }
                         >
@@ -526,9 +589,122 @@ export const MeetingView = () => {
   if (!meeting.plannedAgenda) {
     return <p>No topics</p>;
   }
+
+  const totalPlannedMinutes = meeting.plannedAgenda.reduce(
+    (sum, topic) => sum + (topic.durationMinutes ?? 0),
+    0
+  );
+  const projectedEnd = computePlannedEndTime(meeting);
+  const isOverrun =
+    meeting.expectedDurationMinutes !== undefined &&
+    totalPlannedMinutes > meeting.expectedDurationMinutes;
+
+  const lastCompletedMeeting = [...(me.root.selectedOrganization?.meetings ?? [])]
+    .filter((candidate) => candidate.status === "completed")
+    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+  const carryForwardTopics = (lastCompletedMeeting?.liveAgenda ?? []).filter(
+    (topic) => topic.deferred && !topic.cancelled
+  );
+
   return (
     <div className="meeting-view-content">
       <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
+      <div className="agenda-duration-summary">
+        <span>Total planned time: {formatMinutes(totalPlannedMinutes)}</span>
+        {projectedEnd && <span>Projected end: {formatTime(projectedEnd)}</span>}
+        {isOfficer ? (
+          <span className="expected-duration-field">
+            Target length:{" "}
+            {isEditingExpectedDuration ? (
+              <input
+                className="inline-duration-input"
+                type="number"
+                min={1}
+                autoFocus
+                value={expectedDurationDraft}
+                onChange={(e) => setExpectedDurationDraft(e.target.value)}
+                onBlur={() => {
+                  const trimmed = expectedDurationDraft.trim();
+                  const parsed = trimmed === "" ? undefined : parseInt(trimmed, 10);
+                  void updateExpectedDuration({
+                    meetingId: meeting.id,
+                    expectedDurationMinutes:
+                      parsed !== undefined && !isNaN(parsed) ? parsed : undefined,
+                  });
+                  setIsEditingExpectedDuration(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Escape") setIsEditingExpectedDuration(false);
+                }}
+              />
+            ) : (
+              <span
+                className="expected-duration-value"
+                onDoubleClick={() => {
+                  setExpectedDurationDraft(
+                    meeting.expectedDurationMinutes !== undefined
+                      ? String(meeting.expectedDurationMinutes)
+                      : ""
+                  );
+                  setIsEditingExpectedDuration(true);
+                }}
+                title="Double-click to edit"
+              >
+                {meeting.expectedDurationMinutes !== undefined
+                  ? `${meeting.expectedDurationMinutes} min`
+                  : "not set"}
+              </span>
+            )}
+          </span>
+        ) : (
+          meeting.expectedDurationMinutes !== undefined && (
+            <span>Target length: {meeting.expectedDurationMinutes} min</span>
+          )
+        )}
+        {isOverrun && (
+          <span className="overrun-warning">
+            ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+            over target
+          </span>
+        )}
+      </div>
+      {isOfficer && carryForwardTopics.length > 0 && (
+        <div className="carry-forward-suggestions">
+          <h4>Carried forward from last meeting</h4>
+          <ul>
+            {carryForwardTopics.map((topic) => {
+              const added = carriedForwardIds.has(topic.id);
+              return (
+                <li key={topic.id}>
+                  <span>
+                    {topic.title}
+                    {topic.durationMinutes
+                      ? ` (${topic.durationMinutes} min)`
+                      : ""}
+                  </span>
+                  <button
+                    className="btn-small btn-secondary"
+                    disabled={added}
+                    onClick={() => {
+                      void addTopic({
+                        meetingId: meeting.id,
+                        list: "plannedAgenda",
+                        title: topic.title,
+                        durationMinutes: topic.durationMinutes,
+                      }).then(() => {
+                        setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
+                      });
+                    }}
+                  >
+                    {added ? "Added" : "+ Add to agenda"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       <TopicList
         topicList={meeting.plannedAgenda}
         meeting={meeting}
