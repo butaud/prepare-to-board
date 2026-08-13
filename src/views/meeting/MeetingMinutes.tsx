@@ -18,6 +18,19 @@ import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
+import {
+  AGENDA_BASE_SLOT_MINUTES,
+  AGENDA_EVENT_GAP_PX,
+  AGENDA_EVENT_MIN_HEIGHT_PX,
+  AGENDA_SLOT_HEIGHT_PX,
+  ceilMinutesToAgendaSlotCount,
+  floorToAgendaSlot,
+  formatAgendaTime,
+  formatMinuteCount,
+  getAgendaSlotMinutesForHeight,
+  timelineDisplayEventStyle,
+  timelineGridStyle,
+} from "./agendaTimeline";
 
 const formatDuration = (totalSeconds: number): string => {
   const sign = totalSeconds < 0 ? "-" : "";
@@ -31,50 +44,14 @@ const formatDuration = (totalSeconds: number): string => {
   return `${sign}${m}m ${s}s`;
 };
 
-const formatAgendaTime = (date: Date): string =>
-  date.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
 const formatTimeInputValue = (date: Date): string => {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
 };
 
-const AGENDA_BASE_SLOT_MINUTES = 5;
-const AGENDA_SLOT_HEIGHT_PX = 72;
-const AGENDA_TARGET_VISIBLE_MINUTES = 90;
-const AGENDA_EVENT_MIN_HEIGHT_PX = 14;
-const AGENDA_EVENT_GAP_PX = 3;
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
 const AGENDA_INSERTION_FORM_GAP_PX = 230;
-
-const timelineGridStyle = (slotCount: number): CSSProperties =>
-  ({ "--slot-count": slotCount }) as CSSProperties;
-
-const timelineEventStyle = (
-  startSlot: number,
-  slotSpan: number,
-  topPx = startSlot * AGENDA_SLOT_HEIGHT_PX
-): CSSProperties => ({
-  "--start-slot": startSlot,
-  "--slot-span": slotSpan,
-  top: `${topPx}px`,
-  height: `${Math.max(AGENDA_EVENT_MIN_HEIGHT_PX, slotSpan * AGENDA_SLOT_HEIGHT_PX - 2)}px`,
-}) as CSSProperties;
-
-const timelineDisplayEventStyle = (
-  startSlot: number,
-  slotSpan: number,
-  displayTopPx: number,
-  displayHeightPx: number
-): CSSProperties =>
-  ({
-    ...timelineEventStyle(startSlot, slotSpan, displayTopPx),
-    height: `${displayHeightPx}px`,
-  }) as CSSProperties;
 
 const insertionCursorStyle = (topPx: number): CSSProperties =>
   ({
@@ -86,36 +63,6 @@ const insertionFormStyle = (): CSSProperties =>
   ({
     top: `${AGENDA_INSERTION_RESERVED_HEIGHT_PX + 4}px`,
   }) as CSSProperties;
-
-const floorToAgendaSlot = (date: Date, slotMinutes: number): Date => {
-  const floored = new Date(date);
-  floored.setSeconds(0, 0);
-  floored.setMinutes(
-    Math.floor(floored.getMinutes() / slotMinutes) * slotMinutes
-  );
-  return floored;
-};
-
-const ceilMinutesToAgendaSlotCount = (
-  minutes: number,
-  slotMinutes: number
-): number => Math.max(1, Math.ceil(minutes / slotMinutes));
-
-const getAgendaSlotMinutesForHeight = (availableHeight: number): number => {
-  const visibleSlotCount = Math.max(
-    1,
-    Math.floor(availableHeight / AGENDA_SLOT_HEIGHT_PX)
-  );
-  const slotMinutes = Math.ceil(
-    AGENDA_TARGET_VISIBLE_MINUTES /
-      visibleSlotCount /
-      AGENDA_BASE_SLOT_MINUTES
-  ) * AGENDA_BASE_SLOT_MINUTES;
-  return Math.max(AGENDA_BASE_SLOT_MINUTES, slotMinutes);
-};
-
-const formatMinuteCount = (minutes: number): string =>
-  minutes === 1 ? "1 min" : `${minutes} min`;
 
 const formatDiff = (diff: number): string =>
   diff === 0 ? "" : ` (${diff > 0 ? "+" : ""}${diff})`;

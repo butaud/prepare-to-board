@@ -7,14 +7,17 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
+import DatePicker from "react-datepicker";
 import { TopicList } from "../topic/TopicList";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
-import { computeProjectedEndTime, computePlannedEndTime } from "../../util/data";
+import { computeProjectedEndTime } from "../../util/data";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
+import { PlanAgendaTimeline } from "./PlanAgendaTimeline";
 
+import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
 import "../meeting/MeetingMinutes.css";
@@ -54,9 +57,6 @@ export const MeetingView = () => {
   const reorderTopics = useMutation(api.app.reorderTopics);
   const skipTopic = useMutation(api.app.skipTopic);
   const updateExpectedDuration = useMutation(api.app.updateExpectedDuration);
-  const [isEditingExpectedDuration, setIsEditingExpectedDuration] =
-    useState(false);
-  const [expectedDurationDraft, setExpectedDurationDraft] = useState("");
   const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
     new Set()
   );
@@ -594,10 +594,35 @@ export const MeetingView = () => {
     (sum, topic) => sum + (topic.durationMinutes ?? 0),
     0
   );
-  const projectedEnd = computePlannedEndTime(meeting);
+  const targetEndTime =
+    meeting.expectedDurationMinutes !== undefined
+      ? new Date(meeting.date.getTime() + meeting.expectedDurationMinutes * 60 * 1000)
+      : null;
   const isOverrun =
     meeting.expectedDurationMinutes !== undefined &&
     totalPlannedMinutes > meeting.expectedDurationMinutes;
+
+  const handleTargetEndTimeChange = (picked: Date | null) => {
+    if (!picked) {
+      void updateExpectedDuration({
+        meetingId: meeting.id,
+        expectedDurationMinutes: undefined,
+      });
+      return;
+    }
+    const combined = new Date(meeting.date);
+    combined.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+    let diffMinutes = Math.round(
+      (combined.getTime() - meeting.date.getTime()) / (60 * 1000)
+    );
+    // A target end time earlier in the clock than the start time means it's
+    // meant to land after midnight, the next day.
+    if (diffMinutes <= 0) diffMinutes += 24 * 60;
+    void updateExpectedDuration({
+      meetingId: meeting.id,
+      expectedDurationMinutes: diffMinutes,
+    });
+  };
 
   const lastCompletedMeeting = [...(me.root.selectedOrganization?.meetings ?? [])]
     .filter((candidate) => candidate.status === "completed")
@@ -609,57 +634,32 @@ export const MeetingView = () => {
   return (
     <div className="meeting-view-content">
       <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
-      <div className="agenda-duration-summary">
-        <span>Total planned time: {formatMinutes(totalPlannedMinutes)}</span>
-        {projectedEnd && <span>Projected end: {formatTime(projectedEnd)}</span>}
-        {isOfficer ? (
-          <span className="expected-duration-field">
-            Target length:{" "}
-            {isEditingExpectedDuration ? (
-              <input
-                className="inline-duration-input"
-                type="number"
-                min={1}
-                autoFocus
-                value={expectedDurationDraft}
-                onChange={(e) => setExpectedDurationDraft(e.target.value)}
-                onBlur={() => {
-                  const trimmed = expectedDurationDraft.trim();
-                  const parsed = trimmed === "" ? undefined : parseInt(trimmed, 10);
-                  void updateExpectedDuration({
-                    meetingId: meeting.id,
-                    expectedDurationMinutes:
-                      parsed !== undefined && !isNaN(parsed) ? parsed : undefined,
-                  });
-                  setIsEditingExpectedDuration(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") e.currentTarget.blur();
-                  if (e.key === "Escape") setIsEditingExpectedDuration(false);
-                }}
-              />
-            ) : (
-              <span
-                className="expected-duration-value"
-                onDoubleClick={() => {
-                  setExpectedDurationDraft(
-                    meeting.expectedDurationMinutes !== undefined
-                      ? String(meeting.expectedDurationMinutes)
-                      : ""
-                  );
-                  setIsEditingExpectedDuration(true);
-                }}
-                title="Double-click to edit"
-              >
-                {meeting.expectedDurationMinutes !== undefined
-                  ? `${meeting.expectedDurationMinutes} min`
-                  : "not set"}
-              </span>
-            )}
+      <div className="agenda-plan-summary">
+        {meeting.plannedAgenda.length > 0 && (
+          <span>
+            {meeting.plannedAgenda.length} topic
+            {meeting.plannedAgenda.length !== 1 ? "s" : ""} ·{" "}
+            {formatMinutes(totalPlannedMinutes)} planned
           </span>
+        )}
+        {isOfficer ? (
+          <label className="target-end-time-field">
+            Target end time:
+            <DatePicker
+              selected={targetEndTime}
+              onChange={handleTargetEndTimeChange}
+              showTimeSelect
+              showTimeSelectOnly
+              timeIntervals={5}
+              dateFormat="h:mm aa"
+              placeholderText="Not set"
+              isClearable
+              popperProps={{ placement: "bottom", strategy: "fixed" }}
+            />
+          </label>
         ) : (
-          meeting.expectedDurationMinutes !== undefined && (
-            <span>Target length: {meeting.expectedDurationMinutes} min</span>
+          targetEndTime && (
+            <span>Target end time: {formatTime(targetEndTime)}</span>
           )
         )}
         {isOverrun && (
@@ -669,6 +669,11 @@ export const MeetingView = () => {
           </span>
         )}
       </div>
+      <PlanAgendaTimeline
+        topics={meeting.plannedAgenda}
+        startTime={meeting.date}
+        targetEndTime={targetEndTime}
+      />
       {isOfficer && carryForwardTopics.length > 0 && (
         <div className="carry-forward-suggestions">
           <h4>Carried forward from last meeting</h4>

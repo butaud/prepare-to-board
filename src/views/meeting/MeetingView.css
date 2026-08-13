@@ -14,19 +14,24 @@
   margin: 4px 0 0 0;
 }
 
-.agenda-duration-summary {
+.agenda-plan-summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   font-size: 0.9rem;
-  color: var(--secondary-color);
+  color: var(--muted-text-color);
   margin: 4px 0 12px;
 }
 
-.expected-duration-value {
-  cursor: pointer;
-  border-bottom: 1px dashed var(--secondary-color-light);
+.target-end-time-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  input {
+    width: 110px;
+  }
 }
 
 .overrun-warning {

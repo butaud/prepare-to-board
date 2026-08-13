@@ -11,6 +11,11 @@ export type EditableValueProps<T extends string | number> = {
   onCancel?: () => void;
   editingByDefault?: boolean;
   label?: string;
+  // "single" starts editing on a single click when the field is currently
+  // empty (lower friction for filling in a never-set value), while still
+  // requiring the usual double-click once a value exists. Defaults to
+  // "double" everywhere.
+  emptyClickBehavior?: "single" | "double";
 };
 
 type EditableValueInnerProps<T extends string | number> =
@@ -30,6 +35,7 @@ const EditableValueInner = <T extends string | number>({
   onCancel,
   editingByDefault,
   label,
+  emptyClickBehavior = "double",
   serialize,
   deserialize,
 }: EditableValueInnerProps<T>) => {
@@ -74,15 +80,18 @@ const EditableValueInner = <T extends string | number>({
       </form>
     );
   } else {
+    const useSingleClick = emptyClickBehavior === "single" && value === "";
     const interactivityProps = canEdit
-      ? {
-          onDoubleClick: onStartEditing,
-        }
+      ? useSingleClick
+        ? { onClick: onStartEditing }
+        : { onDoubleClick: onStartEditing }
       : {};
     return createElement(
       as,
       {
-        className,
+        className: canEdit
+          ? [className, "editable-affordance"].filter(Boolean).join(" ")
+          : className,
         title: serialize(value),
         ...interactivityProps,
       },

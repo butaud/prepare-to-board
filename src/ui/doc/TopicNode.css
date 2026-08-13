@@ -6,7 +6,7 @@
 
   .drag-handle {
     cursor: grab;
-    color: var(--secondary-color);
+    color: var(--muted-text-color);
     visibility: hidden;
   }
 
@@ -40,11 +40,10 @@
       margin-top: 4px;
       font-size: 0.9em;
       font-style: italic;
-      color: var(--secondary-color);
+      color: var(--muted-text-color);
 
       .outcome-display:empty::before {
         content: "+ Add outcome/goal";
-        cursor: pointer;
       }
     }
 

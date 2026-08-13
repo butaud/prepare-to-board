@@ -104,6 +104,8 @@ export const TopicNode: FC<TopicNodeProps> = ({
                   canEdit={canEdit}
                   className="outcome-display"
                   label="Outcome/Goal"
+                  emptyClickBehavior="single"
+                  autoFocus
                 />
               </div>
             )}

@@ -1,0 +1,51 @@
+.plan-agenda-timeline-empty {
+  color: var(--muted-text-color);
+  font-size: 0.9rem;
+  padding: 14px 0;
+}
+
+.plan-agenda-timeline-grid {
+  margin-bottom: 20px;
+}
+
+.plan-agenda-event {
+  cursor: default;
+}
+
+.plan-agenda-event.plan-agenda-event-overrun {
+  background: var(--danger-color-subtle);
+  border-color: var(--danger-color-strong);
+  border-left-color: var(--danger-color-strong);
+}
+
+.plan-agenda-target-line {
+  position: absolute;
+  right: var(--scrollbar-clearance, 8px);
+  left: 66px;
+  z-index: 5;
+  border-top: 2px dashed var(--danger-color-strong);
+  pointer-events: none;
+}
+
+.plan-agenda-target-line span {
+  position: absolute;
+  top: -9px;
+  right: 4px;
+  padding: 0 4px;
+  color: var(--danger-color-strong);
+  background: var(--background-color);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.plan-agenda-target-overflow {
+  position: absolute;
+  right: var(--scrollbar-clearance, 8px);
+  bottom: 0;
+  left: 66px;
+  z-index: 0;
+  background: var(--danger-color-subtle);
+  opacity: 0.6;
+  pointer-events: none;
+}

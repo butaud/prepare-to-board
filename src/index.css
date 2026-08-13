@@ -11,6 +11,7 @@
 
   --secondary-color: hsl(50, 77%, 50%);
   --secondary-color-light: hsl(50, 77%, 75%);
+  --muted-text-color: hsl(0, 0%, 38%);
 
   --completed-color: hsl(133, 34%, 60%);
 
@@ -41,6 +42,7 @@
 
     --secondary-color: hsl(50, 77%, 50%);
     --secondary-color-light: hsl(50, 77%, 25%);
+    --muted-text-color: hsl(0, 0%, 68%);
 
     --completed-color: hsl(133, 34%, 40%);
 
@@ -294,4 +296,13 @@ select {
 select:focus {
   border: 1px solid var(--primary-color);
   box-shadow: 0 0 0 3px var(--primary-color-subtle);
+}
+
+/* Hover affordance for click/double-click-to-edit inline fields (see EditableValue) */
+.editable-affordance {
+  cursor: pointer;
+}
+
+.editable-affordance:hover {
+  text-decoration: underline;
 }
