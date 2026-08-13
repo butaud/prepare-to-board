@@ -15,7 +15,14 @@
 }
 
 .plan-header {
-  margin-bottom: 16px;
+  margin-bottom: 4px;
+}
+
+/* .meeting-minutes normally supplies its own top padding since it's the
+   whole page there — here it sits below .plan-header instead, so that
+   padding would just double up on the spacing already provided above. */
+.meeting-minutes.plan-agenda-layout {
+  padding-top: 0;
 }
 
 .plan-start-time {
@@ -45,7 +52,7 @@
   gap: 6px;
 
   input {
-    width: 110px;
+    width: 130px;
   }
 }
 
