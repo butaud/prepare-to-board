@@ -35,9 +35,6 @@ export const PlanAgendaTimeline: FC<PlanAgendaTimelineProps> = ({
     return (
       <div className="plan-agenda-timeline-empty">
         No topics scheduled yet — add one below to see the timeline.
-        {targetEndTime && (
-          <span> Target end time: {formatAgendaTime(targetEndTime)}.</span>
-        )}
       </div>
     );
   }

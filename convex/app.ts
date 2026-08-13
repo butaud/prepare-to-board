@@ -578,6 +578,7 @@ export const addTopic = mutation({
     await ctx.db.patch(args.meetingId, {
       [args.list]: topics,
     });
+    return topic.id;
   },
 });
 

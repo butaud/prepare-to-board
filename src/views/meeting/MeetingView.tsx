@@ -60,6 +60,7 @@ export const MeetingView = () => {
   const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
     new Set()
   );
+  const [isPlanTimelineOpen, setIsPlanTimelineOpen] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -631,90 +632,132 @@ export const MeetingView = () => {
     (topic) => topic.deferred && !topic.cancelled
   );
 
+  const targetEndTimeControl = isOfficer ? (
+    <label className="target-end-time-field">
+      Target end time:
+      <DatePicker
+        selected={targetEndTime}
+        onChange={handleTargetEndTimeChange}
+        showTimeSelect
+        showTimeSelectOnly
+        timeIntervals={5}
+        dateFormat="h:mm aa"
+        placeholderText="Not set"
+        isClearable
+        popperProps={{ placement: "bottom", strategy: "fixed" }}
+      />
+    </label>
+  ) : (
+    targetEndTime && <span>Target end time: {formatTime(targetEndTime)}</span>
+  );
+
   return (
     <div className="meeting-view-content">
       <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
-      <div className="agenda-plan-summary">
-        {meeting.plannedAgenda.length > 0 && (
-          <span>
-            {meeting.plannedAgenda.length} topic
-            {meeting.plannedAgenda.length !== 1 ? "s" : ""} ·{" "}
-            {formatMinutes(totalPlannedMinutes)} planned
-          </span>
-        )}
-        {isOfficer ? (
-          <label className="target-end-time-field">
-            Target end time:
-            <DatePicker
-              selected={targetEndTime}
-              onChange={handleTargetEndTimeChange}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={5}
-              dateFormat="h:mm aa"
-              placeholderText="Not set"
-              isClearable
-              popperProps={{ placement: "bottom", strategy: "fixed" }}
-            />
-          </label>
-        ) : (
-          targetEndTime && (
-            <span>Target end time: {formatTime(targetEndTime)}</span>
-          )
-        )}
-        {isOverrun && (
-          <span className="overrun-warning">
-            ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
-            over target
-          </span>
-        )}
-      </div>
-      <PlanAgendaTimeline
-        topics={meeting.plannedAgenda}
-        startTime={meeting.date}
-        targetEndTime={targetEndTime}
-      />
-      {isOfficer && carryForwardTopics.length > 0 && (
-        <div className="carry-forward-suggestions">
-          <h4>Carried forward from last meeting</h4>
-          <ul>
-            {carryForwardTopics.map((topic) => {
-              const added = carriedForwardIds.has(topic.id);
-              return (
-                <li key={topic.id}>
-                  <span>
-                    {topic.title}
-                    {topic.durationMinutes
-                      ? ` (${topic.durationMinutes} min)`
-                      : ""}
-                  </span>
-                  <button
-                    className="btn-small btn-secondary"
-                    disabled={added}
-                    onClick={() => {
-                      void addTopic({
-                        meetingId: meeting.id,
-                        list: "plannedAgenda",
-                        title: topic.title,
-                        durationMinutes: topic.durationMinutes,
-                      }).then(() => {
-                        setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
-                      });
-                    }}
-                  >
-                    {added ? "Added" : "+ Add to agenda"}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+      <div className="meeting-minutes plan-agenda-layout">
+        <div className="minutes-topic-main">
+          {isOfficer && carryForwardTopics.length > 0 && (
+            <div className="carry-forward-suggestions">
+              <h4>Carried forward from last meeting</h4>
+              <ul>
+                {carryForwardTopics.map((topic) => {
+                  const added = carriedForwardIds.has(topic.id);
+                  return (
+                    <li key={topic.id}>
+                      <span>
+                        {topic.title}
+                        {topic.durationMinutes
+                          ? ` (${topic.durationMinutes} min)`
+                          : ""}
+                      </span>
+                      <button
+                        className="btn-small btn-secondary"
+                        disabled={added}
+                        onClick={() => {
+                          void addTopic({
+                            meetingId: meeting.id,
+                            list: "plannedAgenda",
+                            title: topic.title,
+                            durationMinutes: topic.durationMinutes,
+                          }).then(() => {
+                            setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
+                          });
+                        }}
+                      >
+                        {added ? "Added" : "+ Add to agenda"}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+          <TopicList
+            topicList={meeting.plannedAgenda}
+            meeting={meeting}
+            useDrafts
+          />
         </div>
-      )}
-      <TopicList
-        topicList={meeting.plannedAgenda}
-        meeting={meeting}
-        useDrafts
-      />
+
+        <button
+          className={`minutes-agenda-pane-backdrop${isPlanTimelineOpen ? " is-open" : ""}`}
+          aria-label="Dismiss timeline"
+          onClick={() => setIsPlanTimelineOpen(false)}
+        />
+        <aside
+          id="plan-agenda-pane"
+          className={`minutes-section minutes-topic-tray${isPlanTimelineOpen ? " is-open" : ""}`}
+          aria-label="Meeting timeline"
+          onClick={() => {
+            if (window.matchMedia("(max-width: 750px)").matches && !isPlanTimelineOpen) {
+              setIsPlanTimelineOpen(true);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (
+              window.matchMedia("(max-width: 750px)").matches &&
+              !isPlanTimelineOpen &&
+              (event.key === "Enter" || event.key === " ")
+            ) {
+              event.preventDefault();
+              setIsPlanTimelineOpen(true);
+            }
+          }}
+          tabIndex={isPlanTimelineOpen ? undefined : 0}
+        >
+          <div className="minutes-agenda-pane-header">
+            <h2>Timeline</h2>
+            {meeting.plannedAgenda.length > 0 && (
+              <span className="minutes-agenda-pane-subtitle">
+                {meeting.plannedAgenda.length} topic
+                {meeting.plannedAgenda.length !== 1 ? "s" : ""} ·{" "}
+                {formatMinutes(totalPlannedMinutes)} planned
+              </span>
+            )}
+            {targetEndTimeControl}
+            {isOverrun && (
+              <span className="overrun-warning">
+                ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+                over target
+              </span>
+            )}
+            <button
+              className="minutes-agenda-pane-close"
+              aria-label={isPlanTimelineOpen ? "Close timeline" : "Open timeline"}
+              aria-expanded={isPlanTimelineOpen}
+              aria-controls="plan-agenda-pane"
+              onClick={() => setIsPlanTimelineOpen((open) => !open)}
+            >
+              <span aria-hidden="true">{isPlanTimelineOpen ? ">>" : "<<"}</span>
+            </button>
+          </div>
+          <PlanAgendaTimeline
+            topics={meeting.plannedAgenda}
+            startTime={meeting.date}
+            targetEndTime={targetEndTime}
+          />
+        </aside>
+      </div>
     </div>
   );
 };

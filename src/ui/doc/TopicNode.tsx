@@ -20,6 +20,9 @@ export type TopicNodeProps = {
     outcome?: string;
   }) => void;
   canEdit?: boolean;
+  // Start with the title field already in edit mode, for a topic that was
+  // just added and has no meaningful title yet.
+  titleEditingByDefault?: boolean;
 };
 
 export const TopicNode: FC<TopicNodeProps> = ({
@@ -32,6 +35,7 @@ export const TopicNode: FC<TopicNodeProps> = ({
   onPublish,
   onUpdate,
   canEdit: canEditProp,
+  titleEditingByDefault = false,
 }) => {
   const canEdit = (canEditProp ?? !!onUpdate) && !locked;
   const isDraft = topicIsDraft(topic);
@@ -71,7 +75,7 @@ export const TopicNode: FC<TopicNodeProps> = ({
               }}
               canEdit={canEdit}
               onCancel={onCancel}
-              editingByDefault={isDraft}
+              editingByDefault={isDraft || titleEditingByDefault}
               label="Topic"
               autoFocus
             />

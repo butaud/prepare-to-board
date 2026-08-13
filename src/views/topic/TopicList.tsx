@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import { TopicNode } from "../../ui/doc/TopicNode";
 import { useMutation } from "convex/react";
 import { Meeting, Topic } from "../../schema";
@@ -31,6 +31,7 @@ export const TopicList: FC<TopicListProps> = ({
   const reorderTopics = useMutation(api.app.reorderTopics);
 
   const isOfficer = me.canWrite(meeting);
+  const [newTopicId, setNewTopicId] = useState<string | null>(null);
 
   const onDragEnd: OnDragEndResponder<string> = (result) => {
     if (!result.destination) return;
@@ -89,6 +90,7 @@ export const TopicList: FC<TopicListProps> = ({
                     startTime={new Date(currentTopicStartTime)}
                     locked={isLocked}
                     canEdit={isOfficer}
+                    titleEditingByDefault={topic.id === newTopicId}
                     onUpdate={
                       isOfficer
                         ? (patch) =>
@@ -123,7 +125,7 @@ export const TopicList: FC<TopicListProps> = ({
                         list: "plannedAgenda",
                         title: "New Topic",
                         durationMinutes: lastTopic?.durationMinutes ?? 5,
-                      })
+                      }).then((newTopicId: string) => setNewTopicId(newTopicId))
                     }
                   >
                     Add Topic
