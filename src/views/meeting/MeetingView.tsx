@@ -651,6 +651,7 @@ export const MeetingView = () => {
         placeholderText="Not set"
         isClearable
         popperProps={{ placement: "bottom", strategy: "fixed" }}
+        portalId="datepicker-portal"
       />
     </label>
   ) : (
