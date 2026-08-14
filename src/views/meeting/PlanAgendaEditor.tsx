@@ -56,7 +56,12 @@ const getConnectionPath = (connection: {
 }) => {
   const dx = connection.x2 - connection.x1;
   const direction = dx >= 0 ? 1 : -1;
-  const controlOffset = direction * Math.max(36, Math.min(160, Math.abs(dx) * 0.45));
+  // A fixed minimum offset here produces a visible hook right at each
+  // endpoint when the two points are nearly vertically aligned (small dx,
+  // large dy) — e.g. the collapsed mobile timeline, which is tall and
+  // narrow. Scale the floor down with dx instead so a near-vertical
+  // connection renders as a gentle, mostly-straight curve.
+  const controlOffset = direction * Math.max(8, Math.min(160, Math.abs(dx) * 0.5));
   return `M ${connection.x1} ${connection.y1} C ${
     connection.x1 + controlOffset
   } ${connection.y1}, ${connection.x2 - controlOffset} ${connection.y2}, ${
@@ -106,7 +111,7 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
 
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isPanelSettling, setIsPanelSettling] = useState(false);
+  const wasPanelOpenRef = useRef(isPanelOpen);
   const [addingAfterTopicId, setAddingAfterTopicId] = useState<string | null>(
     null
   );
@@ -280,14 +285,6 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     });
   };
 
-  // Settle flag lets the connector line hide gracefully during the mobile
-  // tray's slide transition instead of jumping mid-animation.
-  useEffect(() => {
-    setIsPanelSettling(true);
-    const t = window.setTimeout(() => setIsPanelSettling(false), 220);
-    return () => window.clearTimeout(t);
-  }, [isPanelOpen]);
-
   // Adaptive slot sizing: zoom the timeline to fit the pane's actual height.
   useEffect(() => {
     const pane = paneRef.current;
@@ -363,7 +360,7 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     };
     const update = () => {
       const isMobile = window.matchMedia("(max-width: 750px)").matches;
-      if (isMobile && (isPanelOpen || isPanelSettling)) {
+      if (isMobile && isPanelOpen) {
         hide(connectionRef.current);
         return;
       }
@@ -414,8 +411,29 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(update);
     };
-    schedule();
-    const postTransitionId = window.setTimeout(schedule, 220);
+
+    // Track transitions with a ref (rather than separate state) so hiding
+    // during the mobile tray's slide animation can't get out of sync with
+    // this effect's own re-run: a second piece of state updated from its
+    // own effect could flip back to "settled" after this effect had already
+    // torn down the timer that was waiting to redraw, leaving the connector
+    // hidden indefinitely.
+    const isMobileNow = window.matchMedia("(max-width: 750px)").matches;
+    const justClosedOnMobile = isMobileNow && wasPanelOpenRef.current && !isPanelOpen;
+    wasPanelOpenRef.current = isPanelOpen;
+
+    let settleTimeoutId = 0;
+    if (isMobileNow && isPanelOpen) {
+      hide(connectionRef.current);
+    } else if (justClosedOnMobile) {
+      // Give the tray's slide-closed CSS transition time to finish before
+      // measuring final positions, instead of drawing mid-animation.
+      hide(connectionRef.current);
+      settleTimeoutId = window.setTimeout(schedule, 220);
+    } else {
+      schedule();
+    }
+
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
     const resizeObserver = new ResizeObserver(schedule);
@@ -424,12 +442,12 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     );
     return () => {
       window.cancelAnimationFrame(frameId);
-      window.clearTimeout(postTransitionId);
+      window.clearTimeout(settleTimeoutId);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
       resizeObserver.disconnect();
     };
-  }, [effectiveSelectedId, entries.length, slotMinutes, isPanelOpen, isPanelSettling]);
+  }, [effectiveSelectedId, entries.length, slotMinutes, isPanelOpen]);
 
   const renderAddTopicForm = (style: CSSProperties | undefined, isFirst: boolean) => (
     <div className="minutes-add-topic-form minutes-add-topic-form-inline" style={style}>

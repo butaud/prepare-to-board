@@ -931,7 +931,7 @@ export const MeetingMinutes = () => {
     string | null
   >(null);
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
-  const [isAgendaPaneSettling, setIsAgendaPaneSettling] = useState(false);
+  const wasAgendaPaneOpenRef = useRef(isAgendaPaneOpen);
   const [agendaSlotMinutes, setAgendaSlotMinutes] = useState(
     AGENDA_BASE_SLOT_MINUTES
   );
@@ -1045,14 +1045,6 @@ export const MeetingMinutes = () => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    setIsAgendaPaneSettling(true);
-    const timeoutId = window.setTimeout(() => {
-      setIsAgendaPaneSettling(false);
-    }, 220);
-    return () => window.clearTimeout(timeoutId);
-  }, [isAgendaPaneOpen]);
 
   useEffect(() => {
     const pane = agendaPaneRef.current;
@@ -1414,7 +1406,12 @@ export const MeetingMinutes = () => {
   }) => {
     const dx = connection.x2 - connection.x1;
     const direction = dx >= 0 ? 1 : -1;
-    const controlOffset = direction * Math.max(36, Math.min(160, Math.abs(dx) * 0.45));
+    // A fixed minimum offset here produces a visible hook right at each
+    // endpoint when the two points are nearly vertically aligned (small dx,
+    // large dy) — e.g. the collapsed mobile timeline, which is tall and
+    // narrow. Scale the floor down with dx instead so a near-vertical
+    // connection renders as a gentle, mostly-straight curve.
+    const controlOffset = direction * Math.max(8, Math.min(160, Math.abs(dx) * 0.5));
     return `M ${connection.x1} ${connection.y1} C ${
       connection.x1 + controlOffset
     } ${connection.y1}, ${connection.x2 - controlOffset} ${connection.y2}, ${
@@ -1473,7 +1470,7 @@ export const MeetingMinutes = () => {
     };
     const updateConnections = () => {
       const isMobile = window.matchMedia("(max-width: 750px)").matches;
-      if (isMobile && (isAgendaPaneOpen || isAgendaPaneSettling)) {
+      if (isMobile && isAgendaPaneOpen) {
         hideConnection(selectedConnectionRef.current);
         hideConnection(activeConnectionRef.current);
         return;
@@ -1551,8 +1548,31 @@ export const MeetingMinutes = () => {
       frameId = window.requestAnimationFrame(updateConnections);
     };
 
-    scheduleUpdate();
-    const postTransitionUpdateId = window.setTimeout(scheduleUpdate, 220);
+    // Track transitions with a ref (rather than separate state) so hiding
+    // during the mobile tray's slide animation can't get out of sync with
+    // this effect's own re-run: a second piece of state updated from its
+    // own effect could flip back to "settled" after this effect had already
+    // torn down the timer that was waiting to redraw, leaving the connectors
+    // hidden indefinitely.
+    const isMobileNow = window.matchMedia("(max-width: 750px)").matches;
+    const justClosedOnMobile =
+      isMobileNow && wasAgendaPaneOpenRef.current && !isAgendaPaneOpen;
+    wasAgendaPaneOpenRef.current = isAgendaPaneOpen;
+
+    let settleTimeoutId = 0;
+    if (isMobileNow && isAgendaPaneOpen) {
+      hideConnection(selectedConnectionRef.current);
+      hideConnection(activeConnectionRef.current);
+    } else if (justClosedOnMobile) {
+      // Give the tray's slide-closed CSS transition time to finish before
+      // measuring final positions, instead of drawing mid-animation.
+      hideConnection(selectedConnectionRef.current);
+      hideConnection(activeConnectionRef.current);
+      settleTimeoutId = window.setTimeout(scheduleUpdate, 220);
+    } else {
+      scheduleUpdate();
+    }
+
     window.addEventListener("resize", scheduleUpdate);
     window.addEventListener("scroll", scheduleUpdate, true);
 
@@ -1568,7 +1588,7 @@ export const MeetingMinutes = () => {
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      window.clearTimeout(postTransitionUpdateId);
+      window.clearTimeout(settleTimeoutId);
       window.removeEventListener("resize", scheduleUpdate);
       window.removeEventListener("scroll", scheduleUpdate, true);
       resizeObserver.disconnect();
@@ -1580,7 +1600,6 @@ export const MeetingMinutes = () => {
     agendaTimelineEntries.length,
     agendaSlotMinutes,
     isAgendaPaneOpen,
-    isAgendaPaneSettling,
   ]);
 
   useEffect(() => {
@@ -1923,7 +1942,7 @@ export const MeetingMinutes = () => {
     <div className="meeting-minutes" ref={minutesLayoutRef}>
       <svg
         className={`minutes-agenda-connections${
-          isAgendaPaneOpen || isAgendaPaneSettling ? " is-tray-open" : ""
+          isAgendaPaneOpen ? " is-tray-open" : ""
         }`}
         aria-hidden="true"
         focusable="false"
