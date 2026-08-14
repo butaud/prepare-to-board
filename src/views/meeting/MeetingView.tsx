@@ -661,8 +661,8 @@ export const MeetingView = () => {
   return (
     <div className="meeting-view-content">
       <div className="plan-header">
-        <h3 className="plan-start-time">
-          Start Time:{" "}
+        <div className="plan-field-row plan-start-time">
+          <span className="plan-field-label">Start Time:</span>
           {isOfficer ? (
             <DatePicker
               selected={meeting.date}
@@ -674,20 +674,15 @@ export const MeetingView = () => {
               portalId="datepicker-portal"
             />
           ) : (
-            meeting.date.toLocaleString(undefined, {
-              dateStyle: "long",
-              timeStyle: "short",
-            })
-          )}
-        </h3>
-        <div className="agenda-plan-summary">
-          {meeting.plannedAgenda.length > 0 && (
             <span>
-              {meeting.plannedAgenda.length} topic
-              {meeting.plannedAgenda.length !== 1 ? "s" : ""} ·{" "}
-              {formatMinutes(totalPlannedMinutes)} planned
+              {meeting.date.toLocaleString(undefined, {
+                dateStyle: "long",
+                timeStyle: "short",
+              })}
             </span>
           )}
+        </div>
+        <div className="plan-field-row">
           {targetEndTimeControl}
           {isOverrun && (
             <span className="overrun-warning">
@@ -769,7 +764,14 @@ export const MeetingView = () => {
           tabIndex={isPlanTimelineOpen ? undefined : 0}
         >
           <div className="minutes-agenda-pane-header">
-            <h2>Timeline</h2>
+            <h2>
+              Timeline
+              {meeting.plannedAgenda.length > 0 && (
+                <span className="plan-timeline-planned">
+                  {formatMinutes(totalPlannedMinutes)} planned
+                </span>
+              )}
+            </h2>
             <button
               className="minutes-agenda-pane-close"
               aria-label={isPlanTimelineOpen ? "Close timeline" : "Open timeline"}

@@ -25,25 +25,26 @@
   padding-top: 0;
 }
 
-.plan-start-time {
+.plan-field-row {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--muted-text-color);
+  margin: 6px 0 0;
 
-  input {
-    width: 190px;
+  &:first-child {
+    margin-top: 0;
   }
 }
 
-.agenda-plan-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-  font-size: 0.9rem;
-  color: var(--muted-text-color);
-  margin: 4px 0 0;
+.plan-field-label {
+  font-weight: 600;
+}
+
+.plan-start-time input {
+  width: 190px;
 }
 
 .target-end-time-field {
@@ -54,6 +55,15 @@
   input {
     width: 130px;
   }
+}
+
+.plan-timeline-planned {
+  margin-left: 8px;
+  color: var(--muted-text-color);
+  font-size: 0.76rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .overrun-warning {
