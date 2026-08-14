@@ -1,7 +1,6 @@
 .meeting-minutes {
   max-width: 1180px;
-  margin: 0 auto;
-  padding: 24px 16px;
+  padding: 24px 0;
   display: grid;
   grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   align-items: start;
@@ -209,8 +208,16 @@
   max-height: var(--agenda-pane-max-height, calc(100vh - 32px));
   overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 22px;
+  padding-left: 22px;
   scrollbar-gutter: stable;
+  /* Flip the scrollbar to the left edge of the panel (its outer edge)
+     instead of the right, where it would otherwise sit between the
+     timeline and the connected topic detail panel. */
+  direction: rtl;
+}
+
+.minutes-topic-tray > * {
+  direction: ltr;
 }
 
 .meeting-minutes button.minutes-agenda-pane-toggle,
