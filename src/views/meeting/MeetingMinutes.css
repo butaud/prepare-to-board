@@ -3,7 +3,7 @@
   margin: 0 auto;
   padding: 24px 16px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   align-items: start;
   gap: 20px;
   position: relative;
@@ -90,7 +90,7 @@
 .minutes-topic-main {
   position: relative;
   z-index: 1;
-  grid-column: 1;
+  grid-column: 2;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -200,7 +200,7 @@
 }
 
 .minutes-topic-tray {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   position: sticky;
   top: 16px;
@@ -1283,8 +1283,8 @@
     --agenda-pane-peek-width: 0px;
     position: absolute;
     top: 0;
-    left: 20px;
-    right: 24px;
+    left: 24px;
+    right: 20px;
     z-index: 21;
     width: auto;
     box-sizing: border-box;
@@ -1292,9 +1292,9 @@
     max-height: none;
     padding: 16px;
     overflow: auto;
-    border-radius: 12px 0 0 12px;
-    box-shadow: -6px 0 20px var(--shadow-color-strong);
-    transform: translateX(calc(100% - var(--agenda-pane-peek-width)));
+    border-radius: 0 12px 12px 0;
+    box-shadow: 6px 0 20px var(--shadow-color-strong);
+    transform: translateX(calc(-100% + var(--agenda-pane-peek-width)));
     transition: transform 180ms ease;
     pointer-events: auto;
   }
@@ -1302,7 +1302,7 @@
   .minutes-topic-tray.is-open {
     --agenda-pane-affordance-width: 42px;
     --agenda-pane-peek-width: 42px;
-    padding-left: 64px;
+    padding-right: 64px;
     border-radius: 0;
     transform: translateX(0);
     pointer-events: auto;
@@ -1328,7 +1328,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 0;
+    right: 0;
     z-index: 2;
     display: inline-flex;
     flex-shrink: 0;
@@ -1344,7 +1344,7 @@
     font-size: 1rem;
     font-weight: 700;
     line-height: 1;
-    box-shadow: -2px 2px 8px var(--shadow-color);
+    box-shadow: 2px 2px 8px var(--shadow-color);
   }
 
   .meeting-minutes button.minutes-agenda-pane-close:hover {
@@ -1353,22 +1353,22 @@
   }
 
   .minutes-topic-tray:not(.is-open) {
-    border-left: 2px solid var(--primary-color);
+    border-right: 2px solid var(--primary-color);
     cursor: pointer;
     overflow: hidden;
   }
 
   .minutes-topic-tray:not(.is-open):hover,
   .minutes-topic-tray:not(.is-open):focus-visible {
-    border-left-color: var(--secondary-color);
-    box-shadow: -8px 0 22px var(--shadow-color-strong);
+    border-right-color: var(--secondary-color);
+    box-shadow: 8px 0 22px var(--shadow-color-strong);
   }
 
   .minutes-topic-tray:not(.is-open)::before {
-    content: "<<";
+    content: ">>";
     position: absolute;
     top: 50%;
-    left: 0;
+    right: 0;
     z-index: 12;
     display: inline-flex;
     width: var(--agenda-pane-affordance-width);
@@ -1376,7 +1376,7 @@
     align-items: center;
     justify-content: center;
     background: color-mix(in srgb, var(--primary-color-subtle) 78%, transparent);
-    border-radius: 12px 0 0 12px;
+    border-radius: 0 12px 12px 0;
     color: var(--primary-color);
     font-size: 0.66rem;
     font-weight: 700;
@@ -1397,7 +1397,7 @@
   .minutes-topic-tray:not(.is-open) .minutes-day-view-grid {
     opacity: 0.58;
     pointer-events: none;
-    transform: translateX(-66px);
+    transform: translateX(66px);
   }
 
   .minutes-topic-tray:not(.is-open) .minutes-agenda-insertion-button {

@@ -1412,10 +1412,9 @@ export const MeetingMinutes = () => {
     x2: number;
     y2: number;
   }) => {
-    const controlOffset = Math.max(
-      36,
-      Math.min(160, Math.abs(connection.x2 - connection.x1) * 0.45)
-    );
+    const dx = connection.x2 - connection.x1;
+    const direction = dx >= 0 ? 1 : -1;
+    const controlOffset = direction * Math.max(36, Math.min(160, Math.abs(dx) * 0.45));
     return `M ${connection.x1} ${connection.y1} C ${
       connection.x1 + controlOffset
     } ${connection.y1}, ${connection.x2 - controlOffset} ${connection.y2}, ${
@@ -1513,10 +1512,10 @@ export const MeetingMinutes = () => {
         const y2 = cappedTargetY - layoutRect.top;
         const targetX =
           isMobile && !isAgendaPaneOpen && paneRect
-            ? paneRect.left - layoutRect.left
-            : targetRect.left - layoutRect.left;
+            ? paneRect.right - layoutRect.left
+            : targetRect.right - layoutRect.left;
         return {
-          x1: sourceRect.right - layoutRect.left,
+          x1: sourceRect.left - layoutRect.left,
           y1,
           x2: targetX,
           y2,
@@ -2257,7 +2256,7 @@ export const MeetingMinutes = () => {
             aria-controls="minutes-agenda-pane"
             onClick={() => setIsAgendaPaneOpen((open) => !open)}
           >
-            <span aria-hidden="true">{isAgendaPaneOpen ? ">>" : "<<"}</span>
+            <span aria-hidden="true">{isAgendaPaneOpen ? "<<" : ">>"}</span>
           </button>
         </div>
         <div
