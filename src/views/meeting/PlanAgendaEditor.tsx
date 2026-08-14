@@ -6,6 +6,7 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
+import { MdDelete } from "react-icons/md";
 import { Meeting, Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { EditableInteger, EditableString } from "../../ui/doc/EditableValue";
@@ -525,6 +526,16 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
       <div className="minutes-topic-main">
         {children}
         <section ref={topicDetailRef} className="minutes-section minutes-topic-detail-section">
+          {selectedTopic && isOfficer && (
+            <button
+              className="plan-topic-delete"
+              onClick={handleDeleteSelected}
+              aria-label="Delete Topic"
+              title="Delete Topic"
+            >
+              <MdDelete />
+            </button>
+          )}
           {selectedTopic ? (
             <div className="minutes-current-topic">
               <h2>Planned Topic</h2>
@@ -559,6 +570,8 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                     }
                     canEdit={isOfficer}
                     label="Duration"
+                    className="plan-duration-display"
+                    autoFocus
                   />{" "}
                   min
                 </span>
@@ -581,13 +594,6 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                   emptyClickBehavior="single"
                 />
               </div>
-              {isOfficer && (
-                <div className="minutes-actions">
-                  <button className="btn-danger" onClick={handleDeleteSelected}>
-                    Delete Topic
-                  </button>
-                </div>
-              )}
             </div>
           ) : (
             <div className="minutes-current-topic">

@@ -45,6 +45,39 @@
   pointer-events: none;
 }
 
+button.plan-topic-delete {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--danger-color-strong);
+  box-shadow: none;
+  font-size: 1.1rem;
+}
+
+button.plan-topic-delete:hover:not(:disabled) {
+  background-color: var(--danger-color-subtle);
+  border-color: var(--danger-color);
+  box-shadow: none;
+}
+
+.plan-duration-display {
+  display: inline;
+}
+
+input.plan-duration-display {
+  width: 60px;
+  min-width: 60px;
+}
+
 .plan-detail-outcome {
   margin-bottom: 12px;
   font-size: 0.95rem;
