@@ -28,17 +28,23 @@ import "./PlanAgendaEditor.css";
 
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
 const AGENDA_INSERTION_FORM_GAP_PX = 230;
+const AGENDA_ADD_AT_END_HEIGHT_PX = 44;
 const PLAN_TIMELINE_ASSUMED_HEIGHT_PX = 640;
 
-const insertionCursorStyle = (topPx: number): CSSProperties =>
+const insertionCursorStyle = (
+  topPx: number,
+  heightPx: number = AGENDA_INSERTION_RESERVED_HEIGHT_PX
+): CSSProperties =>
   ({
     top: `${topPx}px`,
-    height: `${AGENDA_INSERTION_RESERVED_HEIGHT_PX}px`,
+    height: `${heightPx}px`,
   }) as CSSProperties;
 
-const insertionFormStyle = (): CSSProperties =>
+const insertionFormStyle = (
+  baseHeightPx: number = AGENDA_INSERTION_RESERVED_HEIGHT_PX
+): CSSProperties =>
   ({
-    top: `${AGENDA_INSERTION_RESERVED_HEIGHT_PX + 4}px`,
+    top: `${baseHeightPx + 4}px`,
   }) as CSSProperties;
 
 const formatMinutes = (totalMinutes: number): string => {
@@ -200,10 +206,13 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     );
     entry.displayTopPx = displayTop;
     entry.displayHeightPx = displayHeight;
+    const isLastEntry = index === entries.length - 1;
     const insertionGap =
       entry.topic.id === addingAfterTopicId
         ? AGENDA_INSERTION_FORM_GAP_PX
-        : AGENDA_INSERTION_RESERVED_HEIGHT_PX;
+        : isLastEntry
+          ? AGENDA_ADD_AT_END_HEIGHT_PX
+          : AGENDA_INSERTION_RESERVED_HEIGHT_PX;
     packedBottom = displayTop + displayHeight + AGENDA_EVENT_GAP_PX + insertionGap;
   });
 
@@ -487,18 +496,25 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     </div>
   );
 
-  const renderInsertionCursor = (entry: Entry) => {
+  const renderInsertionCursor = (entry: Entry, isTrailing: boolean) => {
     if (!isOfficer) return null;
     const topicId = entry.topic.id;
     const insertionTop =
       entry.displayTopPx + entry.displayHeightPx + AGENDA_EVENT_GAP_PX;
     const isAddingHere = addingAfterTopicId === topicId;
     const isHoveredHere = hoveredInsertionAfterTopicId === topicId;
+    // The trailing slot (after the last topic) is the golden path for
+    // building an agenda — most topics get added there, in order — so it
+    // stays permanently visible and sized like a real timeline item instead
+    // of the thin hover-reveal strip used between existing topics.
+    const baseHeightPx = isTrailing
+      ? AGENDA_ADD_AT_END_HEIGHT_PX
+      : AGENDA_INSERTION_RESERVED_HEIGHT_PX;
     return (
       <div
         key={`insert:${topicId}`}
-        className={`minutes-agenda-insertion-slot${isAddingHere ? " is-open" : ""}${isHoveredHere ? " is-hovered" : ""}`}
-        style={insertionCursorStyle(insertionTop)}
+        className={`minutes-agenda-insertion-slot${isTrailing ? " is-trailing" : ""}${isAddingHere ? " is-open" : ""}${isHoveredHere ? " is-hovered" : ""}`}
+        style={insertionCursorStyle(insertionTop, baseHeightPx)}
         onMouseEnter={() => setHoveredInsertionAfterTopicId(topicId)}
         onMouseLeave={() => {
           if (addingAfterTopicId !== topicId) {
@@ -522,15 +538,20 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
         <button
           className="minutes-agenda-insertion-button"
           type="button"
-          aria-label={`Add topic after ${entry.topic.title}`}
+          aria-label={
+            isTrailing
+              ? "Add topic"
+              : `Add topic after ${entry.topic.title}`
+          }
           onClick={() => {
             setAddingAfterTopicId(topicId);
             setHoveredInsertionAfterTopicId(topicId);
           }}
         >
           <span aria-hidden="true">+</span>
+          {isTrailing && <span>Add Topic</span>}
         </button>
-        {isAddingHere && renderAddTopicForm(insertionFormStyle(), false)}
+        {isAddingHere && renderAddTopicForm(insertionFormStyle(baseHeightPx), false)}
       </div>
     );
   };
@@ -770,7 +791,9 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                 )}
               </Droppable>
             </DragDropContext>
-            {entries.map(renderInsertionCursor)}
+            {entries.map((entry, index) =>
+              renderInsertionCursor(entry, index === entries.length - 1)
+            )}
           </div>
         )}
       </aside>

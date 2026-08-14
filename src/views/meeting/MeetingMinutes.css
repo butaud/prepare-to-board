@@ -780,7 +780,7 @@
   background: var(--primary-color);
 }
 
-.meeting-minutes button.minutes-agenda-insertion-button span {
+.meeting-minutes button.minutes-agenda-insertion-button span[aria-hidden="true"] {
   position: relative;
   z-index: 1;
   display: inline-flex;

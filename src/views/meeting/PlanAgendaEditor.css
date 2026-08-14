@@ -78,6 +78,33 @@ input.plan-duration-display {
   min-width: 60px;
 }
 
+/* The trailing "add topic" slot (after the last item) is the golden path
+   for building an agenda, so it stays permanently visible and reads as a
+   card rather than the thin hover-reveal strip used between items. */
+.minutes-agenda-insertion-slot.is-trailing {
+  z-index: 10;
+}
+
+.minutes-agenda-insertion-slot.is-trailing .minutes-agenda-insertion-button {
+  gap: 8px;
+  opacity: 1;
+  background: var(--primary-color-subtle);
+  border: 2px dashed var(--primary-color-light);
+  border-radius: 7px;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.minutes-agenda-insertion-slot.is-trailing .minutes-agenda-insertion-button:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--primary-color-subtle));
+  border-color: var(--primary-color);
+}
+
+.minutes-agenda-insertion-slot.is-trailing .minutes-agenda-insertion-button::before {
+  content: none;
+}
+
 .plan-detail-outcome {
   margin-bottom: 12px;
   font-size: 0.95rem;
