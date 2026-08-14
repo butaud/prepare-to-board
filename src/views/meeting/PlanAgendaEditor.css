@@ -1,18 +1,13 @@
 .plan-agenda-timeline-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   color: var(--muted-text-color);
   font-size: 0.9rem;
   padding: 14px 0;
 }
 
-.plan-agenda-timeline-grid {
-  margin-bottom: 20px;
-}
-
-.plan-agenda-event {
-  cursor: default;
-}
-
-.plan-agenda-event.plan-agenda-event-overrun {
+.minutes-day-view-event.plan-agenda-event-overrun {
   background: var(--danger-color-subtle);
   border-color: var(--danger-color-strong);
   border-left-color: var(--danger-color-strong);
@@ -22,7 +17,7 @@
   position: absolute;
   right: var(--scrollbar-clearance, 8px);
   left: 66px;
-  z-index: 5;
+  z-index: 9;
   border-top: 2px dashed var(--danger-color-strong);
   pointer-events: none;
 }
@@ -48,4 +43,15 @@
   background: var(--danger-color-subtle);
   opacity: 0.6;
   pointer-events: none;
+}
+
+.plan-detail-outcome {
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--muted-text-color);
+
+  .outcome-display:empty::before {
+    content: "+ Add outcome/goal";
+  }
 }

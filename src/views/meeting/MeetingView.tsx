@@ -8,14 +8,13 @@ import {
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
 import DatePicker from "react-datepicker";
-import { TopicList } from "../topic/TopicList";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
-import { PlanAgendaTimeline } from "./PlanAgendaTimeline";
+import { PlanAgendaEditor } from "./PlanAgendaEditor";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingView.css";
@@ -36,13 +35,6 @@ const formatDuration = (totalSeconds: number): string => {
 const formatTime = (date: Date): string =>
   date.toLocaleTimeString(undefined, { timeStyle: "short" });
 
-const formatMinutes = (totalMinutes: number): string => {
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-};
-
 export const MeetingView = () => {
   const me = useLoadedAccount();
   const meeting = useMeeting();
@@ -61,7 +53,6 @@ export const MeetingView = () => {
   const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
     new Set()
   );
-  const [isPlanTimelineOpen, setIsPlanTimelineOpen] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -692,103 +683,49 @@ export const MeetingView = () => {
           )}
         </div>
       </div>
-      <div className="meeting-minutes plan-agenda-layout">
-        <div className="minutes-topic-main">
-          {isOfficer && carryForwardTopics.length > 0 && (
-            <div className="carry-forward-suggestions">
-              <h4>Carried forward from last meeting</h4>
-              <ul>
-                {carryForwardTopics.map((topic) => {
-                  const added = carriedForwardIds.has(topic.id);
-                  return (
-                    <li key={topic.id}>
-                      <span>
-                        {topic.title}
-                        {topic.durationMinutes
-                          ? ` (${topic.durationMinutes} min)`
-                          : ""}
-                      </span>
-                      <button
-                        className="btn-small btn-secondary"
-                        disabled={added}
-                        onClick={() => {
-                          void addTopic({
-                            meetingId: meeting.id,
-                            list: "plannedAgenda",
-                            title: topic.title,
-                            durationMinutes: topic.durationMinutes,
-                          }).then(() => {
-                            setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
-                          });
-                        }}
-                      >
-                        {added ? "Added" : "+ Add to agenda"}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-          <TopicList
-            topicList={meeting.plannedAgenda}
-            meeting={meeting}
-            useDrafts
-          />
-        </div>
-
-        <button
-          className={`minutes-agenda-pane-backdrop${isPlanTimelineOpen ? " is-open" : ""}`}
-          aria-label="Dismiss timeline"
-          onClick={() => setIsPlanTimelineOpen(false)}
-        />
-        <aside
-          id="plan-agenda-pane"
-          className={`minutes-section minutes-topic-tray${isPlanTimelineOpen ? " is-open" : ""}`}
-          aria-label="Meeting timeline"
-          onClick={() => {
-            if (window.matchMedia("(max-width: 750px)").matches && !isPlanTimelineOpen) {
-              setIsPlanTimelineOpen(true);
-            }
-          }}
-          onKeyDown={(event) => {
-            if (
-              window.matchMedia("(max-width: 750px)").matches &&
-              !isPlanTimelineOpen &&
-              (event.key === "Enter" || event.key === " ")
-            ) {
-              event.preventDefault();
-              setIsPlanTimelineOpen(true);
-            }
-          }}
-          tabIndex={isPlanTimelineOpen ? undefined : 0}
-        >
-          <div className="minutes-agenda-pane-header">
-            <h2>
-              Timeline
-              {meeting.plannedAgenda.length > 0 && (
-                <span className="plan-timeline-planned">
-                  {formatMinutes(totalPlannedMinutes)} planned
-                </span>
-              )}
-            </h2>
-            <button
-              className="minutes-agenda-pane-close"
-              aria-label={isPlanTimelineOpen ? "Close timeline" : "Open timeline"}
-              aria-expanded={isPlanTimelineOpen}
-              aria-controls="plan-agenda-pane"
-              onClick={() => setIsPlanTimelineOpen((open) => !open)}
-            >
-              <span aria-hidden="true">{isPlanTimelineOpen ? ">>" : "<<"}</span>
-            </button>
+      <PlanAgendaEditor
+        meeting={meeting}
+        isOfficer={isOfficer}
+        startTime={meeting.date}
+        targetEndTime={targetEndTime}
+      >
+        {isOfficer && carryForwardTopics.length > 0 && (
+          <div className="carry-forward-suggestions">
+            <h4>Carried forward from last meeting</h4>
+            <ul>
+              {carryForwardTopics.map((topic) => {
+                const added = carriedForwardIds.has(topic.id);
+                return (
+                  <li key={topic.id}>
+                    <span>
+                      {topic.title}
+                      {topic.durationMinutes
+                        ? ` (${topic.durationMinutes} min)`
+                        : ""}
+                    </span>
+                    <button
+                      className="btn-small btn-secondary"
+                      disabled={added}
+                      onClick={() => {
+                        void addTopic({
+                          meetingId: meeting.id,
+                          list: "plannedAgenda",
+                          title: topic.title,
+                          durationMinutes: topic.durationMinutes,
+                        }).then(() => {
+                          setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
+                        });
+                      }}
+                    >
+                      {added ? "Added" : "+ Add to agenda"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          <PlanAgendaTimeline
-            topics={meeting.plannedAgenda}
-            startTime={meeting.date}
-            targetEndTime={targetEndTime}
-          />
-        </aside>
-      </div>
+        )}
+      </PlanAgendaEditor>
     </div>
   );
 };
