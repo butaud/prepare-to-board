@@ -151,8 +151,13 @@ const noteArg = v.object({
   ),
 });
 
-const serializeTopic = (topic: Doc<"meetings">["plannedAgenda"][number], planned: Doc<"meetings">["plannedAgenda"]) => ({
+const serializeTopic = (
+  topic: Doc<"meetings">["plannedAgenda"][number],
+  planned: Doc<"meetings">["plannedAgenda"],
+  members: Doc<"boardMembers">[]
+) => ({
   ...topic,
+  notes: topic.notes?.map((note) => serializeNote(note, members)),
   plannedTopic: topic.plannedTopicId
     ? planned.find((candidate) => candidate.id === topic.plannedTopicId)
     : undefined,
@@ -215,11 +220,11 @@ const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
     organizationId: meeting.organizationId,
     date: meeting.date,
     status: meeting.status,
-    plannedAgenda: planned.map((topic) => serializeTopic(topic, planned)),
-    liveAgenda: meeting.liveAgenda.map((topic) => serializeTopic(topic, planned)),
+    plannedAgenda: planned.map((topic) => serializeTopic(topic, planned, members)),
+    liveAgenda: meeting.liveAgenda.map((topic) => serializeTopic(topic, planned, members)),
     minutes: meeting.minutes.map((minute) => ({
       ...minute,
-      topic: serializeTopic(minute.topic, planned),
+      topic: serializeTopic(minute.topic, planned, members),
       notes: minute.notes?.map((note) => serializeNote(note, members)),
     })),
     liveStartTime: meeting.liveStartTime,
@@ -653,6 +658,75 @@ export const reorderTopics = mutation({
     const byId = new Map(meeting[args.list].map((topic) => [topic.id, topic]));
     await ctx.db.patch(args.meetingId, {
       [args.list]: args.topicIds.map((topicId) => byId.get(topicId)).filter(Boolean),
+    });
+  },
+});
+
+export const addTopicNote = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    list: v.union(v.literal("plannedAgenda"), v.literal("liveAgenda")),
+    topicId: v.string(),
+    note: noteArg,
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      [args.list]: meeting[args.list].map((topic) =>
+        topic.id === args.topicId
+          ? { ...topic, notes: [...(topic.notes ?? []), { id: id(), ...args.note }] }
+          : topic
+      ),
+    });
+  },
+});
+
+export const updateTopicNote = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    list: v.union(v.literal("plannedAgenda"), v.literal("liveAgenda")),
+    topicId: v.string(),
+    noteId: v.string(),
+    note: noteArg,
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      [args.list]: meeting[args.list].map((topic) =>
+        topic.id === args.topicId
+          ? {
+              ...topic,
+              notes: (topic.notes ?? []).map((note) =>
+                note.id === args.noteId ? { id: note.id, ...args.note } : note
+              ),
+            }
+          : topic
+      ),
+    });
+  },
+});
+
+export const removeTopicNote = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    list: v.union(v.literal("plannedAgenda"), v.literal("liveAgenda")),
+    topicId: v.string(),
+    index: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      [args.list]: meeting[args.list].map((topic) =>
+        topic.id === args.topicId
+          ? { ...topic, notes: (topic.notes ?? []).filter((_, index) => index !== args.index) }
+          : topic
+      ),
     });
   },
 });

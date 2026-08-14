@@ -39,6 +39,7 @@ const topic = v.object({
   plannedTopicId: v.optional(v.string()),
   cancelled: v.optional(v.boolean()),
   deferred: v.optional(v.boolean()),
+  notes: v.optional(v.array(note)),
 });
 
 const minute = v.object({

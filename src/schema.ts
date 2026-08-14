@@ -54,6 +54,7 @@ export type Topic = {
   plannedTopicId?: Id;
   cancelled?: boolean;
   deferred?: boolean;
+  notes?: Note[];
 };
 
 export type DraftTopic = Topic & {
