@@ -22,6 +22,8 @@
    padding would just double up on the spacing already provided above. */
 .meeting-minutes.plan-agenda-layout {
   padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
   max-width: none;
   margin-left: 0;
   margin-right: 0;
