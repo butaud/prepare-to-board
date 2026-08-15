@@ -11,6 +11,7 @@ import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
+import { renderMarkdownBlocks } from "../../util/markdown";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
@@ -208,6 +209,11 @@ export const MeetingView = () => {
             <h2 className="present-current-title">{currentTopic.title}</h2>
             {currentTopic.outcome && (
               <p className="present-topic-outcome">{currentTopic.outcome}</p>
+            )}
+            {currentTopic.details && (
+              <div className="present-topic-details">
+                {renderMarkdownBlocks(currentTopic.details)}
+              </div>
             )}
             {(meeting.currentNotes ?? []).filter((n) => n !== null).length > 0 && (
               <div className="present-current-notes">

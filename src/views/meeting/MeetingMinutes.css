@@ -294,6 +294,32 @@
   font-weight: 600;
 }
 
+.minutes-topic-outcome {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--muted-text-color);
+}
+
+.minutes-topic-details {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+
+  p,
+  ul {
+    margin: 0 0 8px;
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+
+  p:last-child,
+  ul:last-child {
+    margin-bottom: 0;
+  }
+}
+
 .minutes-form-row {
   display: flex;
   flex-direction: column;

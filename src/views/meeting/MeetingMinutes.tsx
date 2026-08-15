@@ -10,6 +10,7 @@ import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { PendingNote } from "../../util/data";
+import { renderMarkdownBlocks } from "../../util/markdown";
 import { BoardMember, Meeting, Note, Topic } from "../../schema";
 import { api } from "../../convexClient";
 
@@ -2024,6 +2025,16 @@ export const MeetingMinutes = () => {
                 </span>
               )}
             </div>
+            {selectedAgendaItem.topic.outcome && (
+              <p className="minutes-topic-outcome">
+                {selectedAgendaItem.topic.outcome}
+              </p>
+            )}
+            {selectedAgendaItem.topic.details && (
+              <div className="minutes-topic-details">
+                {renderMarkdownBlocks(selectedAgendaItem.topic.details)}
+              </div>
+            )}
 
             {!isSelectedTopicActive && (
               <div className="minutes-actions minutes-highlight-actions">
