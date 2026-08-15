@@ -1090,6 +1090,20 @@
 .note-text {
   font-size: 0.9rem;
   line-height: 1.5;
+
+  p,
+  ul {
+    margin: 0 0 6px;
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+
+  p:last-child,
+  ul:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .note-action-item {

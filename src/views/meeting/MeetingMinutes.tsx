@@ -76,7 +76,7 @@ interface TextNoteFormProps {
   submitLabel?: string;
 }
 
-export const TextNoteForm = ({
+const TextNoteForm = ({
   onAdd,
   onCancel,
   initialNote,

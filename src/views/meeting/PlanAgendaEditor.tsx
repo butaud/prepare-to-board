@@ -7,11 +7,10 @@ import {
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
 import { MdDelete } from "react-icons/md";
-import { Meeting, Note, PendingNote, Topic } from "../../schema";
+import { Meeting, Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { EditableInteger, EditableString } from "../../ui/doc/EditableValue";
-import { NoteDisplay } from "../../ui/NoteDisplay";
-import { TextNoteForm } from "./MeetingMinutes";
+import { renderMarkdownBlocks } from "../../util/markdown";
 import {
   AGENDA_EVENT_GAP_PX,
   AGENDA_EVENT_MIN_HEIGHT_PX,
@@ -109,9 +108,6 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   const updateTopic = useMutation(api.app.updateTopic);
   const deleteTopic = useMutation(api.app.deleteTopic);
   const reorderTopics = useMutation(api.app.reorderTopics);
-  const addTopicNote = useMutation(api.app.addTopicNote);
-  const updateTopicNote = useMutation(api.app.updateTopicNote);
-  const removeTopicNote = useMutation(api.app.removeTopicNote);
 
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const topicDetailRef = useRef<HTMLElement | null>(null);
@@ -134,18 +130,17 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   const [slotMinutes, setSlotMinutes] = useState(
     getAgendaSlotMinutesForHeight(PLAN_TIMELINE_ASSUMED_HEIGHT_PX)
   );
-  const [isAddingNote, setIsAddingNote] = useState(false);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [draftDetails, setDraftDetails] = useState("");
 
   const selectedTopic =
     topics.find((t) => t.id === selectedTopicId) ?? topics[0] ?? null;
   const effectiveSelectedId = selectedTopic?.id ?? null;
 
-  // Close any open note form when the selected topic changes, so a stale
-  // add/edit form doesn't linger over the wrong topic's notes.
+  // Close any open details editor when the selected topic changes, so a
+  // stale draft doesn't linger over the wrong topic.
   useEffect(() => {
-    setIsAddingNote(false);
-    setEditingNoteId(null);
+    setIsEditingDetails(false);
   }, [effectiveSelectedId]);
 
   const findTopicElement = (topicId: string): HTMLElement | null => {
@@ -646,84 +641,83 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                   emptyClickBehavior="single"
                 />
               </div>
-              <div className="minutes-notes-section">
-                <h4>Notes</h4>
-                {(selectedTopic.notes ?? []).map((note, i) =>
-                  editingNoteId === note.id ? (
-                    <TextNoteForm
-                      key={note.id}
-                      initialNote={note as Extract<Note, { type: "text" }>}
-                      submitLabel="Save"
-                      onAdd={(pn: PendingNote) => {
-                        if (pn.type !== "text") return;
-                        void updateTopicNote({
+              {(selectedTopic.details || isOfficer) && (
+                <div className="plan-detail-details">
+                  <h4>Details</h4>
+                  {isEditingDetails ? (
+                    <form
+                      className="plan-details-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void updateTopic({
                           meetingId: meeting.id,
                           list: "plannedAgenda",
                           topicId: selectedTopic.id,
-                          noteId: note.id,
-                          note: pn,
-                        }).then(() => setEditingNoteId(null));
+                          details: draftDetails,
+                        });
+                        setIsEditingDetails(false);
                       }}
-                      onCancel={() => setEditingNoteId(null)}
-                    />
-                  ) : (
-                    <div className="minutes-note-item" key={note.id}>
-                      <NoteDisplay note={note} />
-                      {isOfficer && (
-                        <>
-                          <button
-                            className="note-edit-btn"
-                            title="Edit note"
-                            aria-label="Edit note"
-                            onClick={() => setEditingNoteId(note.id)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="note-delete-btn"
-                            title="Remove note"
-                            aria-label="Remove note"
-                            onClick={() =>
-                              void removeTopicNote({
-                                meetingId: meeting.id,
-                                list: "plannedAgenda",
-                                topicId: selectedTopic.id,
-                                index: i,
-                              })
-                            }
-                          >
-                            ×
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )
-                )}
-                {isOfficer && !isAddingNote && !editingNoteId && (
-                  <div className="minutes-note-add-buttons">
-                    <button
-                      className="btn-small btn-secondary"
-                      onClick={() => setIsAddingNote(true)}
                     >
-                      + Text Note
-                    </button>
-                  </div>
-                )}
-                {isOfficer && isAddingNote && (
-                  <TextNoteForm
-                    onAdd={(pn: PendingNote) => {
-                      if (pn.type !== "text") return;
-                      void addTopicNote({
-                        meetingId: meeting.id,
-                        list: "plannedAgenda",
-                        topicId: selectedTopic.id,
-                        note: pn,
-                      }).then(() => setIsAddingNote(false));
-                    }}
-                    onCancel={() => setIsAddingNote(false)}
-                  />
-                )}
-              </div>
+                      <div className="minutes-form-row">
+                        <label htmlFor="plan-topic-details">
+                          Supports **bold**, *italic*, [link](url), and "- " bullet lists
+                        </label>
+                        <textarea
+                          id="plan-topic-details"
+                          rows={4}
+                          autoFocus
+                          value={draftDetails}
+                          onChange={(e) => setDraftDetails(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setIsEditingDetails(false);
+                          }}
+                        />
+                      </div>
+                      <div className="minutes-actions">
+                        <button type="submit" className="btn-primary">
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => setIsEditingDetails(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : selectedTopic.details ? (
+                    <>
+                      <div className="plan-details-display">
+                        {renderMarkdownBlocks(selectedTopic.details)}
+                      </div>
+                      {isOfficer && (
+                        <button
+                          className="btn-small btn-secondary"
+                          onClick={() => {
+                            setDraftDetails(selectedTopic.details ?? "");
+                            setIsEditingDetails(true);
+                          }}
+                        >
+                          Edit Details
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    isOfficer && (
+                      <button
+                        className="btn-small btn-secondary"
+                        onClick={() => {
+                          setDraftDetails("");
+                          setIsEditingDetails(true);
+                        }}
+                      >
+                        + Add Details
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="minutes-current-topic">
