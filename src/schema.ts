@@ -87,6 +87,22 @@ export type Meeting = {
   currentNotes?: Note[];
   highlightedTopicId?: Id;
   expectedDurationMinutes?: number;
+  agendaUpdatedAt?: number;
+  viewedAt?: number;
+};
+
+export type NotificationType =
+  | "agenda_published"
+  | "minutes_shared"
+  | "action_item_assigned";
+
+export type AppNotification = {
+  id: Id;
+  type: NotificationType;
+  meetingId?: Id;
+  message: string;
+  read: boolean;
+  createdAt: Date;
 };
 
 export type Organization = {
@@ -142,6 +158,11 @@ export const validateDraftOrganization = (
   }
   return errors;
 };
+
+export const isAgendaUpdatedSinceViewed = (meeting: Meeting): boolean =>
+  meeting.status === "published" &&
+  meeting.agendaUpdatedAt !== undefined &&
+  (meeting.viewedAt === undefined || meeting.agendaUpdatedAt > meeting.viewedAt);
 
 export const getMeetingDisplayStatus = (meeting: Meeting) => {
   if (meeting.status === "draft") return "Draft";

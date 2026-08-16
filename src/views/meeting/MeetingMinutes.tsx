@@ -682,6 +682,18 @@ const PostMeetingMinutes = () => {
     .filter((t) => !coveredTopicIds.has(t.id));
 
   const organization = me.root.selectedOrganization;
+  const notifyBoardMinutesShared = useMutation(api.app.notifyBoardMinutesShared);
+  const [isNotifying, setIsNotifying] = useState(false);
+  const [notifySent, setNotifySent] = useState(false);
+  const handleNotifyBoard = async () => {
+    setIsNotifying(true);
+    try {
+      await notifyBoardMinutesShared({ meetingId: meeting.id });
+      setNotifySent(true);
+    } finally {
+      setIsNotifying(false);
+    }
+  };
   const [isExporting, setIsExporting] = useState(false);
   const handleExportDocx = async () => {
     if (!organization) return;
@@ -726,13 +738,29 @@ const PostMeetingMinutes = () => {
             })}
           </p>
         </div>
-        <button
-          className="btn-secondary"
-          onClick={() => void handleExportDocx()}
-          disabled={isExporting || !organization}
-        >
-          {isExporting ? "Exporting…" : "Export as Word (.docx)"}
-        </button>
+        <div className="minutes-completed-header-actions">
+          {isOfficer && (
+            <button
+              className="btn-secondary"
+              onClick={() => void handleNotifyBoard()}
+              disabled={isNotifying}
+              title="Send an in-app notification to the board that these minutes are ready"
+            >
+              {isNotifying
+                ? "Notifying…"
+                : notifySent
+                  ? "Board Notified"
+                  : "Notify Board"}
+            </button>
+          )}
+          <button
+            className="btn-secondary"
+            onClick={() => void handleExportDocx()}
+            disabled={isExporting || !organization}
+          >
+            {isExporting ? "Exporting…" : "Export as Word (.docx)"}
+          </button>
+        </div>
       </div>
 
       <IntegrityBanner

@@ -14,6 +14,7 @@ import {
 } from "../hooks/Account";
 import { UserAccount } from "../schema";
 import { api } from "../convexClient";
+import { NotificationBell } from "./NotificationBell";
 
 const DevCreateMeetingButton = ({ me }: { me: UserAccount }) => {
   const createRandomMeeting = useMutation(api.app.createRandomMeeting);
@@ -91,6 +92,7 @@ export const Header = () => {
         {isAuthenticated ? (
           <LoadedAccountContext.Provider value={me}>
             <OrganizationSelector />
+            <NotificationBell />
             <UserButton>
               <UserButton.UserProfilePage
                 label="App Settings"

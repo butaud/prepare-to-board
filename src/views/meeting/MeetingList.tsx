@@ -7,7 +7,7 @@ import { SubHeader } from "../../ui/SubHeader";
 import { MeetingCalendar } from "./MeetingCalendar";
 import { MdFormatListBulleted } from "react-icons/md";
 import { IoCalendarOutline } from "react-icons/io5";
-import { type Meeting } from "../../schema";
+import { isAgendaUpdatedSinceViewed, type Meeting } from "../../schema";
 import "./MeetingList.css";
 
 const meetingLink = (meeting: Meeting): string => {
@@ -57,6 +57,9 @@ const MeetingCard = ({ meeting }: { meeting: Meeting }) => {
       <span className="card-date">{formatDate(meeting.date)}</span>
       <span className="card-meta">
         <StatusBadge status={meeting.status} />
+        {isAgendaUpdatedSinceViewed(meeting) && (
+          <span className="updated-badge">Updated</span>
+        )}
         {topicCount > 0 && (
           <span className="card-detail">
             {topicCount} topic{topicCount !== 1 ? "s" : ""}

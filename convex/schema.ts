@@ -95,5 +95,25 @@ export default defineSchema({
     highlightedTopicId: v.optional(v.string()),
     focusedTopicId: v.optional(v.string()),
     expectedDurationMinutes: v.optional(v.number()),
+    agendaUpdatedAt: v.optional(v.number()),
   }).index("by_org", ["organizationId"]),
+
+  notifications: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("agenda_published"),
+      v.literal("minutes_shared"),
+      v.literal("action_item_assigned")
+    ),
+    meetingId: v.optional(v.id("meetings")),
+    message: v.string(),
+    read: v.boolean(),
+  }).index("by_user", ["userId"]),
+
+  meetingViews: defineTable({
+    userId: v.id("users"),
+    meetingId: v.id("meetings"),
+    viewedAt: v.number(),
+  }).index("by_user_meeting", ["userId", "meetingId"]),
 });
