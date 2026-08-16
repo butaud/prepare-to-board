@@ -10,6 +10,7 @@ import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { PendingNote } from "../../util/data";
+import { renderMarkdownBlocks } from "../../util/markdown";
 import { BoardMember, Meeting, Note, Topic } from "../../schema";
 import { api } from "../../convexClient";
 
@@ -18,6 +19,19 @@ import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
+import {
+  AGENDA_BASE_SLOT_MINUTES,
+  AGENDA_EVENT_GAP_PX,
+  AGENDA_EVENT_MIN_HEIGHT_PX,
+  AGENDA_SLOT_HEIGHT_PX,
+  ceilMinutesToAgendaSlotCount,
+  floorToAgendaSlot,
+  formatAgendaTime,
+  formatMinuteCount,
+  getAgendaSlotMinutesForHeight,
+  timelineDisplayEventStyle,
+  timelineGridStyle,
+} from "./agendaTimeline";
 
 const formatDuration = (totalSeconds: number): string => {
   const sign = totalSeconds < 0 ? "-" : "";
@@ -31,50 +45,14 @@ const formatDuration = (totalSeconds: number): string => {
   return `${sign}${m}m ${s}s`;
 };
 
-const formatAgendaTime = (date: Date): string =>
-  date.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
 const formatTimeInputValue = (date: Date): string => {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
 };
 
-const AGENDA_BASE_SLOT_MINUTES = 5;
-const AGENDA_SLOT_HEIGHT_PX = 72;
-const AGENDA_TARGET_VISIBLE_MINUTES = 90;
-const AGENDA_EVENT_MIN_HEIGHT_PX = 14;
-const AGENDA_EVENT_GAP_PX = 3;
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
 const AGENDA_INSERTION_FORM_GAP_PX = 230;
-
-const timelineGridStyle = (slotCount: number): CSSProperties =>
-  ({ "--slot-count": slotCount }) as CSSProperties;
-
-const timelineEventStyle = (
-  startSlot: number,
-  slotSpan: number,
-  topPx = startSlot * AGENDA_SLOT_HEIGHT_PX
-): CSSProperties => ({
-  "--start-slot": startSlot,
-  "--slot-span": slotSpan,
-  top: `${topPx}px`,
-  height: `${Math.max(AGENDA_EVENT_MIN_HEIGHT_PX, slotSpan * AGENDA_SLOT_HEIGHT_PX - 2)}px`,
-}) as CSSProperties;
-
-const timelineDisplayEventStyle = (
-  startSlot: number,
-  slotSpan: number,
-  displayTopPx: number,
-  displayHeightPx: number
-): CSSProperties =>
-  ({
-    ...timelineEventStyle(startSlot, slotSpan, displayTopPx),
-    height: `${displayHeightPx}px`,
-  }) as CSSProperties;
 
 const insertionCursorStyle = (topPx: number): CSSProperties =>
   ({
@@ -86,36 +64,6 @@ const insertionFormStyle = (): CSSProperties =>
   ({
     top: `${AGENDA_INSERTION_RESERVED_HEIGHT_PX + 4}px`,
   }) as CSSProperties;
-
-const floorToAgendaSlot = (date: Date, slotMinutes: number): Date => {
-  const floored = new Date(date);
-  floored.setSeconds(0, 0);
-  floored.setMinutes(
-    Math.floor(floored.getMinutes() / slotMinutes) * slotMinutes
-  );
-  return floored;
-};
-
-const ceilMinutesToAgendaSlotCount = (
-  minutes: number,
-  slotMinutes: number
-): number => Math.max(1, Math.ceil(minutes / slotMinutes));
-
-const getAgendaSlotMinutesForHeight = (availableHeight: number): number => {
-  const visibleSlotCount = Math.max(
-    1,
-    Math.floor(availableHeight / AGENDA_SLOT_HEIGHT_PX)
-  );
-  const slotMinutes = Math.ceil(
-    AGENDA_TARGET_VISIBLE_MINUTES /
-      visibleSlotCount /
-      AGENDA_BASE_SLOT_MINUTES
-  ) * AGENDA_BASE_SLOT_MINUTES;
-  return Math.max(AGENDA_BASE_SLOT_MINUTES, slotMinutes);
-};
-
-const formatMinuteCount = (minutes: number): string =>
-  minutes === 1 ? "1 min" : `${minutes} min`;
 
 const formatDiff = (diff: number): string =>
   diff === 0 ? "" : ` (${diff > 0 ? "+" : ""}${diff})`;
@@ -984,7 +932,7 @@ export const MeetingMinutes = () => {
     string | null
   >(null);
   const [isAgendaPaneOpen, setIsAgendaPaneOpen] = useState(false);
-  const [isAgendaPaneSettling, setIsAgendaPaneSettling] = useState(false);
+  const wasAgendaPaneOpenRef = useRef(isAgendaPaneOpen);
   const [agendaSlotMinutes, setAgendaSlotMinutes] = useState(
     AGENDA_BASE_SLOT_MINUTES
   );
@@ -1098,14 +1046,6 @@ export const MeetingMinutes = () => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    setIsAgendaPaneSettling(true);
-    const timeoutId = window.setTimeout(() => {
-      setIsAgendaPaneSettling(false);
-    }, 220);
-    return () => window.clearTimeout(timeoutId);
-  }, [isAgendaPaneOpen]);
 
   useEffect(() => {
     const pane = agendaPaneRef.current;
@@ -1465,10 +1405,14 @@ export const MeetingMinutes = () => {
     x2: number;
     y2: number;
   }) => {
-    const controlOffset = Math.max(
-      36,
-      Math.min(160, Math.abs(connection.x2 - connection.x1) * 0.45)
-    );
+    const dx = connection.x2 - connection.x1;
+    const direction = dx >= 0 ? 1 : -1;
+    // A fixed minimum offset here produces a visible hook right at each
+    // endpoint when the two points are nearly vertically aligned (small dx,
+    // large dy) — e.g. the collapsed mobile timeline, which is tall and
+    // narrow. Scale the floor down with dx instead so a near-vertical
+    // connection renders as a gentle, mostly-straight curve.
+    const controlOffset = direction * Math.max(8, Math.min(160, Math.abs(dx) * 0.5));
     return `M ${connection.x1} ${connection.y1} C ${
       connection.x1 + controlOffset
     } ${connection.y1}, ${connection.x2 - controlOffset} ${connection.y2}, ${
@@ -1527,7 +1471,7 @@ export const MeetingMinutes = () => {
     };
     const updateConnections = () => {
       const isMobile = window.matchMedia("(max-width: 750px)").matches;
-      if (isMobile && (isAgendaPaneOpen || isAgendaPaneSettling)) {
+      if (isMobile && isAgendaPaneOpen) {
         hideConnection(selectedConnectionRef.current);
         hideConnection(activeConnectionRef.current);
         return;
@@ -1566,10 +1510,10 @@ export const MeetingMinutes = () => {
         const y2 = cappedTargetY - layoutRect.top;
         const targetX =
           isMobile && !isAgendaPaneOpen && paneRect
-            ? paneRect.left - layoutRect.left
-            : targetRect.left - layoutRect.left;
+            ? paneRect.right - layoutRect.left
+            : targetRect.right - layoutRect.left;
         return {
-          x1: sourceRect.right - layoutRect.left,
+          x1: sourceRect.left - layoutRect.left,
           y1,
           x2: targetX,
           y2,
@@ -1605,8 +1549,31 @@ export const MeetingMinutes = () => {
       frameId = window.requestAnimationFrame(updateConnections);
     };
 
-    scheduleUpdate();
-    const postTransitionUpdateId = window.setTimeout(scheduleUpdate, 220);
+    // Track transitions with a ref (rather than separate state) so hiding
+    // during the mobile tray's slide animation can't get out of sync with
+    // this effect's own re-run: a second piece of state updated from its
+    // own effect could flip back to "settled" after this effect had already
+    // torn down the timer that was waiting to redraw, leaving the connectors
+    // hidden indefinitely.
+    const isMobileNow = window.matchMedia("(max-width: 750px)").matches;
+    const justClosedOnMobile =
+      isMobileNow && wasAgendaPaneOpenRef.current && !isAgendaPaneOpen;
+    wasAgendaPaneOpenRef.current = isAgendaPaneOpen;
+
+    let settleTimeoutId = 0;
+    if (isMobileNow && isAgendaPaneOpen) {
+      hideConnection(selectedConnectionRef.current);
+      hideConnection(activeConnectionRef.current);
+    } else if (justClosedOnMobile) {
+      // Give the tray's slide-closed CSS transition time to finish before
+      // measuring final positions, instead of drawing mid-animation.
+      hideConnection(selectedConnectionRef.current);
+      hideConnection(activeConnectionRef.current);
+      settleTimeoutId = window.setTimeout(scheduleUpdate, 220);
+    } else {
+      scheduleUpdate();
+    }
+
     window.addEventListener("resize", scheduleUpdate);
     window.addEventListener("scroll", scheduleUpdate, true);
 
@@ -1622,7 +1589,7 @@ export const MeetingMinutes = () => {
 
     return () => {
       window.cancelAnimationFrame(frameId);
-      window.clearTimeout(postTransitionUpdateId);
+      window.clearTimeout(settleTimeoutId);
       window.removeEventListener("resize", scheduleUpdate);
       window.removeEventListener("scroll", scheduleUpdate, true);
       resizeObserver.disconnect();
@@ -1634,7 +1601,6 @@ export const MeetingMinutes = () => {
     agendaTimelineEntries.length,
     agendaSlotMinutes,
     isAgendaPaneOpen,
-    isAgendaPaneSettling,
   ]);
 
   useEffect(() => {
@@ -1977,7 +1943,7 @@ export const MeetingMinutes = () => {
     <div className="meeting-minutes" ref={minutesLayoutRef}>
       <svg
         className={`minutes-agenda-connections${
-          isAgendaPaneOpen || isAgendaPaneSettling ? " is-tray-open" : ""
+          isAgendaPaneOpen ? " is-tray-open" : ""
         }`}
         aria-hidden="true"
         focusable="false"
@@ -2059,6 +2025,16 @@ export const MeetingMinutes = () => {
                 </span>
               )}
             </div>
+            {selectedAgendaItem.topic.outcome && (
+              <p className="minutes-topic-outcome">
+                {selectedAgendaItem.topic.outcome}
+              </p>
+            )}
+            {selectedAgendaItem.topic.details && (
+              <div className="minutes-topic-details">
+                {renderMarkdownBlocks(selectedAgendaItem.topic.details)}
+              </div>
+            )}
 
             {!isSelectedTopicActive && (
               <div className="minutes-actions minutes-highlight-actions">
@@ -2310,7 +2286,7 @@ export const MeetingMinutes = () => {
             aria-controls="minutes-agenda-pane"
             onClick={() => setIsAgendaPaneOpen((open) => !open)}
           >
-            <span aria-hidden="true">{isAgendaPaneOpen ? ">>" : "<<"}</span>
+            <span aria-hidden="true">{isAgendaPaneOpen ? "<<" : ">>"}</span>
           </button>
         </div>
         <div

@@ -151,7 +151,10 @@ const noteArg = v.object({
   ),
 });
 
-const serializeTopic = (topic: Doc<"meetings">["plannedAgenda"][number], planned: Doc<"meetings">["plannedAgenda"]) => ({
+const serializeTopic = (
+  topic: Doc<"meetings">["plannedAgenda"][number],
+  planned: Doc<"meetings">["plannedAgenda"]
+) => ({
   ...topic,
   plannedTopic: topic.plannedTopicId
     ? planned.find((candidate) => candidate.id === topic.plannedTopicId)
@@ -225,6 +228,7 @@ const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
     liveStartTime: meeting.liveStartTime,
     currentNotes: meeting.currentNotes?.map((note) => serializeNote(note, members)),
     highlightedTopicId: meeting.highlightedTopicId ?? meeting.focusedTopicId,
+    expectedDurationMinutes: meeting.expectedDurationMinutes,
   };
 };
 
@@ -512,6 +516,16 @@ const setHighlightedTopicMutation = mutation({
 export const setHighlightedTopic = setHighlightedTopicMutation;
 export const setFocusedTopic = setHighlightedTopicMutation;
 
+export const updateMeetingDate = mutation({
+  args: { meetingId: v.id("meetings"), date: v.number() },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, { date: args.date });
+  },
+});
+
 export const updateLiveStartTime = mutation({
   args: { meetingId: v.id("meetings"), liveStartTime: v.number() },
   handler: async (ctx, args) => {
@@ -519,6 +533,18 @@ export const updateLiveStartTime = mutation({
     if (!meeting) return;
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
     await ctx.db.patch(args.meetingId, { liveStartTime: args.liveStartTime });
+  },
+});
+
+export const updateExpectedDuration = mutation({
+  args: { meetingId: v.id("meetings"), expectedDurationMinutes: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      expectedDurationMinutes: args.expectedDurationMinutes,
+    });
   },
 });
 
@@ -565,6 +591,7 @@ export const addTopic = mutation({
     await ctx.db.patch(args.meetingId, {
       [args.list]: topics,
     });
+    return topic.id;
   },
 });
 
@@ -575,7 +602,10 @@ export const updateTopic = mutation({
     topicId: v.string(),
     title: v.optional(v.string()),
     durationMinutes: v.optional(v.number()),
+    outcome: v.optional(v.string()),
+    details: v.optional(v.string()),
     deferred: v.optional(v.boolean()),
+    cancelled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
@@ -588,7 +618,10 @@ export const updateTopic = mutation({
               ...topic,
               title: args.title ?? topic.title,
               durationMinutes: args.durationMinutes ?? topic.durationMinutes,
+              outcome: args.outcome ?? topic.outcome,
+              details: args.details ?? topic.details,
               deferred: args.deferred ?? topic.deferred,
+              cancelled: args.cancelled ?? topic.cancelled,
             }
           : topic
       ),

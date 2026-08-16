@@ -39,6 +39,7 @@ const topic = v.object({
   plannedTopicId: v.optional(v.string()),
   cancelled: v.optional(v.boolean()),
   deferred: v.optional(v.boolean()),
+  details: v.optional(v.string()),
 });
 
 const minute = v.object({
@@ -93,5 +94,6 @@ export default defineSchema({
     currentNotes: v.optional(v.array(note)),
     highlightedTopicId: v.optional(v.string()),
     focusedTopicId: v.optional(v.string()),
+    expectedDurationMinutes: v.optional(v.number()),
   }).index("by_org", ["organizationId"]),
 });

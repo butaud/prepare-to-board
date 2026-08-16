@@ -1,0 +1,149 @@
+.plan-agenda-timeline-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted-text-color);
+  font-size: 0.9rem;
+  padding: 14px 0;
+}
+
+.minutes-day-view-event.plan-agenda-event-overrun {
+  background: var(--danger-color-subtle);
+  border-color: var(--danger-color-strong);
+  border-left-color: var(--danger-color-strong);
+}
+
+.plan-agenda-target-line {
+  position: absolute;
+  right: var(--scrollbar-clearance, 8px);
+  left: 66px;
+  z-index: 9;
+  border-top: 2px dashed var(--danger-color-strong);
+  pointer-events: none;
+}
+
+.plan-agenda-target-line span {
+  position: absolute;
+  top: -9px;
+  right: 4px;
+  padding: 0 4px;
+  color: var(--danger-color-strong);
+  background: var(--background-color);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.plan-agenda-target-overflow {
+  position: absolute;
+  right: var(--scrollbar-clearance, 8px);
+  bottom: 0;
+  left: 66px;
+  z-index: 0;
+  background: var(--danger-color-subtle);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+button.plan-topic-delete {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--danger-color-strong);
+  box-shadow: none;
+  font-size: 1.1rem;
+}
+
+button.plan-topic-delete:hover:not(:disabled) {
+  background-color: var(--danger-color-subtle);
+  border-color: var(--danger-color);
+  box-shadow: none;
+}
+
+.plan-duration-display {
+  display: inline;
+}
+
+input.plan-duration-display {
+  width: 60px;
+  min-width: 60px;
+}
+
+/* The trailing "add topic" slot (after the last item) is the golden path
+   for building an agenda, so it stays permanently visible and reads as a
+   card rather than the thin hover-reveal strip used between items. */
+.minutes-agenda-insertion-slot.is-trailing {
+  z-index: 10;
+}
+
+.minutes-agenda-insertion-slot.is-trailing .minutes-agenda-insertion-button {
+  gap: 8px;
+  opacity: 1;
+  background: var(--primary-color-subtle);
+  border: 2px dashed var(--primary-color-light);
+  border-radius: 7px;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.minutes-agenda-insertion-slot.is-trailing .minutes-agenda-insertion-button:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--primary-color-subtle));
+  border-color: var(--primary-color);
+}
+
+.minutes-agenda-insertion-slot.is-trailing .minutes-agenda-insertion-button::before {
+  content: none;
+}
+
+.plan-detail-outcome {
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--muted-text-color);
+
+  .outcome-display:empty::before {
+    content: "+ Add outcome/goal";
+  }
+}
+
+.plan-detail-details h4 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.plan-details-display {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+
+  p {
+    margin: 0 0 8px;
+  }
+
+  ul {
+    margin: 0 0 8px;
+    padding-left: 20px;
+  }
+
+  p:last-child,
+  ul:last-child {
+    margin-bottom: 8px;
+  }
+}
+
+.plan-details-form textarea {
+  max-width: none;
+}

@@ -3,6 +3,7 @@ import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
+import { renderMarkdownBlocks } from "../../util/markdown";
 import { Minute, Note, Topic } from "../../schema";
 import { NoteDisplay } from "../../ui/NoteDisplay";
 import { api } from "../../convexClient";
@@ -238,6 +239,14 @@ export const MeetingPresent = () => {
 
         {isFocused && (
           <div className="present-focused-notes">
+            {topic.outcome && (
+              <p className="present-topic-outcome">{topic.outcome}</p>
+            )}
+            {topic.details && (
+              <div className="present-topic-details">
+                {renderMarkdownBlocks(topic.details)}
+              </div>
+            )}
             {item.section === "now" && item.activeSeconds !== undefined && (
               <div className="present-focused-meta">
                 <span>

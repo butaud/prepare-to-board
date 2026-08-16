@@ -5,11 +5,97 @@
 
 .meeting-view-content {
   max-width: 1200px;
-  margin: 0 auto;
 }
 
 .meeting-view-live-start {
   font-size: 0.9rem;
   color: var(--color-muted, #555);
   margin: 4px 0 0 0;
+}
+
+.plan-header {
+  margin-bottom: 4px;
+}
+
+/* .meeting-minutes normally supplies its own top padding since it's the
+   whole page there — here it sits below .plan-header instead, so that
+   padding would just double up on the spacing already provided above. */
+.meeting-minutes.plan-agenda-layout {
+  padding-top: 0;
+  max-width: none;
+}
+
+.plan-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--muted-text-color);
+  margin: 6px 0 0;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.plan-field-label {
+  font-weight: 600;
+}
+
+.plan-start-time input {
+  width: 190px;
+}
+
+.target-end-time-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  input {
+    width: 130px;
+  }
+}
+
+.plan-timeline-planned {
+  margin-left: 8px;
+  color: var(--muted-text-color);
+  font-size: 0.76rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.overrun-warning {
+  color: var(--danger-color-strong);
+  font-weight: 600;
+}
+
+.carry-forward-suggestions {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--primary-color-subtle);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+
+  h4 {
+    margin: 0 0 6px;
+    font-size: 0.9rem;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
 }

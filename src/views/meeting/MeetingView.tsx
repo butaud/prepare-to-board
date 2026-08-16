@@ -7,14 +7,17 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
-import { TopicList } from "../topic/TopicList";
+import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
+import { renderMarkdownBlocks } from "../../util/markdown";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
+import { PlanAgendaEditor } from "./PlanAgendaEditor";
 
+import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
 import "../meeting/MeetingMinutes.css";
@@ -46,6 +49,11 @@ export const MeetingView = () => {
   const updateTopic = useMutation(api.app.updateTopic);
   const reorderTopics = useMutation(api.app.reorderTopics);
   const skipTopic = useMutation(api.app.skipTopic);
+  const updateExpectedDuration = useMutation(api.app.updateExpectedDuration);
+  const updateMeetingDate = useMutation(api.app.updateMeetingDate);
+  const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -100,10 +108,11 @@ export const MeetingView = () => {
         )
       : 0;
 
-    const allRemaining = liveAgenda
+    const allRemainingRaw = liveAgenda
       .filter((t) => t !== null)
-      .slice(remainingStartIndex)
-      .filter((t) => !t.cancelled);
+      .slice(remainingStartIndex);
+    const cancelledTopics = allRemainingRaw.filter((t) => t.cancelled);
+    const allRemaining = allRemainingRaw.filter((t) => !t.cancelled);
     const remainingTopics = allRemaining.filter((t) => !t.deferred);
     const deferredTopics = allRemaining.filter((t) => t.deferred);
 
@@ -200,6 +209,11 @@ export const MeetingView = () => {
             <h2 className="present-current-title">{currentTopic.title}</h2>
             {currentTopic.outcome && (
               <p className="present-topic-outcome">{currentTopic.outcome}</p>
+            )}
+            {currentTopic.details && (
+              <div className="present-topic-details">
+                {renderMarkdownBlocks(currentTopic.details)}
+              </div>
             )}
             {(meeting.currentNotes ?? []).filter((n) => n !== null).length > 0 && (
               <div className="present-current-notes">
@@ -361,6 +375,19 @@ export const MeetingView = () => {
                                 >
                                   Defer
                                 </button>
+                                <button
+                                  className="btn-small danger"
+                                  onClick={() =>
+                                    void updateTopic({
+                                      meetingId: meeting.id,
+                                      list: "liveAgenda",
+                                      topicId: topic.id,
+                                      cancelled: true,
+                                    })
+                                  }
+                                >
+                                  Cancel
+                                </button>
                               </div>
                             </li>
                           )}
@@ -409,6 +436,41 @@ export const MeetingView = () => {
                               list: "liveAgenda",
                               topicId: topic.id,
                               deferred: false,
+                            })
+                          }
+                        >
+                          Restore
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+
+            {/* Cancelled topics — officers only */}
+            {isOfficer && cancelledTopics.length > 0 && (
+              <>
+                <h4 className="present-cancelled-heading">Cancelled</h4>
+                <ol className="present-topic-list">
+                  {cancelledTopics.map((topic) => (
+                    <li
+                      key={topic.id}
+                      className="present-topic-item present-cancelled-item"
+                    >
+                      <span className="present-topic-title">{topic.title}</span>
+                      <span className="present-topic-meta">
+                        {topic.durationMinutes ?? "?"} min
+                      </span>
+                      <div className="present-topic-actions">
+                        <button
+                          className="btn-small btn-secondary"
+                          onClick={() =>
+                            void updateTopic({
+                              meetingId: meeting.id,
+                              list: "liveAgenda",
+                              topicId: topic.id,
+                              cancelled: false,
                             })
                           }
                         >
@@ -526,14 +588,150 @@ export const MeetingView = () => {
   if (!meeting.plannedAgenda) {
     return <p>No topics</p>;
   }
+
+  const totalPlannedMinutes = meeting.plannedAgenda.reduce(
+    (sum, topic) => sum + (topic.durationMinutes ?? 0),
+    0
+  );
+  const targetEndTime =
+    meeting.expectedDurationMinutes !== undefined
+      ? new Date(meeting.date.getTime() + meeting.expectedDurationMinutes * 60 * 1000)
+      : null;
+  const isOverrun =
+    meeting.expectedDurationMinutes !== undefined &&
+    totalPlannedMinutes > meeting.expectedDurationMinutes;
+
+  const handleTargetEndTimeChange = (picked: Date | null) => {
+    if (!picked) {
+      void updateExpectedDuration({
+        meetingId: meeting.id,
+        expectedDurationMinutes: undefined,
+      });
+      return;
+    }
+    const combined = new Date(meeting.date);
+    combined.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+    let diffMinutes = Math.round(
+      (combined.getTime() - meeting.date.getTime()) / (60 * 1000)
+    );
+    // A target end time earlier in the clock than the start time means it's
+    // meant to land after midnight, the next day.
+    if (diffMinutes <= 0) diffMinutes += 24 * 60;
+    void updateExpectedDuration({
+      meetingId: meeting.id,
+      expectedDurationMinutes: diffMinutes,
+    });
+  };
+
+  const handleStartDateChange = (picked: Date | null) => {
+    if (!picked) return;
+    void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() });
+  };
+
+  const lastCompletedMeeting = [...(me.root.selectedOrganization?.meetings ?? [])]
+    .filter((candidate) => candidate.status === "completed")
+    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+  const carryForwardTopics = (lastCompletedMeeting?.liveAgenda ?? []).filter(
+    (topic) => topic.deferred && !topic.cancelled
+  );
+
+  const targetEndTimeControl = isOfficer ? (
+    <label className="target-end-time-field">
+      Target end time:
+      <DatePicker
+        selected={targetEndTime}
+        onChange={handleTargetEndTimeChange}
+        showTimeSelect
+        showTimeSelectOnly
+        timeIntervals={5}
+        dateFormat="h:mm aa"
+        placeholderText="Not set"
+        isClearable
+        popperProps={{ placement: "bottom", strategy: "fixed" }}
+        portalId="datepicker-portal"
+      />
+    </label>
+  ) : (
+    targetEndTime && <span>Target end time: {formatTime(targetEndTime)}</span>
+  );
+
   return (
     <div className="meeting-view-content">
-      <h3>Start Time: {meeting.date.toLocaleTimeString()}</h3>
-      <TopicList
-        topicList={meeting.plannedAgenda}
+      <div className="plan-header">
+        <div className="plan-field-row plan-start-time">
+          <span className="plan-field-label">Start Time:</span>
+          {isOfficer ? (
+            <DatePicker
+              selected={meeting.date}
+              onChange={handleStartDateChange}
+              showTimeSelect
+              timeIntervals={5}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              popperProps={{ placement: "bottom", strategy: "fixed" }}
+              portalId="datepicker-portal"
+            />
+          ) : (
+            <span>
+              {meeting.date.toLocaleString(undefined, {
+                dateStyle: "long",
+                timeStyle: "short",
+              })}
+            </span>
+          )}
+        </div>
+        <div className="plan-field-row">
+          {targetEndTimeControl}
+          {isOverrun && (
+            <span className="overrun-warning">
+              ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+              over target
+            </span>
+          )}
+        </div>
+      </div>
+      <PlanAgendaEditor
         meeting={meeting}
-        useDrafts
-      />
+        isOfficer={isOfficer}
+        startTime={meeting.date}
+        targetEndTime={targetEndTime}
+      >
+        {isOfficer && carryForwardTopics.length > 0 && (
+          <div className="carry-forward-suggestions">
+            <h4>Carried forward from last meeting</h4>
+            <ul>
+              {carryForwardTopics.map((topic) => {
+                const added = carriedForwardIds.has(topic.id);
+                return (
+                  <li key={topic.id}>
+                    <span>
+                      {topic.title}
+                      {topic.durationMinutes
+                        ? ` (${topic.durationMinutes} min)`
+                        : ""}
+                    </span>
+                    <button
+                      className="btn-small btn-secondary"
+                      disabled={added}
+                      onClick={() => {
+                        void addTopic({
+                          meetingId: meeting.id,
+                          list: "plannedAgenda",
+                          title: topic.title,
+                          durationMinutes: topic.durationMinutes,
+                        }).then(() => {
+                          setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
+                        });
+                      }}
+                    >
+                      {added ? "Added" : "+ Add to agenda"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </PlanAgendaEditor>
     </div>
   );
 };

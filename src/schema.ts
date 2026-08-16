@@ -54,6 +54,7 @@ export type Topic = {
   plannedTopicId?: Id;
   cancelled?: boolean;
   deferred?: boolean;
+  details?: string;
 };
 
 export type DraftTopic = Topic & {
@@ -85,6 +86,7 @@ export type Meeting = {
   liveStartTime?: Date;
   currentNotes?: Note[];
   highlightedTopicId?: Id;
+  expectedDurationMinutes?: number;
 };
 
 export type Organization = {
