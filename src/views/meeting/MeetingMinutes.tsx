@@ -19,6 +19,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
+import { AttendanceEditor } from "../../ui/AttendanceEditor";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import {
@@ -671,6 +672,7 @@ const PostMeetingMinutes = () => {
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
   const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
   const setActionItemCompletedOn = useMutation(api.app.setActionItemCompletedOn);
+  const updateAttendance = useMutation(api.app.updateAttendance);
   const privateNotes = usePrivateNotes(meeting.id);
   const minutes = meeting.minutes ?? [];
   const completedMinutes = minutes.filter((m) => m !== null);
@@ -765,6 +767,18 @@ const PostMeetingMinutes = () => {
           </button>
         </div>
       </div>
+
+      <section className="minutes-section">
+        <h3>Attendance</h3>
+        <AttendanceEditor
+          members={members}
+          attendance={meeting.attendance}
+          canEdit={Boolean(isOfficer)}
+          onChange={(attendance) =>
+            void updateAttendance({ meetingId: meeting.id, attendance })
+          }
+        />
+      </section>
 
       <IntegrityBanner
         unresolvedMotions={integrityIssues.unresolvedMotions}
@@ -1092,6 +1106,7 @@ export const MeetingMinutes = () => {
   const removeCurrentNote = useMutation(api.app.removeCurrentNote);
   const setHighlightedTopic = useMutation(api.app.setFocusedTopic);
   const updateLiveStartTime = useMutation(api.app.updateLiveStartTime);
+  const updateAttendance = useMutation(api.app.updateAttendance);
   const updateMinuteDuration = useMutation(api.app.updateMinuteDuration);
 
   useEffect(() => {
@@ -2012,6 +2027,17 @@ export const MeetingMinutes = () => {
         />
       </svg>
       <div className="minutes-topic-main">
+        <section className="minutes-section attendance-section">
+          <h3>Attendance</h3>
+          <AttendanceEditor
+            members={members}
+            attendance={meeting.attendance}
+            canEdit={Boolean(isOfficer)}
+            onChange={(attendance) =>
+              void updateAttendance({ meetingId: meeting.id, attendance })
+            }
+          />
+        </section>
         <IntegrityBanner
           unresolvedMotions={integrityIssues.unresolvedMotions}
           unassignedActionItems={integrityIssues.unassignedActionItems}

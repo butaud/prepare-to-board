@@ -14,6 +14,7 @@ import { computeProjectedEndTime } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
+import { EditableString } from "../../ui/doc/EditableValue";
 import { MeetingPresent } from "./MeetingPresent";
 import { PlanAgendaEditor } from "./PlanAgendaEditor";
 
@@ -51,6 +52,7 @@ export const MeetingView = () => {
   const skipTopic = useMutation(api.app.skipTopic);
   const updateExpectedDuration = useMutation(api.app.updateExpectedDuration);
   const updateMeetingDate = useMutation(api.app.updateMeetingDate);
+  const updateMeetingMetadata = useMutation(api.app.updateMeetingMetadata);
   const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
     new Set()
   );
@@ -628,6 +630,29 @@ export const MeetingView = () => {
     void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() });
   };
 
+  // updateMeetingMetadata patches all of its optional fields on every call
+  // (matching updateBoardMember's convention), so every call here must carry
+  // forward the meeting's current values for anything not being changed.
+  const handleMetadataChange = (changes: {
+    title?: string;
+    subtitle?: string;
+    location?: string;
+    callerId?: string;
+    callerName?: string;
+    callerRole?: string;
+  }) => {
+    void updateMeetingMetadata({
+      meetingId: meeting.id,
+      title: meeting.title,
+      subtitle: meeting.subtitle,
+      location: meeting.location,
+      callerId: meeting.callerId,
+      callerName: meeting.callerName,
+      callerRole: meeting.callerRole,
+      ...changes,
+    });
+  };
+
   const lastCompletedMeeting = [...(me.root.selectedOrganization?.meetings ?? [])]
     .filter((candidate) => candidate.status === "completed")
     .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
@@ -688,6 +713,90 @@ export const MeetingView = () => {
             </span>
           )}
         </div>
+        {(isOfficer || meeting.title) && (
+          <div className="plan-field-row">
+            <span className="plan-field-label">Title:</span>
+            <EditableString
+              as="span"
+              value={meeting.title ?? ""}
+              onValueChange={(newValue) => handleMetadataChange({ title: newValue })}
+              canEdit={isOfficer}
+              label="Meeting title"
+              emptyClickBehavior="single"
+            />
+          </div>
+        )}
+        {(isOfficer || meeting.subtitle) && (
+          <div className="plan-field-row">
+            <span className="plan-field-label">Subtitle:</span>
+            <EditableString
+              as="span"
+              value={meeting.subtitle ?? ""}
+              onValueChange={(newValue) => handleMetadataChange({ subtitle: newValue })}
+              canEdit={isOfficer}
+              label="Meeting subtitle"
+              emptyClickBehavior="single"
+            />
+          </div>
+        )}
+        {(isOfficer || meeting.location) && (
+          <div className="plan-field-row">
+            <span className="plan-field-label">Location:</span>
+            <EditableString
+              as="span"
+              value={meeting.location ?? ""}
+              onValueChange={(newValue) => handleMetadataChange({ location: newValue })}
+              canEdit={isOfficer}
+              label="Meeting location"
+              emptyClickBehavior="single"
+            />
+          </div>
+        )}
+        {(isOfficer || meeting.callerName) && (
+          <div className="plan-field-row">
+            <span className="plan-field-label">Called by:</span>
+            {isOfficer ? (
+              <>
+                <select
+                  value={meeting.callerId ?? ""}
+                  onChange={(e) => {
+                    const selectedId = e.target.value || undefined;
+                    const selectedMember = me.root.selectedOrganization?.members.find(
+                      (member) => member.id === selectedId
+                    );
+                    handleMetadataChange({
+                      callerId: selectedId,
+                      callerName: selectedMember?.name,
+                    });
+                  }}
+                >
+                  <option value="">Not set</option>
+                  {me.root.selectedOrganization.members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+                <EditableString
+                  as="span"
+                  value={meeting.callerRole ?? ""}
+                  onValueChange={(newValue) =>
+                    handleMetadataChange({ callerRole: newValue })
+                  }
+                  canEdit={isOfficer}
+                  label="Caller role"
+                  emptyClickBehavior="single"
+                  className="plan-caller-role"
+                />
+              </>
+            ) : (
+              <span>
+                {meeting.callerName}
+                {meeting.callerRole ? ` (${meeting.callerRole})` : ""}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <PlanAgendaEditor
         meeting={meeting}

@@ -47,6 +47,10 @@
   width: 190px;
 }
 
+.plan-caller-role {
+  min-width: 80px;
+}
+
 .target-end-time-field {
   display: flex;
   align-items: center;

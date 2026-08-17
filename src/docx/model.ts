@@ -25,11 +25,12 @@ export type SessionMetadata = {
   committeeDocUrl?: string;
 };
 
-export type CommitteeType = "Board" | "Headmaster";
-
+// Deviation: minutes-taker fixes this to "Board" | "Headmaster" (its own
+// school-board-specific committee types). prepare-to-board isn't
+// school-specific, so committee type is free text instead.
 export type Committee = {
   name: string;
-  type: CommitteeType;
+  type: string;
 };
 
 export type PastActionItem = {
