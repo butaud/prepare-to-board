@@ -12,7 +12,7 @@ import { useLoadedAccount } from "../../hooks/Account";
 import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { PendingNote } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
-import { BoardMember, Meeting, Note, Topic } from "../../schema";
+import { BoardMember, getCanonicalTopicId, Meeting, Note, Topic } from "../../schema";
 import { api } from "../../convexClient";
 
 import "react-datepicker/dist/react-datepicker.css";
@@ -843,9 +843,14 @@ const PostMeetingMinutes = () => {
                   )}
                   {!privateNotes.isLoading && (
                     <PrivateNoteEditor
-                      initialText={privateNotes.getNote(topic?.id ?? minute.id)}
+                      initialText={privateNotes.getNote(
+                        topic ? getCanonicalTopicId(topic) : minute.id
+                      )}
                       onSave={(text) =>
-                        void privateNotes.saveNote(topic?.id ?? minute.id, text)
+                        void privateNotes.saveNote(
+                          topic ? getCanonicalTopicId(topic) : minute.id,
+                          text
+                        )
                       }
                     />
                   )}
@@ -874,6 +879,14 @@ const PostMeetingMinutes = () => {
                     {topic.durationMinutes ?? "?"} min planned
                   </span>
                 </div>
+                {!privateNotes.isLoading && (
+                  <PrivateNoteEditor
+                    initialText={privateNotes.getNote(getCanonicalTopicId(topic))}
+                    onSave={(text) =>
+                      void privateNotes.saveNote(getCanonicalTopicId(topic), text)
+                    }
+                  />
+                )}
               </li>
             ))}
           </ul>

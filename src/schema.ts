@@ -66,6 +66,16 @@ export type DraftTopic = Topic & {
 export const topicIsDraft = (topic: Topic | DraftTopic): topic is DraftTopic =>
   "isDraft" in topic;
 
+// A topic's own `id` changes across its lifecycle: a live-agenda topic gets
+// a freshly generated id (with `plannedTopicId` pointing back to the
+// original), which then carries through unchanged onto its completed
+// minute. This is the one id that's stable across planned -> live ->
+// completed for the same topic, so private notes (and anything else that
+// needs to follow a topic across the whole meeting) should key off this
+// instead of the raw id.
+export const getCanonicalTopicId = (topic: Topic): Id =>
+  topic.plannedTopicId ?? topic.id;
+
 export type Minute = {
   id: Id;
   topic: Topic;

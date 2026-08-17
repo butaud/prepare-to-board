@@ -5,7 +5,7 @@ import { useLoadedAccount } from "../../hooks/Account";
 import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { computeProjectedEndTime } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
-import { Minute, Note, Topic } from "../../schema";
+import { getCanonicalTopicId, Minute, Note, Topic } from "../../schema";
 import { NoteDisplay } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { api } from "../../convexClient";
@@ -41,6 +41,11 @@ export const MeetingPresent = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
   const [now, setNow] = useState(() => new Date());
+  // Which topic THIS viewer has expanded, independent of what the officer
+  // has spotlighted for the room. null means "follow the presenter."
+  const [myOverrideTopicId, setMyOverrideTopicId] = useState<string | null>(
+    null
+  );
   const selectedAgendaItemRef = useRef<HTMLLIElement | null>(null);
   const highlightedTopicId =
     meeting.highlightedTopicId ??
@@ -156,7 +161,17 @@ export const MeetingPresent = () => {
     nowItem ??
     allItems[0] ??
     null;
-  const selectedTopicId = highlightedItem?.topic.id ?? null;
+  const broadcastSelectedTopicId = highlightedItem?.topic.id ?? null;
+  // Ignore a stale override pointing at a topic that no longer exists
+  // (e.g. cancelled) rather than leaving the viewer stuck on a dead row.
+  const overrideStillValid =
+    myOverrideTopicId !== null &&
+    allItems.some((item) => item.topic.id === myOverrideTopicId);
+  const effectiveOverrideTopicId = overrideStillValid ? myOverrideTopicId : null;
+  const selectedTopicId = effectiveOverrideTopicId ?? broadcastSelectedTopicId;
+  const isViewingIndependently =
+    effectiveOverrideTopicId !== null &&
+    effectiveOverrideTopicId !== broadcastSelectedTopicId;
   const hasHighlightedAgendaTopic = highlightedTopicId
     ? allItems.some((item) => item.topic.id === highlightedTopicId)
     : false;
@@ -182,12 +197,17 @@ export const MeetingPresent = () => {
     setHighlightedTopic,
   ]);
 
-  const highlightTopic = (topicId: string) => {
-    if (!isOfficer) return;
-    void setHighlightedTopic({
-      meetingId: meeting.id,
-      topicId: topicId === currentTopic?.id ? undefined : topicId,
+  const handleTopicClick = (topicId: string) => {
+    setMyOverrideTopicId((current) => {
+      const currentlyExpanded = current ?? broadcastSelectedTopicId;
+      return topicId === currentlyExpanded ? null : topicId;
     });
+    if (isOfficer) {
+      void setHighlightedTopic({
+        meetingId: meeting.id,
+        topicId: topicId === currentTopic?.id ? undefined : topicId,
+      });
+    }
   };
 
   const renderAgendaItem = (item: PresentAgendaItem) => {
@@ -212,8 +232,7 @@ export const MeetingPresent = () => {
         <button
           className={`present-agenda-item${item.section === "now" ? " is-meeting-active" : ""}${isFocused ? " is-focused" : ""}`}
           aria-expanded={isFocused}
-          disabled={!isOfficer}
-          onClick={() => highlightTopic(topic.id)}
+          onClick={() => handleTopicClick(topic.id)}
         >
           <span className="present-item-main">
             <span className="present-topic-title">{topic.title}</span>
@@ -242,6 +261,15 @@ export const MeetingPresent = () => {
 
         {isFocused && (
           <div className="present-focused-notes">
+            {isViewingIndependently && (
+              <button
+                type="button"
+                className="present-independent-view-banner"
+                onClick={() => setMyOverrideTopicId(null)}
+              >
+                Viewing independently — return to presenter&rsquo;s view
+              </button>
+            )}
             {topic.outcome && (
               <p className="present-topic-outcome">{topic.outcome}</p>
             )}
@@ -267,8 +295,10 @@ export const MeetingPresent = () => {
             )}
             {!privateNotes.isLoading && (
               <PrivateNoteEditor
-                initialText={privateNotes.getNote(topic.id)}
-                onSave={(text) => void privateNotes.saveNote(topic.id, text)}
+                initialText={privateNotes.getNote(getCanonicalTopicId(topic))}
+                onSave={(text) =>
+                  void privateNotes.saveNote(getCanonicalTopicId(topic), text)
+                }
               />
             )}
           </div>

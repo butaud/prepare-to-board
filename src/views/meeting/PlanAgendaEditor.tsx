@@ -7,9 +7,11 @@ import {
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
 import { MdDelete } from "react-icons/md";
-import { Meeting, Topic } from "../../schema";
+import { getCanonicalTopicId, Meeting, Topic } from "../../schema";
 import { api } from "../../convexClient";
+import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { EditableInteger, EditableString } from "../../ui/doc/EditableValue";
+import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import {
   AGENDA_EVENT_GAP_PX,
@@ -103,6 +105,12 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   children,
 }) => {
   const topics = meeting.plannedAgenda;
+
+  // View is the default for everyone (identical for officers and
+  // non-officers); Edit is an officer-only mode entered explicitly, so
+  // public-field editing never shows up alongside private notes.
+  const [isEditingAgenda, setIsEditingAgenda] = useState(false);
+  const privateNotes = usePrivateNotes(meeting.id);
 
   const addTopic = useMutation(api.app.addTopic);
   const updateTopic = useMutation(api.app.updateTopic);
@@ -565,12 +573,78 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     );
   };
 
+  if (!isEditingAgenda || !isOfficer) {
+    return (
+      <div className="plan-agenda-view">
+        <div className="plan-agenda-view-header">
+          <h2>Agenda</h2>
+          {isOfficer && (
+            <button
+              className="btn-secondary"
+              onClick={() => setIsEditingAgenda(true)}
+            >
+              Edit Agenda
+            </button>
+          )}
+        </div>
+        {entries.length === 0 ? (
+          <p className="minutes-hint">No topics have been scheduled yet.</p>
+        ) : (
+          <ol className="minutes-list plan-agenda-view-list">
+            {entries.map((entry) => (
+              <li key={entry.topic.id} className="minutes-item">
+                <div className="minutes-item-header">
+                  <span className="minutes-item-title">{entry.topic.title}</span>
+                  <span className="minutes-item-duration">
+                    {formatAgendaTime(entry.start)} – {formatAgendaTime(entry.end)}
+                    {" · "}
+                    {formatMinuteCount(entry.durationMinutes)}
+                  </span>
+                </div>
+                {entry.topic.outcome && (
+                  <div className="minutes-item-notes">{entry.topic.outcome}</div>
+                )}
+                {entry.topic.details && (
+                  <div className="plan-details-display">
+                    {renderMarkdownBlocks(entry.topic.details)}
+                  </div>
+                )}
+                {!privateNotes.isLoading && (
+                  <PrivateNoteEditor
+                    initialText={privateNotes.getNote(
+                      getCanonicalTopicId(entry.topic)
+                    )}
+                    onSave={(text) =>
+                      void privateNotes.saveNote(
+                        getCanonicalTopicId(entry.topic),
+                        text
+                      )
+                    }
+                  />
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="meeting-minutes plan-agenda-layout" ref={layoutRef}>
       <svg className="minutes-agenda-connections" aria-hidden="true" focusable="false">
         <path ref={connectionRef} className="minutes-agenda-connection-line is-active is-hidden" />
       </svg>
       <div className="minutes-topic-main">
+        <div className="plan-edit-mode-bar">
+          <span className="plan-edit-mode-label">Editing Agenda</span>
+          <button
+            className="btn-secondary btn-small"
+            onClick={() => setIsEditingAgenda(false)}
+          >
+            Done
+          </button>
+        </div>
         {children}
         <section ref={topicDetailRef} className="minutes-section minutes-topic-detail-section">
           {selectedTopic && isOfficer && (
