@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
+import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { computeProjectedEndTime } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import { Minute, Note, Topic } from "../../schema";
 import { NoteDisplay } from "../../ui/NoteDisplay";
+import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { api } from "../../convexClient";
 
 import "./MeetingPresent.css";
@@ -46,6 +48,7 @@ export const MeetingPresent = () => {
     null;
   const setHighlightedTopic = useMutation(api.app.setFocusedTopic);
   const isOfficer = me.canWrite(meeting);
+  const privateNotes = usePrivateNotes(meeting.id);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -261,6 +264,12 @@ export const MeetingPresent = () => {
               item.notes.map((note, i) => <NoteDisplay key={i} note={note} />)
             ) : (
               <p className="present-empty">No notes for this topic.</p>
+            )}
+            {!privateNotes.isLoading && (
+              <PrivateNoteEditor
+                initialText={privateNotes.getNote(topic.id)}
+                onSave={(text) => void privateNotes.saveNote(topic.id, text)}
+              />
             )}
           </div>
         )}

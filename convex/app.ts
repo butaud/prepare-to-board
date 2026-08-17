@@ -1256,3 +1256,63 @@ export const recordMeetingViewed = mutation({
     }
   },
 });
+
+// Private notes are intentionally scoped to `requireUser`'s own id with no
+// parameter to read anyone else's — there is no cross-user read path here
+// even in principle, unlike every other note type in the app.
+export const privateNotesForMeeting = query({
+  args: { meetingId: v.id("meetings") },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return [];
+    const { user } = await requireRole(ctx, meeting.organizationId, [
+      "admin",
+      "writer",
+      "reader",
+    ]);
+    const notes = await ctx.db
+      .query("privateNotes")
+      .withIndex("by_user_meeting_topic", (q) =>
+        q.eq("userId", user._id).eq("meetingId", args.meetingId)
+      )
+      .collect();
+    return notes.map((note) => ({
+      topicId: note.topicId,
+      text: note.text,
+      updatedAt: note.updatedAt,
+    }));
+  },
+});
+
+export const savePrivateNote = mutation({
+  args: { meetingId: v.id("meetings"), topicId: v.string(), text: v.string() },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    const { user } = await requireRole(ctx, meeting.organizationId, [
+      "admin",
+      "writer",
+      "reader",
+    ]);
+    const existing = await ctx.db
+      .query("privateNotes")
+      .withIndex("by_user_meeting_topic", (q) =>
+        q
+          .eq("userId", user._id)
+          .eq("meetingId", args.meetingId)
+          .eq("topicId", args.topicId)
+      )
+      .unique();
+    if (existing) {
+      await ctx.db.patch(existing._id, { text: args.text, updatedAt: Date.now() });
+    } else {
+      await ctx.db.insert("privateNotes", {
+        userId: user._id,
+        meetingId: args.meetingId,
+        topicId: args.topicId,
+        text: args.text,
+        updatedAt: Date.now(),
+      });
+    }
+  },
+});
