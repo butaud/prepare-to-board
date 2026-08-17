@@ -76,6 +76,9 @@ export default defineSchema({
     email: v.optional(v.string()),
     title: v.optional(v.string()),
     accountId: v.optional(v.id("users")),
+    type: v.optional(
+      v.union(v.literal("board"), v.literal("administration"), v.literal("other"))
+    ),
   }).index("by_org", ["organizationId"]),
 
   meetings: defineTable({

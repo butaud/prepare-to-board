@@ -416,6 +416,7 @@ export const me = query({
             email: m.email,
             title: m.title,
             accountId: m.accountId,
+            type: m.type,
           })),
           meetings: await Promise.all(
             meetings.map((meeting) =>
@@ -493,8 +494,15 @@ export const updateOrganization = mutation({
 });
 
 export const joinOrganization = mutation({
-  args: { organizationId: v.id("organizations") },
+  args: { organizationId: v.id("organizations"), email: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    // The Clerk JWT's identity.email is only populated if the "convex" JWT
+    // template has an email claim configured (Clerk dashboard, outside this
+    // codebase) - it's reliably empty otherwise. Accept the email as a
+    // client-supplied argument instead, the same way ensureCurrentUser
+    // already does, so auto-linking to an unclaimed roster entry doesn't
+    // silently depend on external configuration. identity.email is kept as
+    // a fallback in case the claim is present.
     const identity = await requireIdentity(ctx);
     const user = await getOrCreateCurrentUser(ctx);
     const existing = await membershipFor(ctx, args.organizationId, user._id);
@@ -505,7 +513,12 @@ export const joinOrganization = mutation({
         role: "reader",
       });
     }
-    await ensureBoardMemberForUser(ctx, args.organizationId, user, identity.email);
+    await ensureBoardMemberForUser(
+      ctx,
+      args.organizationId,
+      user,
+      args.email ?? identity.email
+    );
     await ctx.db.patch(user._id, { selectedOrganizationId: args.organizationId });
   },
 });
@@ -1131,15 +1144,25 @@ export const updateActionItemDueDate = mutation({
   },
 });
 
+const boardMemberType = v.union(
+  v.literal("board"),
+  v.literal("administration"),
+  v.literal("other")
+);
+
 export const addBoardMember = mutation({
   args: {
     organizationId: v.id("organizations"),
     name: v.string(),
     email: v.optional(v.string()),
     title: v.optional(v.string()),
+    type: v.optional(boardMemberType),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.organizationId, ["admin"]);
+    // Officers can do basic roster upkeep; inviting a user and promoting
+    // someone to officer/admin stay admin-only (see joinOrganization,
+    // InviteUserDialog, and updateMembershipRole).
+    await requireRole(ctx, args.organizationId, ["admin", "writer"]);
     await ctx.db.insert("boardMembers", args);
   },
 });
@@ -1149,12 +1172,17 @@ export const updateBoardMember = mutation({
     memberId: v.id("boardMembers"),
     name: v.optional(v.string()),
     title: v.optional(v.string()),
+    type: v.optional(boardMemberType),
   },
   handler: async (ctx, args) => {
     const member = await ctx.db.get(args.memberId);
     if (!member) return;
-    await requireRole(ctx, member.organizationId, ["admin"]);
-    await ctx.db.patch(args.memberId, { name: args.name, title: args.title });
+    await requireRole(ctx, member.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.memberId, {
+      name: args.name,
+      title: args.title,
+      type: args.type,
+    });
   },
 });
 
@@ -1165,6 +1193,38 @@ export const updateMembershipRole = mutation({
     const membership = await membershipFor(ctx, args.organizationId, args.userId);
     if (!membership) return;
     await ctx.db.patch(membership._id, { role: args.role });
+  },
+});
+
+// Manual fallback for when auto-link (ensureBoardMemberForUser, driven by
+// email match) still can't apply — e.g. a typo'd email, or someone who
+// signed up with a different address than what's on file. An admin merges
+// an already-joined account's disconnected boardMembers row into an
+// existing unclaimed roster entry: the unclaimed entry's identity (name,
+// title, type, email) is kept, its accountId is set to the joined
+// account's, and the now-redundant duplicate row is deleted.
+export const linkBoardMemberToAccount = mutation({
+  args: {
+    unclaimedMemberId: v.id("boardMembers"),
+    accountBoardMemberId: v.id("boardMembers"),
+  },
+  handler: async (ctx, args) => {
+    const unclaimed = await ctx.db.get(args.unclaimedMemberId);
+    if (!unclaimed) throw new ConvexError("Roster entry not found");
+    await requireRole(ctx, unclaimed.organizationId, ["admin"]);
+    if (unclaimed.accountId) {
+      throw new ConvexError("This roster entry is already linked to an account");
+    }
+    const accountEntry = await ctx.db.get(args.accountBoardMemberId);
+    if (
+      !accountEntry ||
+      accountEntry.organizationId !== unclaimed.organizationId ||
+      !accountEntry.accountId
+    ) {
+      throw new ConvexError("Selected account entry not found");
+    }
+    await ctx.db.patch(args.unclaimedMemberId, { accountId: accountEntry.accountId });
+    await ctx.db.delete(args.accountBoardMemberId);
   },
 });
 
