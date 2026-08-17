@@ -9,6 +9,7 @@ import { useMutation } from "convex/react";
 import { MdDelete } from "react-icons/md";
 import { getCanonicalTopicId, Meeting, Topic } from "../../schema";
 import { api } from "../../convexClient";
+import { usePlanAgendaEditMode } from "../../hooks/PlanAgendaEditMode";
 import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { EditableInteger, EditableString } from "../../ui/doc/EditableValue";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
@@ -107,9 +108,10 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   const topics = meeting.plannedAgenda;
 
   // View is the default for everyone (identical for officers and
-  // non-officers); Edit is an officer-only mode entered explicitly, so
+  // non-officers); Edit is an officer-only mode entered explicitly via the
+  // "Edit Agenda" action in the meeting's action bar (MeetingShared), so
   // public-field editing never shows up alongside private notes.
-  const [isEditingAgenda, setIsEditingAgenda] = useState(false);
+  const { isEditingAgenda } = usePlanAgendaEditMode();
   const privateNotes = usePrivateNotes(meeting.id);
 
   const addTopic = useMutation(api.app.addTopic);
@@ -578,14 +580,6 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
       <div className="plan-agenda-view">
         <div className="plan-agenda-view-header">
           <h2>Agenda</h2>
-          {isOfficer && (
-            <button
-              className="btn-secondary"
-              onClick={() => setIsEditingAgenda(true)}
-            >
-              Edit Agenda
-            </button>
-          )}
         </div>
         {entries.length === 0 ? (
           <p className="minutes-hint">No topics have been scheduled yet.</p>
@@ -638,12 +632,6 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
       <div className="minutes-topic-main">
         <div className="plan-edit-mode-bar">
           <span className="plan-edit-mode-label">Editing Agenda</span>
-          <button
-            className="btn-secondary btn-small"
-            onClick={() => setIsEditingAgenda(false)}
-          >
-            Done
-          </button>
         </div>
         {children}
         <section ref={topicDetailRef} className="minutes-section minutes-topic-detail-section">

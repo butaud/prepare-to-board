@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { LuLock } from "react-icons/lu";
+import { LuLock, LuPencil } from "react-icons/lu";
 import "./PrivateNoteEditor.css";
 
 interface PrivateNoteEditorProps {
@@ -12,14 +12,26 @@ const SAVE_DEBOUNCE_MS = 600;
 export const PrivateNoteEditor = ({ initialText, onSave }: PrivateNoteEditorProps) => {
   const [text, setText] = useState(initialText);
   const [status, setStatus] = useState<"idle" | "pending" | "saved">("idle");
+  // Starts collapsed when there's nothing to show yet, so a long list of
+  // topics with no notes doesn't turn into a wall of empty textareas.
+  const [isExpanded, setIsExpanded] = useState(initialText !== "");
   const lastSavedRef = useRef(initialText);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const focusOnExpandRef = useRef(false);
 
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (isExpanded && focusOnExpandRef.current) {
+      textareaRef.current?.focus();
+      focusOnExpandRef.current = false;
+    }
+  }, [isExpanded]);
 
   const flush = (value: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -37,6 +49,21 @@ export const PrivateNoteEditor = ({ initialText, onSave }: PrivateNoteEditorProp
     timeoutRef.current = setTimeout(() => flush(value), SAVE_DEBOUNCE_MS);
   };
 
+  if (!isExpanded) {
+    return (
+      <button
+        type="button"
+        className="btn-small btn-secondary private-note-add-button"
+        onClick={() => {
+          focusOnExpandRef.current = true;
+          setIsExpanded(true);
+        }}
+      >
+        <LuPencil aria-hidden="true" /> Add private note
+      </button>
+    );
+  }
+
   return (
     <div className="private-note-editor">
       <div className="private-note-header">
@@ -49,6 +76,7 @@ export const PrivateNoteEditor = ({ initialText, onSave }: PrivateNoteEditorProp
         </span>
       </div>
       <textarea
+        ref={textareaRef}
         className="private-note-textarea"
         placeholder="Private notes only you can see..."
         value={text}

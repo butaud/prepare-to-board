@@ -174,7 +174,8 @@ input.plan-duration-display {
   gap: 4px;
 }
 
-.plan-agenda-view-list .private-note-editor {
+.plan-agenda-view-list .private-note-editor,
+.plan-agenda-view-list .private-note-add-button {
   margin-top: 8px;
 }
 

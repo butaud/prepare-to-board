@@ -48,3 +48,12 @@
   outline: 1px solid var(--primary-color-light);
   outline-offset: -1px;
 }
+
+button.private-note-add-button {
+  opacity: 0.75;
+  font-size: 0.8rem;
+}
+
+button.private-note-add-button:hover {
+  opacity: 1;
+}
