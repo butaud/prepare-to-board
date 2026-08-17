@@ -1,0 +1,60 @@
+.private-note-editor {
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--primary-color-subtle);
+}
+
+.private-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.private-note-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-text-color);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.private-note-status {
+  font-size: 0.72rem;
+  color: var(--muted-text-color);
+  font-style: italic;
+}
+
+.private-note-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 44px;
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  background: var(--background-color);
+  color: var(--font-color);
+}
+
+.private-note-textarea:focus {
+  outline: 1px solid var(--primary-color-light);
+  outline-offset: -1px;
+}
+
+button.private-note-add-button {
+  opacity: 0.75;
+  font-size: 0.8rem;
+  align-self: flex-start;
+}
+
+button.private-note-add-button:hover {
+  opacity: 1;
+}

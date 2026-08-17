@@ -9,14 +9,16 @@ import { useMutation } from "convex/react";
 import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
+import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { PendingNote } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
-import { BoardMember, Meeting, Note, Topic } from "../../schema";
+import { BoardMember, getCanonicalTopicId, Meeting, Note, Topic } from "../../schema";
 import { api } from "../../convexClient";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
+import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import {
@@ -669,6 +671,7 @@ const PostMeetingMinutes = () => {
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
   const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
   const setActionItemCompletedOn = useMutation(api.app.setActionItemCompletedOn);
+  const privateNotes = usePrivateNotes(meeting.id);
   const minutes = meeting.minutes ?? [];
   const completedMinutes = minutes.filter((m) => m !== null);
 
@@ -838,6 +841,19 @@ const PostMeetingMinutes = () => {
                       </div>
                     )
                   )}
+                  {!privateNotes.isLoading && (
+                    <PrivateNoteEditor
+                      initialText={privateNotes.getNote(
+                        topic ? getCanonicalTopicId(topic) : minute.id
+                      )}
+                      onSave={(text) =>
+                        void privateNotes.saveNote(
+                          topic ? getCanonicalTopicId(topic) : minute.id,
+                          text
+                        )
+                      }
+                    />
+                  )}
                 </li>
               );
             })}
@@ -863,6 +879,14 @@ const PostMeetingMinutes = () => {
                     {topic.durationMinutes ?? "?"} min planned
                   </span>
                 </div>
+                {!privateNotes.isLoading && (
+                  <PrivateNoteEditor
+                    initialText={privateNotes.getNote(getCanonicalTopicId(topic))}
+                    onSave={(text) =>
+                      void privateNotes.saveNote(getCanonicalTopicId(topic), text)
+                    }
+                  />
+                )}
               </li>
             ))}
           </ul>

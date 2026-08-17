@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLoadMeetingFromParams } from "../../hooks/Meeting";
 import { getMeetingDisplayStatus } from "../../schema";
 import { useLoadedAccount } from "../../hooks/Account";
+import { PlanAgendaEditModeContext } from "../../hooks/PlanAgendaEditMode";
 import { SubHeader, SubHeaderAction, SubHeaderTab } from "../../ui/SubHeader";
 import { SlTrash } from "react-icons/sl";
 import {
+  MdEdit,
   MdOutlinePresentToAll,
   MdPlayCircleOutline,
   MdPublish,
@@ -27,11 +29,18 @@ export const MeetingShared = () => {
   const setMeetingStatus = useMutation(api.app.setMeetingStatus);
   const recordMeetingViewed = useMutation(api.app.recordMeetingViewed);
   const meetingId = meeting?.id;
+  const meetingStatus = meeting?.status;
+  const [isEditingAgenda, setIsEditingAgenda] = useState(false);
   useEffect(() => {
     if (meetingId) {
       void recordMeetingViewed({ meetingId });
     }
   }, [meetingId, recordMeetingViewed]);
+  // Leaving the Plan page (different meeting, or the meeting moved past
+  // draft/published) shouldn't leave edit mode stuck on for next time.
+  useEffect(() => {
+    setIsEditingAgenda(false);
+  }, [meetingId, meetingStatus]);
   if (meeting === undefined) {
     return <p>Loading...</p>;
   }
@@ -96,6 +105,13 @@ export const MeetingShared = () => {
         icon: <MdStopCircle />,
       });
     }
+    if (meeting.status === "draft" || meeting.status === "published") {
+      actions.push({
+        label: isEditingAgenda ? "Done Editing" : "Edit Agenda",
+        onClick: () => setIsEditingAgenda(!isEditingAgenda),
+        icon: <MdEdit />,
+      });
+    }
     actions.push({
       label: "Delete",
       onClick: onDeleteClick,
@@ -104,14 +120,18 @@ export const MeetingShared = () => {
     });
   }
   return (
-    <div>
-      <SubHeader
-        dynamicTitleParts={{ [meeting.id]: breadcrumbTitle }}
-        partsToIgnore={["present", "minutes"]}
-        actions={actions}
-        tabs={tabs}
-      />
-      {outlet}
-    </div>
+    <PlanAgendaEditModeContext.Provider
+      value={{ isEditingAgenda, setIsEditingAgenda }}
+    >
+      <div>
+        <SubHeader
+          dynamicTitleParts={{ [meeting.id]: breadcrumbTitle }}
+          partsToIgnore={["present", "minutes"]}
+          actions={actions}
+          tabs={tabs}
+        />
+        {outlet}
+      </div>
+    </PlanAgendaEditModeContext.Provider>
   );
 };

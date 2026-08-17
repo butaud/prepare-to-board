@@ -116,4 +116,12 @@ export default defineSchema({
     meetingId: v.id("meetings"),
     viewedAt: v.number(),
   }).index("by_user_meeting", ["userId", "meetingId"]),
+
+  privateNotes: defineTable({
+    userId: v.id("users"),
+    meetingId: v.id("meetings"),
+    topicId: v.string(),
+    text: v.string(),
+    updatedAt: v.number(),
+  }).index("by_user_meeting_topic", ["userId", "meetingId", "topicId"]),
 });

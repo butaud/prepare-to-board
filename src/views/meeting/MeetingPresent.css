@@ -322,6 +322,26 @@
   font-style: italic;
 }
 
+.present-focused-notes button.present-independent-view-banner {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--secondary-color-light);
+  color: var(--font-color);
+  border: none;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: auto;
+  box-shadow: none;
+}
+
+.present-focused-notes button.present-independent-view-banner:hover {
+  opacity: 0.85;
+}
+
 .present-topic-outcome {
   font-size: 0.95rem;
   opacity: 0.8;

@@ -926,6 +926,11 @@
   border-left: 2px solid var(--primary-color-light);
 }
 
+.minutes-item .private-note-editor,
+.minutes-item .private-note-add-button {
+  margin-top: 8px;
+}
+
 /* Badges */
 .badge {
   font-size: 0.7rem;
