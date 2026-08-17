@@ -240,7 +240,6 @@ const serializeMeeting = async (
     location: meeting.location,
     callerId: meeting.callerId,
     callerName: meeting.callerName,
-    callerRole: meeting.callerRole,
     attendance: meeting.attendance,
   };
 };
@@ -713,7 +712,6 @@ export const updateMeetingMetadata = mutation({
     location: v.optional(v.string()),
     callerId: v.optional(v.string()),
     callerName: v.optional(v.string()),
-    callerRole: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
@@ -725,7 +723,6 @@ export const updateMeetingMetadata = mutation({
       location: args.location,
       callerId: args.callerId,
       callerName: args.callerName,
-      callerRole: args.callerRole,
     });
   },
 });

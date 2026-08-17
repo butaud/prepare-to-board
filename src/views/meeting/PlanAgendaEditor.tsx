@@ -701,6 +701,7 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                   className="outcome-display"
                   label="Outcome/Goal"
                   emptyClickBehavior="single"
+                  placeholder="Add outcome/goal"
                 />
               </div>
               {(selectedTopic.details || isOfficer) && (

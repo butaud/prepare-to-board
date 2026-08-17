@@ -110,7 +110,6 @@ export default defineSchema({
     location: v.optional(v.string()),
     callerId: v.optional(v.string()),
     callerName: v.optional(v.string()),
-    callerRole: v.optional(v.string()),
     attendance: v.optional(v.array(attendanceEntry)),
   }).index("by_org", ["organizationId"]),
 

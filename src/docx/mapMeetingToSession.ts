@@ -170,7 +170,11 @@ const buildCaller = (
   const callerMember = members.find((member) => member.id === meeting.callerId);
   return {
     person: personFromBoardMemberOrName(callerMember, meeting.callerName),
-    role: meeting.callerRole ?? "",
+    // The caller is always a board member; their roster "title" (President,
+    // Treasurer, etc.) doubles as their caller role rather than asking the
+    // officer to type one in separately. Fall back to a generic role when
+    // that board member has no title set.
+    role: callerMember?.title ? `the ${callerMember.title}` : "a board member",
   };
 };
 

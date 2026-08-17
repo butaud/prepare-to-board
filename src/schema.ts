@@ -112,7 +112,6 @@ export type Meeting = {
   location?: string;
   callerId?: Id;
   callerName?: string;
-  callerRole?: string;
   attendance?: AttendanceEntry[];
 };
 
