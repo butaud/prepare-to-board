@@ -52,6 +52,7 @@
 button.private-note-add-button {
   opacity: 0.75;
   font-size: 0.8rem;
+  align-self: flex-start;
 }
 
 button.private-note-add-button:hover {
