@@ -235,6 +235,12 @@ const serializeMeeting = async (
     expectedDurationMinutes: meeting.expectedDurationMinutes,
     agendaUpdatedAt: meeting.agendaUpdatedAt,
     viewedAt,
+    title: meeting.title,
+    subtitle: meeting.subtitle,
+    location: meeting.location,
+    callerId: meeting.callerId,
+    callerName: meeting.callerName,
+    attendance: meeting.attendance,
   };
 };
 
@@ -402,9 +408,18 @@ export const me = query({
           .query("meetings")
           .withIndex("by_org", (q) => q.eq("organizationId", org._id))
           .collect();
+        const calendarItems = await ctx.db
+          .query("calendarItems")
+          .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+          .collect();
+        const committees = await ctx.db
+          .query("committees")
+          .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+          .collect();
         return {
           id: org._id,
           name: org.name,
+          committeeDocUrl: org.committeeDocUrl,
           memberships: orgMemberships.map((m, index) => ({
             userId: m.userId,
             role: m.role,
@@ -423,6 +438,17 @@ export const me = query({
               serializeMeeting(ctx, meeting, viewedAtByMeeting.get(meeting._id))
             )
           ),
+          calendarItems: calendarItems.map((c) => ({
+            id: c._id,
+            month: c.month,
+            text: c.text,
+            completed: c.completed,
+          })),
+          committees: committees.map((c) => ({
+            id: c._id,
+            name: c.name,
+            type: c.type,
+          })),
         };
       })
     );
@@ -675,6 +701,44 @@ export const updateExpectedDuration = mutation({
     await ctx.db.patch(args.meetingId, {
       expectedDurationMinutes: args.expectedDurationMinutes,
     });
+  },
+});
+
+export const updateMeetingMetadata = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    title: v.optional(v.string()),
+    subtitle: v.optional(v.string()),
+    location: v.optional(v.string()),
+    callerId: v.optional(v.string()),
+    callerName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, {
+      title: args.title,
+      subtitle: args.subtitle,
+      location: args.location,
+      callerId: args.callerId,
+      callerName: args.callerName,
+    });
+  },
+});
+
+export const updateAttendance = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    attendance: v.array(
+      v.object({ boardMemberId: v.string(), present: v.boolean() })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, { attendance: args.attendance });
   },
 });
 
@@ -1183,6 +1247,102 @@ export const updateBoardMember = mutation({
       title: args.title,
       type: args.type,
     });
+  },
+});
+
+export const addCalendarItem = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    month: v.number(),
+    text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, args.organizationId, ["admin"]);
+    await ctx.db.insert("calendarItems", {
+      organizationId: args.organizationId,
+      month: args.month,
+      text: args.text,
+      completed: false,
+    });
+  },
+});
+
+export const updateCalendarItem = mutation({
+  args: {
+    calendarItemId: v.id("calendarItems"),
+    month: v.optional(v.number()),
+    text: v.optional(v.string()),
+    completed: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.calendarItemId);
+    if (!item) return;
+    await requireRole(ctx, item.organizationId, ["admin"]);
+    await ctx.db.patch(args.calendarItemId, {
+      month: args.month,
+      text: args.text,
+      completed: args.completed,
+    });
+  },
+});
+
+export const deleteCalendarItem = mutation({
+  args: { calendarItemId: v.id("calendarItems") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.calendarItemId);
+    if (!item) return;
+    await requireRole(ctx, item.organizationId, ["admin"]);
+    await ctx.db.delete(args.calendarItemId);
+  },
+});
+
+export const addCommittee = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    type: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, args.organizationId, ["admin"]);
+    await ctx.db.insert("committees", args);
+  },
+});
+
+export const updateCommittee = mutation({
+  args: {
+    committeeId: v.id("committees"),
+    name: v.optional(v.string()),
+    type: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const committee = await ctx.db.get(args.committeeId);
+    if (!committee) return;
+    await requireRole(ctx, committee.organizationId, ["admin"]);
+    await ctx.db.patch(args.committeeId, {
+      name: args.name,
+      type: args.type,
+    });
+  },
+});
+
+export const deleteCommittee = mutation({
+  args: { committeeId: v.id("committees") },
+  handler: async (ctx, args) => {
+    const committee = await ctx.db.get(args.committeeId);
+    if (!committee) return;
+    await requireRole(ctx, committee.organizationId, ["admin"]);
+    await ctx.db.delete(args.committeeId);
+  },
+});
+
+export const updateCommitteeDocUrl = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    committeeDocUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, args.organizationId, ["admin"]);
+    await ctx.db.patch(args.organizationId, { committeeDocUrl: args.committeeDocUrl });
   },
 });
 

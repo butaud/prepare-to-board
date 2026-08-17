@@ -119,4 +119,64 @@
     font-style: italic;
     margin-top: 0;
   }
+
+  .add-calendar-item-form,
+  .add-committee-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background-color: var(--primary-color-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+  }
+
+  .calendar-month-group {
+    margin-bottom: 14px;
+
+    h4 {
+      margin: 0 0 6px;
+      font-size: 0.8rem;
+      color: var(--primary-color-light);
+    }
+  }
+
+  .calendar-item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .calendar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-color-subtle);
+  }
+
+  .calendar-item.is-completed .calendar-item-checkbox span {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+
+  .calendar-item-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .calendar-item-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .committee-doc-url-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
 }

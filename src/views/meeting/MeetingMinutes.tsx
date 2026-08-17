@@ -19,6 +19,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
+import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import {
@@ -729,6 +730,11 @@ const PostMeetingMinutes = () => {
   // unplanned = live topics with no plannedTopic that have a minute
   return (
     <div className="meeting-minutes-completed">
+      <MeetingDetailsAccordion
+        meeting={meeting}
+        members={members}
+        isOfficer={Boolean(isOfficer)}
+      />
       <div className="minutes-completed-header">
         <div>
           <h2>Meeting Minutes</h2>
@@ -2012,6 +2018,11 @@ export const MeetingMinutes = () => {
         />
       </svg>
       <div className="minutes-topic-main">
+        <MeetingDetailsAccordion
+          meeting={meeting}
+          members={members}
+          isOfficer={Boolean(isOfficer)}
+        />
         <IntegrityBanner
           unresolvedMotions={integrityIssues.unresolvedMotions}
           unassignedActionItems={integrityIssues.unassignedActionItems}

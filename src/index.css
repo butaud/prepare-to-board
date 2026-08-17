@@ -320,3 +320,8 @@ select:focus {
 .editable-affordance:hover {
   text-decoration: underline;
 }
+
+.editable-placeholder {
+  color: var(--muted-text-color);
+  font-style: italic;
+}

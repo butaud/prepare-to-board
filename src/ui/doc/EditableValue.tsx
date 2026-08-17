@@ -16,6 +16,11 @@ export type EditableValueProps<T extends string | number> = {
   // requiring the usual double-click once a value exists. Defaults to
   // "double" everywhere.
   emptyClickBehavior?: "single" | "double";
+  // Shown (muted/italic) in place of the value when it's empty and
+  // editable, so there's actually something visible and clickable - an
+  // empty string alone renders as a genuinely zero-size element with
+  // nothing to click on.
+  placeholder?: string;
 };
 
 type EditableValueInnerProps<T extends string | number> =
@@ -36,6 +41,7 @@ const EditableValueInner = <T extends string | number>({
   editingByDefault,
   label,
   emptyClickBehavior = "double",
+  placeholder,
   serialize,
   deserialize,
 }: EditableValueInnerProps<T>) => {
@@ -80,22 +86,28 @@ const EditableValueInner = <T extends string | number>({
       </form>
     );
   } else {
-    const useSingleClick = emptyClickBehavior === "single" && value === "";
+    const isEmpty = value === "";
+    const useSingleClick = emptyClickBehavior === "single" && isEmpty;
     const interactivityProps = canEdit
       ? useSingleClick
         ? { onClick: onStartEditing }
         : { onDoubleClick: onStartEditing }
       : {};
+    const showPlaceholder = canEdit && isEmpty && placeholder !== undefined;
     return createElement(
       as,
       {
-        className: canEdit
-          ? [className, "editable-affordance"].filter(Boolean).join(" ")
-          : className,
+        className: [
+          className,
+          canEdit && "editable-affordance",
+          showPlaceholder && "editable-placeholder",
+        ]
+          .filter(Boolean)
+          .join(" "),
         title: serialize(value),
         ...interactivityProps,
       },
-      serialize(value)
+      showPlaceholder ? placeholder : serialize(value)
     );
   }
 };

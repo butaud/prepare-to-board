@@ -1,0 +1,77 @@
+.meeting-details-accordion {
+  background: var(--primary-color-subtle);
+  border-radius: 8px;
+}
+
+/* Compound selector beats the global `button:not(.cl-button)` rule in
+   index.css, which otherwise wins on specificity and forces this back to
+   a short, solid-primary-color, center-justified button. */
+.meeting-details-accordion button.meeting-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  padding: 14px 20px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  text-align: left;
+  font-size: 1rem;
+  color: var(--font-color);
+
+  &:hover {
+    background-color: var(--primary-color-light);
+  }
+}
+
+.meeting-details-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.meeting-details-summary {
+  font-size: 0.85rem;
+  color: var(--muted-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-details-body {
+  padding: 0 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meeting-details-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meeting-details-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.meeting-details-field-label {
+  font-weight: 600;
+}
+
+.meeting-details-attendance h4 {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}

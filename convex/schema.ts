@@ -49,6 +49,11 @@ const minute = v.object({
   notes: v.optional(v.array(note)),
 });
 
+const attendanceEntry = v.object({
+  boardMemberId: v.string(),
+  present: v.boolean(),
+});
+
 export default defineSchema({
   users: defineTable({
     clerkId: v.string(),
@@ -59,6 +64,7 @@ export default defineSchema({
 
   organizations: defineTable({
     name: v.string(),
+    committeeDocUrl: v.optional(v.string()),
   }),
 
   memberships: defineTable({
@@ -99,6 +105,12 @@ export default defineSchema({
     focusedTopicId: v.optional(v.string()),
     expectedDurationMinutes: v.optional(v.number()),
     agendaUpdatedAt: v.optional(v.number()),
+    title: v.optional(v.string()),
+    subtitle: v.optional(v.string()),
+    location: v.optional(v.string()),
+    callerId: v.optional(v.string()),
+    callerName: v.optional(v.string()),
+    attendance: v.optional(v.array(attendanceEntry)),
   }).index("by_org", ["organizationId"]),
 
   notifications: defineTable({
@@ -127,4 +139,20 @@ export default defineSchema({
     text: v.string(),
     updatedAt: v.number(),
   }).index("by_user_meeting_topic", ["userId", "meetingId", "topicId"]),
+
+  calendarItems: defineTable({
+    organizationId: v.id("organizations"),
+    month: v.number(), // 1 = January ... 12 = December
+    text: v.string(),
+    completed: v.boolean(),
+  }).index("by_org", ["organizationId"]),
+
+  committees: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    // Free text rather than minutes-taker's fixed "Board" | "Headmaster"
+    // union (see docx/model.ts) - prepare-to-board isn't school-specific,
+    // so committee type shouldn't be either.
+    type: v.string(),
+  }).index("by_org", ["organizationId"]),
 });

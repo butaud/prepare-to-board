@@ -88,6 +88,11 @@ export type Minute = {
 
 export type MeetingStatus = "draft" | "published" | "live" | "completed";
 
+export type AttendanceEntry = {
+  boardMemberId: Id;
+  present: boolean;
+};
+
 export type Meeting = {
   id: Id;
   organizationId: Id;
@@ -102,6 +107,12 @@ export type Meeting = {
   expectedDurationMinutes?: number;
   agendaUpdatedAt?: number;
   viewedAt?: number;
+  title?: string;
+  subtitle?: string;
+  location?: string;
+  callerId?: Id;
+  callerName?: string;
+  attendance?: AttendanceEntry[];
 };
 
 export type NotificationType =
@@ -118,12 +129,28 @@ export type AppNotification = {
   createdAt: Date;
 };
 
+export type CalendarItem = {
+  id: Id;
+  month: number; // 1 = January ... 12 = December
+  text: string;
+  completed: boolean;
+};
+
+export type Committee = {
+  id: Id;
+  name: string;
+  type: string;
+};
+
 export type Organization = {
   id: Id;
   name: string;
+  committeeDocUrl?: string;
   meetings: Meeting[];
   members: BoardMember[];
   memberships: Membership[];
+  calendarItems: CalendarItem[];
+  committees: Committee[];
 };
 
 export type Membership = {

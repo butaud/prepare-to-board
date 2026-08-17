@@ -1,0 +1,75 @@
+.attendance-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.attendance-group h4 {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  color: var(--muted-text-color);
+}
+
+.attendance-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attendance-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.attendance-name {
+  min-width: 140px;
+}
+
+.attendance-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+/* Compound selectors beat the global `button:not(.cl-button)` rule in
+   index.css, which otherwise wins on specificity and forces every button
+   back to the solid primary-color fill regardless of these overrides. */
+.attendance-toggle button.attendance-toggle-btn {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  height: auto;
+  border-radius: 4px;
+  border: 1px solid var(--primary-color-light);
+  background-color: transparent;
+  color: var(--font-color);
+}
+
+.attendance-toggle button.attendance-toggle-btn.is-present {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.attendance-toggle button.attendance-toggle-btn.is-absent {
+  background-color: var(--danger-color-strong);
+  border-color: var(--danger-color-strong);
+  color: white;
+}
+
+.attendance-status {
+  font-size: 0.85rem;
+  color: var(--muted-text-color);
+}
+
+.attendance-status.is-present {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.attendance-status.is-absent {
+  color: var(--danger-color-strong);
+  font-weight: 600;
+}
