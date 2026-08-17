@@ -40,7 +40,8 @@
     }
 
     thead th:last-child {
-      width: 60px;
+      width: 1%;
+      white-space: nowrap;
     }
 
     tr.member {
@@ -96,6 +97,20 @@
 
   .unclaimed-member td {
     opacity: 0.65;
+  }
+
+  .member-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .link-to-account {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .manage-note {

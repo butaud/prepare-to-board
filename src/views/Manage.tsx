@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation } from "convex/react";
-import { BoardMember, Organization, Role } from "../schema";
+import { BoardMember, BoardMemberType, Organization, Role } from "../schema";
 import { InviteUserDialog } from "../ui/dialogs/InviteUserDialog";
 import { SlPlus, SlPencil } from "react-icons/sl";
 import { useLoadedAccount } from "../hooks/Account";
@@ -10,11 +10,42 @@ import { api } from "../convexClient";
 
 import "./Manage.css";
 
+const boardMemberTypes: BoardMemberType[] = ["board", "administration", "other"];
+const boardMemberTypeLabels: Record<BoardMemberType, string> = {
+  board: "Board Member",
+  administration: "Administration",
+  other: "Other",
+};
+
+const BoardMemberTypeSelect = ({
+  value,
+  onChange,
+  selectRef,
+}: {
+  value: BoardMemberType | undefined;
+  onChange?: (type: BoardMemberType) => void;
+  selectRef?: React.Ref<HTMLSelectElement>;
+}) => (
+  <select
+    ref={selectRef}
+    aria-label="Type"
+    defaultValue={value ?? "other"}
+    onChange={onChange ? (e) => onChange(e.target.value as BoardMemberType) : undefined}
+  >
+    {boardMemberTypes.map((t) => (
+      <option key={t} value={t}>
+        {boardMemberTypeLabels[t]}
+      </option>
+    ))}
+  </select>
+);
+
 const AddBoardMemberForm = ({ org }: { org: Organization }) => {
   const addBoardMember = useMutation(api.app.addBoardMember);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [email, setEmail] = useState("");
+  const [type, setType] = useState<BoardMemberType>("other");
   const [showing, setShowing] = useState(false);
 
   const handleAdd = () => {
@@ -24,10 +55,12 @@ const AddBoardMemberForm = ({ org }: { org: Organization }) => {
       name: name.trim(),
       title: title.trim() || undefined,
       email: email.trim() || undefined,
+      type,
     }).then(() => {
       setName("");
       setTitle("");
       setEmail("");
+      setType("other");
       setShowing(false);
     });
   };
@@ -45,6 +78,7 @@ const AddBoardMemberForm = ({ org }: { org: Organization }) => {
       <input placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <input placeholder="Title (e.g. President)" value={title} onChange={(e) => setTitle(e.target.value)} />
       <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <BoardMemberTypeSelect value={type} onChange={setType} />
       <button onClick={handleAdd} disabled={!name.trim()}>Add</button>
       <button onClick={() => setShowing(false)}>Cancel</button>
     </div>
@@ -66,8 +100,11 @@ export const Manage = () => {
 
   const org = me.root.selectedOrganization;
   const isAdmin = me.canAdmin(org);
+  const isOfficer = me.canWrite(org);
   const claimedMemberIds = new Set(org.members.map((member) => member.accountId).filter(Boolean));
   const unclaimedBoardMembers = org.members.filter((member) => !member.accountId);
+  const linkableAccountEntries = org.members.filter((member) => member.accountId);
+  const showActionsColumn = isOfficer || isAdmin;
 
   return (
     <div className="manage">
@@ -88,14 +125,15 @@ export const Manage = () => {
             <tr>
               <th>Name</th>
               <th>Title</th>
+              <th>Type</th>
               <th>Role</th>
-              {isAdmin && <th></th>}
+              {showActionsColumn && <th></th>}
             </tr>
           </thead>
           <tbody>
             {org.memberships.length === 0 && unclaimedBoardMembers.length === 0 && (
               <tr>
-                <td colSpan={isAdmin ? 4 : 3}>No members yet.</td>
+                <td colSpan={showActionsColumn ? 5 : 4}>No members yet.</td>
               </tr>
             )}
             {org.memberships.map((member) => {
@@ -110,22 +148,31 @@ export const Manage = () => {
                   name={member.name}
                   isSelf={member.userId === me.id}
                   isAdmin={isAdmin}
+                  isOfficer={isOfficer}
                   boardMember={boardMember}
                 />
               );
             })}
             {unclaimedBoardMembers.map((bm) => (
-              <UnclaimedBoardMemberRow key={bm.id} boardMember={bm} isAdmin={isAdmin} />
+              <UnclaimedBoardMemberRow
+                key={bm.id}
+                boardMember={bm}
+                isAdmin={isAdmin}
+                isOfficer={isOfficer}
+                linkableAccountEntries={linkableAccountEntries}
+              />
             ))}
           </tbody>
         </table>
-        {isAdmin && (
+        {(isAdmin || isOfficer) && (
           <div className="manage-actions">
-            <button onClick={() => setInviteDialogOpen(true)}>
-              <SlPlus />
-              Invite a new user
-            </button>
-            <AddBoardMemberForm org={org} />
+            {isAdmin && (
+              <button onClick={() => setInviteDialogOpen(true)}>
+                <SlPlus />
+                Invite a new user
+              </button>
+            )}
+            {isOfficer && <AddBoardMemberForm org={org} />}
           </div>
         )}
       </div>
@@ -139,26 +186,87 @@ export const Manage = () => {
   );
 };
 
+const LinkToAccountControl = ({
+  unclaimedMemberId,
+  candidates,
+}: {
+  unclaimedMemberId: string;
+  candidates: BoardMember[];
+}) => {
+  const linkBoardMemberToAccount = useMutation(api.app.linkBoardMemberToAccount);
+  const [selectedId, setSelectedId] = useState("");
+
+  if (candidates.length === 0) return null;
+
+  const handleLink = () => {
+    if (!selectedId) return;
+    const candidate = candidates.find((c) => c.id === selectedId);
+    if (
+      !candidate ||
+      !confirm(
+        `Link "${candidate.name}"'s account to this roster entry? This merges the two into one entry and can't be undone.`
+      )
+    ) {
+      return;
+    }
+    void linkBoardMemberToAccount({
+      unclaimedMemberId,
+      accountBoardMemberId: selectedId,
+    }).then(() => setSelectedId(""));
+  };
+
+  return (
+    <span className="link-to-account">
+      <select
+        aria-label="Link to account"
+        value={selectedId}
+        onChange={(e) => setSelectedId(e.target.value)}
+      >
+        <option value="">Link to account…</option>
+        {candidates.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <button
+        className="btn-small btn-secondary"
+        disabled={!selectedId}
+        onClick={handleLink}
+      >
+        Link
+      </button>
+    </span>
+  );
+};
+
 const UnclaimedBoardMemberRow = ({
   boardMember,
   isAdmin,
+  isOfficer,
+  linkableAccountEntries,
 }: {
   boardMember: BoardMember;
   isAdmin: boolean;
+  isOfficer: boolean;
+  linkableAccountEntries: BoardMember[];
 }) => {
   const updateBoardMember = useMutation(api.app.updateBoardMember);
   const [editing, setEditing] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const typeRef = useRef<HTMLSelectElement>(null);
 
   const handleSave = () => {
     const newName = nameRef.current?.value ?? "";
     const newTitle = titleRef.current?.value ?? "";
+    const newType = (typeRef.current?.value as BoardMemberType) || "other";
     if (!newName.trim()) return;
     void updateBoardMember({
       memberId: boardMember.id,
       name: newName.trim(),
       title: newTitle.trim() || undefined,
+      type: newType,
     }).then(() => setEditing(false));
   };
 
@@ -167,6 +275,7 @@ const UnclaimedBoardMemberRow = ({
       <tr className="member unclaimed-member">
         <td><input ref={nameRef} defaultValue={boardMember.name} autoFocus style={{ width: "100%" }} /></td>
         <td><input ref={titleRef} defaultValue={boardMember.title ?? ""} placeholder="Title" style={{ width: "100%" }} /></td>
+        <td><BoardMemberTypeSelect value={boardMember.type} selectRef={typeRef} /></td>
         <td><em>Not joined</em></td>
         <td>
           <button className="btn-small btn-primary" onClick={handleSave}>Save</button>
@@ -180,12 +289,21 @@ const UnclaimedBoardMemberRow = ({
     <tr className="member unclaimed-member">
       <td>{boardMember.name}</td>
       <td>{boardMember.title ?? "-"}</td>
+      <td>{boardMemberTypeLabels[boardMember.type ?? "other"]}</td>
       <td><em>Not joined</em></td>
-      {isAdmin && (
-        <td>
-          <button className="btn-small btn-secondary" onClick={() => setEditing(true)} title="Edit">
-            <SlPencil />
-          </button>
+      {(isOfficer || isAdmin) && (
+        <td className="member-actions">
+          {isOfficer && (
+            <button className="btn-small btn-secondary" onClick={() => setEditing(true)} title="Edit">
+              <SlPencil />
+            </button>
+          )}
+          {isAdmin && (
+            <LinkToAccountControl
+              unclaimedMemberId={boardMember.id}
+              candidates={linkableAccountEntries}
+            />
+          )}
         </td>
       )}
     </tr>
@@ -199,6 +317,7 @@ type MemberNodeProps = {
   name: string;
   isSelf: boolean;
   isAdmin: boolean;
+  isOfficer: boolean;
   boardMember: BoardMember | undefined;
 };
 
@@ -209,23 +328,27 @@ const MemberNode = ({
   name,
   isSelf,
   isAdmin,
+  isOfficer,
   boardMember,
 }: MemberNodeProps) => {
   const updateRole = useMutation(api.app.updateMembershipRole);
   const updateBoardMember = useMutation(api.app.updateBoardMember);
-  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const typeRef = useRef<HTMLSelectElement>(null);
 
-  const saveTitle = () => {
+  const saveDetails = () => {
     if (!boardMember) {
-      setEditingTitle(false);
+      setEditingDetails(false);
       return;
     }
+    const newType = (typeRef.current?.value as BoardMemberType) || "other";
     void updateBoardMember({
       memberId: boardMember.id,
       name: boardMember.name,
       title: titleRef.current?.value.trim() || undefined,
-    }).then(() => setEditingTitle(false));
+      type: newType,
+    }).then(() => setEditingDetails(false));
   };
 
   const handleRoleChange = (newRole: Role) => {
@@ -246,14 +369,17 @@ const MemberNode = ({
     <tr className="member">
       <td className={isSelf ? "me" : ""}>{name + (isSelf ? " (me)" : "")}</td>
       <td>
-        {isAdmin && editingTitle ? (
-          <span style={{ display: "flex", gap: 4 }}>
-            <input ref={titleRef} defaultValue={boardMember?.title ?? ""} autoFocus placeholder="Title" style={{ width: "100%" }} />
-            <button className="btn-small btn-primary" onClick={saveTitle}>Save</button>
-            <button className="btn-small btn-secondary" onClick={() => setEditingTitle(false)}>Cancel</button>
-          </span>
+        {isOfficer && editingDetails ? (
+          <input ref={titleRef} defaultValue={boardMember?.title ?? ""} autoFocus placeholder="Title" style={{ width: "100%" }} />
         ) : (
           <>{boardMember?.title ?? "-"}</>
+        )}
+      </td>
+      <td>
+        {isOfficer && editingDetails ? (
+          <BoardMemberTypeSelect value={boardMember?.type} selectRef={typeRef} />
+        ) : (
+          boardMemberTypeLabels[boardMember?.type ?? "other"]
         )}
       </td>
       <td>
@@ -265,12 +391,19 @@ const MemberNode = ({
           isMemberAdmin={startingRole === "admin"}
         />
       </td>
-      {isAdmin && (
-        <td style={{ display: "flex", gap: 4 }}>
-          {!editingTitle && boardMember && (
-            <button className="btn-small btn-secondary" onClick={() => setEditingTitle(true)} title="Edit title">
-              <SlPencil />
-            </button>
+      {(isOfficer || isAdmin) && (
+        <td className="member-actions">
+          {isOfficer && boardMember && (
+            editingDetails ? (
+              <span style={{ display: "flex", gap: 4 }}>
+                <button className="btn-small btn-primary" onClick={saveDetails}>Save</button>
+                <button className="btn-small btn-secondary" onClick={() => setEditingDetails(false)}>Cancel</button>
+              </span>
+            ) : (
+              <button className="btn-small btn-secondary" onClick={() => setEditingDetails(true)} title="Edit title/type">
+                <SlPencil />
+              </button>
+            )
           )}
         </td>
       )}

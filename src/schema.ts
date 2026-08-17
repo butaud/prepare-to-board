@@ -8,12 +8,15 @@ export type TextNote = {
   text: string;
 };
 
+export type BoardMemberType = "board" | "administration" | "other";
+
 export type BoardMember = {
   id: Id;
   name: string;
   email?: string;
   title?: string;
   accountId?: Id;
+  type?: BoardMemberType;
 };
 
 export type ActionItemNote = {
