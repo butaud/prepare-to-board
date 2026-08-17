@@ -6,7 +6,7 @@ header {
 
   border-bottom: 1px solid var(--border-color);
   box-shadow: 0 1px 4px var(--shadow-color);
-  padding: 8px 0;
+  padding: 8px 16px;
 
   .start {
     flex: 0 0 auto;

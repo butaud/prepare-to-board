@@ -98,4 +98,17 @@
       color: var(--primary-color-light);
     }
   }
+
+  .updated-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    background-color: var(--secondary-color);
+    color: var(--font-color);
+  }
 }

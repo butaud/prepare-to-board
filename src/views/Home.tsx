@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
 import { CreateOrganization } from "../ui/forms/Organization";
-import { getUserProfileFormalName, type Meeting } from "../schema";
+import {
+  getUserProfileFormalName,
+  isAgendaUpdatedSinceViewed,
+  type Meeting,
+} from "../schema";
 import { useLoadedAccount } from "../hooks/Account";
 import { ActionItemRow } from "../ui/ActionItemRow";
 import {
@@ -40,6 +44,9 @@ const MeetingCard = ({
       </span>
       <span className="meeting-card-meta">
         <StatusBadge status={meeting.status} />
+        {isAgendaUpdatedSinceViewed(meeting) && (
+          <span className="updated-badge">Updated</span>
+        )}
         {topicCount > 0 && (
           <span className="meeting-card-topics">
             {topicCount} topic{topicCount !== 1 ? "s" : ""}

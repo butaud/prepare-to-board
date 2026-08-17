@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLoadMeetingFromParams } from "../../hooks/Meeting";
 import { getMeetingDisplayStatus } from "../../schema";
 import { useLoadedAccount } from "../../hooks/Account";
@@ -24,6 +25,13 @@ export const MeetingShared = () => {
   const deleteMeeting = useMutation(api.app.deleteMeeting);
   const startMeeting = useMutation(api.app.startMeeting);
   const setMeetingStatus = useMutation(api.app.setMeetingStatus);
+  const recordMeetingViewed = useMutation(api.app.recordMeetingViewed);
+  const meetingId = meeting?.id;
+  useEffect(() => {
+    if (meetingId) {
+      void recordMeetingViewed({ meetingId });
+    }
+  }, [meetingId, recordMeetingViewed]);
   if (meeting === undefined) {
     return <p>Loading...</p>;
   }

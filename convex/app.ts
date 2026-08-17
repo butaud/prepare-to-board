@@ -207,7 +207,11 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
   status: note.status,
 });
 
-const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
+const serializeMeeting = async (
+  ctx: Ctx,
+  meeting: Doc<"meetings">,
+  viewedAt?: number
+) => {
   const members = await ctx.db
     .query("boardMembers")
     .withIndex("by_org", (q) => q.eq("organizationId", meeting.organizationId))
@@ -229,6 +233,8 @@ const serializeMeeting = async (ctx: Ctx, meeting: Doc<"meetings">) => {
     currentNotes: meeting.currentNotes?.map((note) => serializeNote(note, members)),
     highlightedTopicId: meeting.highlightedTopicId ?? meeting.focusedTopicId,
     expectedDurationMinutes: meeting.expectedDurationMinutes,
+    agendaUpdatedAt: meeting.agendaUpdatedAt,
+    viewedAt,
   };
 };
 
@@ -237,6 +243,86 @@ const currentLiveTopicIndex = (meeting: Doc<"meetings">) =>
     (topic, index) =>
       index >= meeting.minutes.length && !topic.cancelled && !topic.deferred
   );
+
+const createNotification = async (
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    userId: Id<"users">;
+    type: "agenda_published" | "minutes_shared" | "action_item_assigned";
+    meetingId?: Id<"meetings">;
+    message: string;
+  }
+) => {
+  await ctx.db.insert("notifications", { ...args, read: false });
+};
+
+const notifyOrgMembers = async (
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  excludeUserId: Id<"users">,
+  type: "agenda_published" | "minutes_shared",
+  message: string,
+  meetingId: Id<"meetings">
+) => {
+  const memberships = await ctx.db
+    .query("memberships")
+    .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
+    .collect();
+  await Promise.all(
+    memberships
+      .filter((membership) => membership.userId !== excludeUserId)
+      .map((membership) =>
+        createNotification(ctx, {
+          organizationId,
+          userId: membership.userId,
+          type,
+          meetingId,
+          message,
+        })
+      )
+  );
+};
+
+const findAssigneeAccountId = async (
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  assigneeId?: string
+) => {
+  if (!assigneeId) return undefined;
+  const members = await ctx.db
+    .query("boardMembers")
+    .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
+    .collect();
+  return members.find((member) => member._id === assigneeId)?.accountId;
+};
+
+// Notifies a newly-assigned action item's assignee. Only fires when the note
+// is (or becomes) an action_item with an assignee who has a linked account
+// other than the person making the change, so self-assignment and edits that
+// don't touch the assignee stay silent.
+const notifyActionItemAssignee = async (
+  ctx: MutationCtx,
+  meeting: Doc<"meetings">,
+  actorUserId: Id<"users">,
+  topicTitle: string,
+  note: { type: string; text: string; assigneeId?: string }
+) => {
+  if (note.type !== "action_item" || !note.assigneeId) return;
+  const accountId = await findAssigneeAccountId(
+    ctx,
+    meeting.organizationId,
+    note.assigneeId
+  );
+  if (!accountId || accountId === actorUserId) return;
+  await createNotification(ctx, {
+    organizationId: meeting.organizationId,
+    userId: accountId,
+    type: "action_item_assigned",
+    meetingId: meeting._id,
+    message: `You were assigned an action item during "${topicTitle}": ${note.text}`,
+  });
+};
 
 export const ensureCurrentUser = mutation({
   args: { name: v.optional(v.string()), email: v.optional(v.string()) },
@@ -290,6 +376,13 @@ export const me = query({
       .query("memberships")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
+    const meetingViews = await ctx.db
+      .query("meetingViews")
+      .withIndex("by_user_meeting", (q) => q.eq("userId", user._id))
+      .collect();
+    const viewedAtByMeeting = new Map(
+      meetingViews.map((view) => [view.meetingId, view.viewedAt])
+    );
     const organizations = await Promise.all(
       memberships.map(async (membership) => {
         const org = await ctx.db.get(membership.organizationId);
@@ -324,7 +417,11 @@ export const me = query({
             title: m.title,
             accountId: m.accountId,
           })),
-          meetings: await Promise.all(meetings.map((meeting) => serializeMeeting(ctx, meeting))),
+          meetings: await Promise.all(
+            meetings.map((meeting) =>
+              serializeMeeting(ctx, meeting, viewedAtByMeeting.get(meeting._id))
+            )
+          ),
         };
       })
     );
@@ -348,8 +445,18 @@ export const meeting = query({
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return null;
-    await requireRole(ctx, meeting.organizationId, ["admin", "writer", "reader"]);
-    return await serializeMeeting(ctx, meeting);
+    const { user } = await requireRole(ctx, meeting.organizationId, [
+      "admin",
+      "writer",
+      "reader",
+    ]);
+    const view = await ctx.db
+      .query("meetingViews")
+      .withIndex("by_user_meeting", (q) =>
+        q.eq("userId", user._id).eq("meetingId", meeting._id)
+      )
+      .unique();
+    return await serializeMeeting(ctx, meeting, view?.viewedAt);
   },
 });
 
@@ -465,8 +572,18 @@ export const setMeetingStatus = mutation({
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
-    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
     await ctx.db.patch(args.meetingId, { status: args.status });
+    if (args.status === "published" && meeting.status !== "published") {
+      await notifyOrgMembers(
+        ctx,
+        meeting.organizationId,
+        user._id,
+        "agenda_published",
+        "The agenda for an upcoming meeting has been published.",
+        args.meetingId
+      );
+    }
   },
 });
 
@@ -590,6 +707,9 @@ export const addTopic = mutation({
     topics.splice(insertIndex, 0, topic);
     await ctx.db.patch(args.meetingId, {
       [args.list]: topics,
+      ...(args.list === "plannedAgenda" && meeting.status === "published"
+        ? { agendaUpdatedAt: Date.now() }
+        : {}),
     });
     return topic.id;
   },
@@ -625,6 +745,9 @@ export const updateTopic = mutation({
             }
           : topic
       ),
+      ...(args.list === "plannedAgenda" && meeting.status === "published"
+        ? { agendaUpdatedAt: Date.now() }
+        : {}),
     });
   },
 });
@@ -641,6 +764,9 @@ export const deleteTopic = mutation({
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
     await ctx.db.patch(args.meetingId, {
       [args.list]: meeting[args.list].filter((topic) => topic.id !== args.topicId),
+      ...(args.list === "plannedAgenda" && meeting.status === "published"
+        ? { agendaUpdatedAt: Date.now() }
+        : {}),
     });
   },
 });
@@ -658,6 +784,9 @@ export const reorderTopics = mutation({
     const byId = new Map(meeting[args.list].map((topic) => [topic.id, topic]));
     await ctx.db.patch(args.meetingId, {
       [args.list]: args.topicIds.map((topicId) => byId.get(topicId)).filter(Boolean),
+      ...(args.list === "plannedAgenda" && meeting.status === "published"
+        ? { agendaUpdatedAt: Date.now() }
+        : {}),
     });
   },
 });
@@ -753,10 +882,18 @@ export const addCurrentNote = mutation({
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
-    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
     await ctx.db.patch(args.meetingId, {
       currentNotes: [...(meeting.currentNotes ?? []), { id: id(), ...args.note }],
     });
+    const activeTopic = meeting.liveAgenda[currentLiveTopicIndex(meeting)];
+    await notifyActionItemAssignee(
+      ctx,
+      meeting,
+      user._id,
+      activeTopic?.title ?? "the meeting",
+      args.note
+    );
   },
 });
 
@@ -777,12 +914,23 @@ export const updateCurrentNote = mutation({
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
-    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const previous = (meeting.currentNotes ?? []).find((note) => note.id === args.noteId);
     await ctx.db.patch(args.meetingId, {
       currentNotes: (meeting.currentNotes ?? []).map((note) =>
         note.id === args.noteId ? { id: note.id, ...args.note } : note
       ),
     });
+    if (args.note.assigneeId && args.note.assigneeId !== previous?.assigneeId) {
+      const activeTopic = meeting.liveAgenda[currentLiveTopicIndex(meeting)];
+      await notifyActionItemAssignee(
+        ctx,
+        meeting,
+        user._id,
+        activeTopic?.title ?? "the meeting",
+        args.note
+      );
+    }
   },
 });
 
@@ -791,7 +939,7 @@ export const addMinuteNote = mutation({
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
-    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
     await ctx.db.patch(args.meetingId, {
       minutes: meeting.minutes.map((minute) =>
         minute.id === args.minuteId
@@ -799,6 +947,14 @@ export const addMinuteNote = mutation({
           : minute
       ),
     });
+    const minute = meeting.minutes.find((candidate) => candidate.id === args.minuteId);
+    await notifyActionItemAssignee(
+      ctx,
+      meeting,
+      user._id,
+      minute?.topic.title ?? "the meeting",
+      args.note
+    );
   },
 });
 
@@ -812,7 +968,9 @@ export const updateMinuteNote = mutation({
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
-    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    const minuteBefore = meeting.minutes.find((candidate) => candidate.id === args.minuteId);
+    const previous = minuteBefore?.notes?.find((note) => note.id === args.noteId);
     await ctx.db.patch(args.meetingId, {
       minutes: meeting.minutes.map((minute) =>
         minute.id === args.minuteId
@@ -825,6 +983,15 @@ export const updateMinuteNote = mutation({
           : minute
       ),
     });
+    if (args.note.assigneeId && args.note.assigneeId !== previous?.assigneeId) {
+      await notifyActionItemAssignee(
+        ctx,
+        meeting,
+        user._id,
+        minuteBefore?.topic.title ?? "the meeting",
+        args.note
+      );
+    }
   },
 });
 
@@ -998,5 +1165,94 @@ export const updateMembershipRole = mutation({
     const membership = await membershipFor(ctx, args.organizationId, args.userId);
     if (!membership) return;
     await ctx.db.patch(membership._id, { role: args.role });
+  },
+});
+
+export const notifications = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
+    const items = await ctx.db
+      .query("notifications")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(50);
+    return items.map((item) => ({
+      id: item._id,
+      type: item.type,
+      meetingId: item.meetingId,
+      message: item.message,
+      read: item.read,
+      createdAt: item._creationTime,
+    }));
+  },
+});
+
+export const markNotificationRead = mutation({
+  args: { notificationId: v.id("notifications") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const notification = await ctx.db.get(args.notificationId);
+    if (!notification || notification.userId !== user._id) return;
+    await ctx.db.patch(args.notificationId, { read: true });
+  },
+});
+
+export const markAllNotificationsRead = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    const unread = await ctx.db
+      .query("notifications")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("read"), false))
+      .collect();
+    await Promise.all(unread.map((item) => ctx.db.patch(item._id, { read: true })));
+  },
+});
+
+export const notifyBoardMinutesShared = mutation({
+  args: { meetingId: v.id("meetings") },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await notifyOrgMembers(
+      ctx,
+      meeting.organizationId,
+      user._id,
+      "minutes_shared",
+      "Minutes from a recent meeting are ready to review.",
+      args.meetingId
+    );
+  },
+});
+
+export const recordMeetingViewed = mutation({
+  args: { meetingId: v.id("meetings") },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    const { user } = await requireRole(ctx, meeting.organizationId, [
+      "admin",
+      "writer",
+      "reader",
+    ]);
+    const existing = await ctx.db
+      .query("meetingViews")
+      .withIndex("by_user_meeting", (q) =>
+        q.eq("userId", user._id).eq("meetingId", args.meetingId)
+      )
+      .unique();
+    if (existing) {
+      await ctx.db.patch(existing._id, { viewedAt: Date.now() });
+    } else {
+      await ctx.db.insert("meetingViews", {
+        userId: user._id,
+        meetingId: args.meetingId,
+        viewedAt: Date.now(),
+      });
+    }
   },
 });
