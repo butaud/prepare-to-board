@@ -896,16 +896,17 @@ export const makeActive = mutation({
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
     await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    // The active slot is always right after the completed topics. The
+    // target topic (which must not be completed yet, so its index is
+    // always >= currentIndex) moves into that slot; whatever topic was
+    // sitting there before - if any - simply shifts down to become the
+    // next topic instead of being auto-deferred to the end of the agenda.
     const currentIndex = meeting.minutes.length;
-    const current = meeting.liveAgenda[currentIndex];
     const targetIndex = meeting.liveAgenda.findIndex((topic) => topic.id === args.topicId);
-    if (!current || targetIndex === -1) return;
+    if (targetIndex === -1 || targetIndex < currentIndex) return;
     const liveAgenda = [...meeting.liveAgenda];
-    const [currentTopic] = liveAgenda.splice(currentIndex, 1);
-    const adjustedTargetIndex = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
-    const [targetTopic] = liveAgenda.splice(adjustedTargetIndex, 1);
+    const [targetTopic] = liveAgenda.splice(targetIndex, 1);
     liveAgenda.splice(currentIndex, 0, { ...targetTopic, deferred: false });
-    liveAgenda.push({ ...currentTopic, deferred: true });
     await ctx.db.patch(args.meetingId, {
       liveAgenda,
       highlightedTopicId:
