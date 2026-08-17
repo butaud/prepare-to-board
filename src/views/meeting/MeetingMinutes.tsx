@@ -1181,6 +1181,22 @@ export const MeetingMinutes = () => {
     setEditingCurrentNoteId(null);
   }, [meetingActiveTopicId]);
 
+  // Keep the detail pane's selection following the active topic when it
+  // changes (completing/skipping the active topic, or making a different
+  // topic active) - but only when the selection was actually pinned to the
+  // topic that just stopped being active, not when the minute-taker had
+  // deliberately selected something else (e.g. the topic they just made
+  // active, which should stay selected rather than being second-guessed).
+  const previousActiveTopicIdRef = useRef<string | null>(meetingActiveTopicId);
+  useEffect(() => {
+    const previousActiveTopicId = previousActiveTopicIdRef.current;
+    previousActiveTopicIdRef.current = meetingActiveTopicId;
+    if (previousActiveTopicId === meetingActiveTopicId) return;
+    setLocallySelectedTopicId((current) =>
+      current === previousActiveTopicId ? meetingActiveTopicId : current
+    );
+  }, [meetingActiveTopicId]);
+
   const isOfficer = me?.canWrite(meeting);
 
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
@@ -2135,9 +2151,8 @@ export const MeetingMinutes = () => {
                       topicId: selectedAgendaItem.topic.id,
                     })
                   }
-                  disabled={!meetingActiveTopic}
                 >
-                  Make Active
+                  {meetingActiveTopic ? "Make Active Instead" : "Make Active"}
                 </button>
                 <button
                   className="btn-secondary"
@@ -2165,9 +2180,8 @@ export const MeetingMinutes = () => {
                       topicId: selectedAgendaItem.topic.id,
                     })
                   }
-                  disabled={!meetingActiveTopic}
                 >
-                  Make Active
+                  {meetingActiveTopic ? "Make Active Instead" : "Make Active"}
                 </button>
               </div>
             )}
