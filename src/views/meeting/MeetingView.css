@@ -27,16 +27,11 @@
   gap: 8px;
 }
 
-/* Collapsed, it sits to the right of the stacked start/end time fields;
-   expanded, it needs the full width to lay out its fields and attendance
-   grid. */
+/* Stays in place beside the stacked start/end time fields whether
+   collapsed or expanded - it just grows taller, not wider, when opened. */
 .plan-header .meeting-details-accordion {
   flex: 1 1 240px;
   min-width: 200px;
-}
-
-.plan-header .meeting-details-accordion:has(.meeting-details-body) {
-  flex-basis: 100%;
 }
 
 /* .meeting-minutes normally supplies its own top padding since it's the
