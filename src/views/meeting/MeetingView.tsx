@@ -693,7 +693,12 @@ export const MeetingView = () => {
             )}
           </div>
         </div>
-        <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
+        <MeetingDetailsAccordion
+          meeting={meeting}
+          members={members}
+          isOfficer={isOfficer}
+          showAttendance={false}
+        />
       </div>
       <PlanAgendaEditor
         meeting={meeting}

@@ -12,12 +12,17 @@ export type MeetingDetailsAccordionProps = {
   meeting: Meeting;
   members: BoardMember[];
   isOfficer: boolean;
+  // Attendance isn't meaningful until the meeting actually happens, so the
+  // pre-meeting Plan page hides it here rather than showing a grid of
+  // members no one has marked present or absent yet.
+  showAttendance?: boolean;
 };
 
 export const MeetingDetailsAccordion: FC<MeetingDetailsAccordionProps> = ({
   meeting,
   members,
   isOfficer,
+  showAttendance = true,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const updateMeetingMetadata = useMutation(api.app.updateMeetingMetadata);
@@ -56,7 +61,7 @@ export const MeetingDetailsAccordion: FC<MeetingDetailsAccordionProps> = ({
   const summaryParts = [meeting.title, meeting.subtitle, meeting.location].filter(
     (part): part is string => Boolean(part)
   );
-  if (presentCount + absentCount > 0) {
+  if (showAttendance && presentCount + absentCount > 0) {
     summaryParts.push(`${presentCount} present, ${absentCount} absent`);
   }
   const summary = summaryParts.length > 0 ? summaryParts.join(" · ") : "No details set yet";
@@ -155,17 +160,19 @@ export const MeetingDetailsAccordion: FC<MeetingDetailsAccordionProps> = ({
               </div>
             )}
           </div>
-          <div className="meeting-details-attendance">
-            <h4>Attendance</h4>
-            <AttendanceEditor
-              members={members}
-              attendance={meeting.attendance}
-              canEdit={isOfficer}
-              onChange={(attendance) =>
-                void updateAttendance({ meetingId: meeting.id, attendance })
-              }
-            />
-          </div>
+          {showAttendance && (
+            <div className="meeting-details-attendance">
+              <h4>Attendance</h4>
+              <AttendanceEditor
+                members={members}
+                attendance={meeting.attendance}
+                canEdit={isOfficer}
+                onChange={(attendance) =>
+                  void updateAttendance({ meetingId: meeting.id, attendance })
+                }
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
