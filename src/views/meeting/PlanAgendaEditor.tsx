@@ -13,6 +13,7 @@ import { usePlanAgendaEditMode } from "../../hooks/PlanAgendaEditMode";
 import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { EditableInteger, EditableString } from "../../ui/doc/EditableValue";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
+import { handleMarkdownLinkPaste } from "../../util/linkPaste";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import {
   AGENDA_EVENT_GAP_PX,
@@ -31,9 +32,14 @@ import "./MeetingMinutes.css";
 import "./PlanAgendaEditor.css";
 
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
-const AGENDA_INSERTION_FORM_GAP_PX = 230;
 const AGENDA_ADD_AT_END_HEIGHT_PX = 44;
 const PLAN_TIMELINE_ASSUMED_HEIGHT_PX = 640;
+
+// A brand-new topic gets these placeholders and is immediately selected
+// with its title focused for editing in the main pane, rather than opening
+// a separate add-topic form - see handleAddTopic.
+const NEW_TOPIC_TITLE = "New Topic";
+const NEW_TOPIC_DURATION_MINUTES = 5;
 
 const insertionCursorStyle = (
   topPx: number,
@@ -42,13 +48,6 @@ const insertionCursorStyle = (
   ({
     top: `${topPx}px`,
     height: `${heightPx}px`,
-  }) as CSSProperties;
-
-const insertionFormStyle = (
-  baseHeightPx: number = AGENDA_INSERTION_RESERVED_HEIGHT_PX
-): CSSProperties =>
-  ({
-    top: `${baseHeightPx + 4}px`,
   }) as CSSProperties;
 
 const formatMinutes = (totalMinutes: number): string => {
@@ -129,14 +128,13 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const wasPanelOpenRef = useRef(isPanelOpen);
-  const [addingAfterTopicId, setAddingAfterTopicId] = useState<string | null>(
-    null
-  );
-  const [isAddingFirstTopic, setIsAddingFirstTopic] = useState(false);
   const [hoveredInsertionAfterTopicId, setHoveredInsertionAfterTopicId] =
     useState<string | null>(null);
-  const [newTopicTitle, setNewTopicTitle] = useState("");
-  const [newTopicDuration, setNewTopicDuration] = useState(5);
+  // The topic just created via handleAddTopic, so its title field can start
+  // in edit mode once - cleared as soon as selection moves elsewhere.
+  const [justCreatedTopicId, setJustCreatedTopicId] = useState<string | null>(
+    null
+  );
   const [slotMinutes, setSlotMinutes] = useState(
     getAgendaSlotMinutesForHeight(PLAN_TIMELINE_ASSUMED_HEIGHT_PX)
   );
@@ -152,6 +150,15 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   useEffect(() => {
     setIsEditingDetails(false);
   }, [effectiveSelectedId]);
+
+  // Only the topic just created should start with its title in edit mode -
+  // once the minute-taker navigates away from it, revisiting it later
+  // shouldn't re-trigger edit mode.
+  useEffect(() => {
+    if (justCreatedTopicId && justCreatedTopicId !== effectiveSelectedId) {
+      setJustCreatedTopicId(null);
+    }
+  }, [effectiveSelectedId, justCreatedTopicId]);
 
   const findTopicElement = (topicId: string): HTMLElement | null => {
     const pane = paneRef.current;
@@ -226,12 +233,9 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     entry.displayTopPx = displayTop;
     entry.displayHeightPx = displayHeight;
     const isLastEntry = index === entries.length - 1;
-    const insertionGap =
-      entry.topic.id === addingAfterTopicId
-        ? AGENDA_INSERTION_FORM_GAP_PX
-        : isLastEntry
-          ? AGENDA_ADD_AT_END_HEIGHT_PX
-          : AGENDA_INSERTION_RESERVED_HEIGHT_PX;
+    const insertionGap = isLastEntry
+      ? AGENDA_ADD_AT_END_HEIGHT_PX
+      : AGENDA_INSERTION_RESERVED_HEIGHT_PX;
     packedBottom = displayTop + displayHeight + AGENDA_EVENT_GAP_PX + insertionGap;
   });
 
@@ -261,29 +265,17 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   );
 
   const handleAddTopic = (insertAfterTopicId: string | undefined) => {
-    if (!newTopicTitle.trim()) return;
     void addTopic({
       meetingId: meeting.id,
       list: "plannedAgenda",
-      title: newTopicTitle.trim(),
-      durationMinutes: newTopicDuration,
+      title: NEW_TOPIC_TITLE,
+      durationMinutes: NEW_TOPIC_DURATION_MINUTES,
       insertAfterTopicId,
     }).then((newTopicId: string) => {
-      setSelectedTopicId(newTopicId);
+      setJustCreatedTopicId(newTopicId);
+      handleSelectTopic(newTopicId);
     });
-    setNewTopicTitle("");
-    setNewTopicDuration(5);
-    setAddingAfterTopicId(null);
     setHoveredInsertionAfterTopicId(null);
-    setIsAddingFirstTopic(false);
-  };
-
-  const handleCancelAdd = () => {
-    setNewTopicTitle("");
-    setNewTopicDuration(5);
-    setAddingAfterTopicId(null);
-    setHoveredInsertionAfterTopicId(null);
-    setIsAddingFirstTopic(false);
   };
 
   const handleDeleteSelected = () => {
@@ -358,7 +350,7 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
       resizeObserver.disconnect();
       window.removeEventListener("resize", onResize);
     };
-  }, [addingAfterTopicId, isAddingFirstTopic]);
+  }, []);
 
   // Scroll the initially-selected topic into view once, on first load.
   useEffect(() => {
@@ -477,50 +469,11 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     };
   }, [effectiveSelectedId, entries.length, slotMinutes, isPanelOpen]);
 
-  const renderAddTopicForm = (style: CSSProperties | undefined, isFirst: boolean) => (
-    <div className="minutes-add-topic-form minutes-add-topic-form-inline" style={style}>
-      <h4>Add Topic</h4>
-      <div className="minutes-form-row">
-        <label htmlFor="new-topic-title">Title:</label>
-        <input
-          id="new-topic-title"
-          type="text"
-          value={newTopicTitle}
-          onChange={(e) => setNewTopicTitle(e.target.value)}
-          placeholder="Topic title"
-          autoFocus
-        />
-      </div>
-      <div className="minutes-form-row">
-        <label htmlFor="new-topic-duration">Duration (min):</label>
-        <input
-          id="new-topic-duration"
-          type="number"
-          min={1}
-          value={newTopicDuration}
-          onChange={(e) => setNewTopicDuration(Number(e.target.value))}
-        />
-      </div>
-      <div className="minutes-actions">
-        <button
-          className="btn-primary"
-          onClick={() => handleAddTopic(isFirst ? undefined : addingAfterTopicId ?? undefined)}
-        >
-          Add
-        </button>
-        <button className="btn-secondary" onClick={handleCancelAdd}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-
   const renderInsertionCursor = (entry: Entry, isTrailing: boolean) => {
     if (!isOfficer) return null;
     const topicId = entry.topic.id;
     const insertionTop =
       entry.displayTopPx + entry.displayHeightPx + AGENDA_EVENT_GAP_PX;
-    const isAddingHere = addingAfterTopicId === topicId;
     const isHoveredHere = hoveredInsertionAfterTopicId === topicId;
     // The trailing slot (after the last topic) is the golden path for
     // building an agenda — most topics get added there, in order — so it
@@ -532,22 +485,17 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
     return (
       <div
         key={`insert:${topicId}`}
-        className={`minutes-agenda-insertion-slot${isTrailing ? " is-trailing" : ""}${isAddingHere ? " is-open" : ""}${isHoveredHere ? " is-hovered" : ""}`}
+        className={`minutes-agenda-insertion-slot${isTrailing ? " is-trailing" : ""}${isHoveredHere ? " is-hovered" : ""}`}
         style={insertionCursorStyle(insertionTop, baseHeightPx)}
         onMouseEnter={() => setHoveredInsertionAfterTopicId(topicId)}
-        onMouseLeave={() => {
-          if (addingAfterTopicId !== topicId) {
-            setHoveredInsertionAfterTopicId((current) =>
-              current === topicId ? null : current
-            );
-          }
-        }}
+        onMouseLeave={() =>
+          setHoveredInsertionAfterTopicId((current) =>
+            current === topicId ? null : current
+          )
+        }
         onFocus={() => setHoveredInsertionAfterTopicId(topicId)}
         onBlur={(event) => {
-          if (
-            addingAfterTopicId !== topicId &&
-            !event.currentTarget.contains(event.relatedTarget as Node | null)
-          ) {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             setHoveredInsertionAfterTopicId((current) =>
               current === topicId ? null : current
             );
@@ -562,15 +510,11 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
               ? "Add topic"
               : `Add topic after ${entry.topic.title}`
           }
-          onClick={() => {
-            setAddingAfterTopicId(topicId);
-            setHoveredInsertionAfterTopicId(topicId);
-          }}
+          onClick={() => handleAddTopic(topicId)}
         >
           <span aria-hidden="true">+</span>
           {isTrailing && <span>Add Topic</span>}
         </button>
-        {isAddingHere && renderAddTopicForm(insertionFormStyle(baseHeightPx), false)}
       </div>
     );
   };
@@ -649,18 +593,22 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
             <div className="minutes-current-topic">
               <h2>Planned Topic</h2>
               <EditableString
+                key={selectedTopic.id}
                 as="h3"
                 value={selectedTopic.title}
-                onValueChange={(newValue) =>
+                onValueChange={(newValue) => {
+                  setJustCreatedTopicId(null);
                   void updateTopic({
                     meetingId: meeting.id,
                     list: "plannedAgenda",
                     topicId: selectedTopic.id,
                     title: newValue,
-                  })
-                }
+                  });
+                }}
+                onCancel={() => setJustCreatedTopicId(null)}
                 canEdit={isOfficer}
                 label="Topic"
+                editingByDefault={isOfficer && selectedTopic.id === justCreatedTopicId}
                 autoFocus
               />
               <div className="minutes-current-meta">
@@ -702,6 +650,7 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                   label="Outcome/Goal"
                   emptyClickBehavior="single"
                   placeholder="Add outcome/goal"
+                  autoFocus
                 />
               </div>
               {(selectedTopic.details || isOfficer) && (
@@ -731,6 +680,9 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                           autoFocus
                           value={draftDetails}
                           onChange={(e) => setDraftDetails(e.target.value)}
+                          onPaste={(e) =>
+                            handleMarkdownLinkPaste(e, draftDetails, setDraftDetails)
+                          }
                           onKeyDown={(e) => {
                             if (e.key === "Escape") setIsEditingDetails(false);
                           }}
@@ -838,10 +790,11 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
         </div>
         {topics.length === 0 ? (
           <div className="plan-agenda-timeline-empty">
-            {isAddingFirstTopic ? (
-              renderAddTopicForm(undefined, true)
-            ) : isOfficer ? (
-              <button className="btn-small btn-secondary" onClick={() => setIsAddingFirstTopic(true)}>
+            {isOfficer ? (
+              <button
+                className="btn-small btn-secondary"
+                onClick={() => handleAddTopic(undefined)}
+              >
                 + Add Topic
               </button>
             ) : (
