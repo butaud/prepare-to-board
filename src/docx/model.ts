@@ -67,11 +67,11 @@ export type CalendarItem = {
 };
 
 // minutes-taker's Person is { title: "Mr."|"Mrs."|"Miss", firstName, lastName }.
-// prepare-to-board's BoardMember only has a single `name` string, so we
-// deviate here: title/firstName are always "" and the full name goes in
-// lastName. See mapMeetingToSession.ts for the mapping and PR notes for the
-// known cosmetic effect (speaker references read as the full name rather
-// than an honorific + last name).
+// prepare-to-board's BoardMember only has a single `name` string (plus an
+// optional salutation), so we deviate here: firstName is always "", and
+// title/lastName are only split into honorific + last name once the board
+// member has a salutation set - otherwise the full name goes in lastName
+// and title stays "". See mapMeetingToSession.ts for the mapping.
 export type Person = {
   title: string;
   firstName: string;

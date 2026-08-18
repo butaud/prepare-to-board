@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation } from "convex/react";
 import DatePicker from "react-datepicker";
 import { api } from "../convexClient";
-import { BoardMember, Meeting } from "../schema";
+import { BoardMember, getBoardMemberFormalName, Meeting } from "../schema";
 import {
   type ActionItemWithContext,
   formatRelativeMeetingDate,
@@ -190,7 +190,9 @@ export const ActionItemRow = ({
       />
       <div className="action-item-context">
         {item.assignee ? (
-          <span className="action-item-assignee">{item.assignee.name}</span>
+          <span className="action-item-assignee">
+            {getBoardMemberFormalName(item.assignee)}
+          </span>
         ) : (
           <span>Unassigned</span>
         )}

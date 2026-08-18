@@ -708,7 +708,11 @@ const PostMeetingMinutes = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const dateStr = meeting.date.toISOString().slice(0, 10);
+      const dateStr = [
+        meeting.date.getFullYear(),
+        String(meeting.date.getMonth() + 1).padStart(2, "0"),
+        String(meeting.date.getDate()).padStart(2, "0"),
+      ].join("-");
       a.download = `Board Meeting Minutes - ${dateStr}.docx`;
       document.body.appendChild(a);
       a.click();

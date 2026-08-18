@@ -1,4 +1,4 @@
-import { Note } from "../schema";
+import { getBoardMemberFormalName, Note } from "../schema";
 import { PendingNote } from "../util/data";
 import { renderMarkdownBlocks } from "../util/markdown";
 
@@ -78,7 +78,9 @@ export const NoteDisplay = ({ note, completion, hideAssignee }: NoteDisplayProps
           {isComplete ? "☑" : "☐"}
         </span>
         {!hideAssignee && note.assignee?.name && (
-          <span className="note-action-assignee">{note.assignee.name}:</span>
+          <span className="note-action-assignee">
+            {getBoardMemberFormalName(note.assignee)}:
+          </span>
         )}
         <span>{note.text}</span>
         {isComplete ? (
@@ -98,8 +100,8 @@ export const NoteDisplay = ({ note, completion, hideAssignee }: NoteDisplayProps
   }
   if (note.type === "motion") {
     const status = note.status;
-    const mover = note.moverMember?.name ?? note.mover;
-    const seconder = note.seconderMember?.name ?? note.seconder;
+    const mover = getBoardMemberFormalName(note.moverMember) ?? note.mover;
+    const seconder = getBoardMemberFormalName(note.seconderMember) ?? note.seconder;
     const showVotes = completedMotionStatuses.has(status);
     return (
       <div className="note-motion">

@@ -66,6 +66,10 @@ export default defineSchema({
   organizations: defineTable({
     name: v.string(),
     committeeDocUrl: v.optional(v.string()),
+    // Months of board-calendar context (trailing and upcoming) to include
+    // around the current month in the exported minutes document. Defaults
+    // to 2 when unset - see buildCalendar in mapMeetingToSession.ts.
+    calendarContextMonths: v.optional(v.number()),
   }),
 
   memberships: defineTable({
@@ -81,7 +85,14 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     name: v.string(),
     email: v.optional(v.string()),
+    // Office/role on the board (President, Treasurer, etc.) - labelled
+    // "Office" in the UI.
     title: v.optional(v.string()),
+    // Salutation used when referring to this member in minutes, e.g.
+    // "Mr. <lastname>" - labelled "Title" in the UI.
+    salutation: v.optional(
+      v.union(v.literal("Mr."), v.literal("Mrs."), v.literal("Miss"))
+    ),
     accountId: v.optional(v.id("users")),
     type: v.optional(
       v.union(v.literal("board"), v.literal("administration"), v.literal("other"))

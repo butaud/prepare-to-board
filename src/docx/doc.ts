@@ -7,8 +7,9 @@
 //     our motion form treats the seconder as optional.
 //   - makeCallToOrderParagraph and the Session type both tolerate a meeting
 //     with zero recorded topics (the original assumes at least one).
-//   - Person only ever has a lastName (the full name) and an empty
-//     title/firstName - see model.ts for why.
+//   - Person's firstName is always empty, and title/lastName only split out
+//     an honorific + last name once a board member has a salutation set -
+//     otherwise lastName holds the full name - see model.ts for why.
 import {
   Document,
   Packer,
@@ -44,9 +45,12 @@ const isTextNote = (note: Topic["notes"][number]): note is TextNote => note.type
 const isActionItemNote = (note: Topic["notes"][number]): note is ActionItemNote =>
   note.type === "actionItem";
 
+const formatPersonReference = (person: Person): string =>
+  [person.title, person.lastName].filter(Boolean).join(" ");
+
 const makeSpeakerReference = (person: Person): TextRun => {
   return new TextRun({
-    text: [person.title, person.lastName].filter(Boolean).join(" "),
+    text: formatPersonReference(person),
     style: "SpeakerReference",
   });
 };
@@ -54,7 +58,7 @@ const makeSpeakerReference = (person: Person): TextRun => {
 const sessionHeader = (metadata: SessionMetadata): Paragraph[] => {
   const titleLine = `${metadata.title} - ${metadata.subtitle}: ${
     metadata.location
-  }, ${metadata.startTime.toLocaleDateString(undefined, { timeZone: "UTC" })}`;
+  }, ${metadata.startTime.toLocaleDateString()}`;
   return [
     new Paragraph({
       children: [new TextRun(metadata.organization)],
@@ -78,7 +82,7 @@ const makeAttendanceLine = (name: string, people: Person[]): Paragraph => {
   return new Paragraph({
     children: [
       new TextRun({ text: `${name}: `, bold: true }),
-      new TextRun(people.map((p) => p.lastName).join(", ")),
+      new TextRun(people.map(formatPersonReference).join(", ")),
     ],
   });
 };
@@ -146,7 +150,6 @@ const makeCallToOrderParagraph = (session: Session): Paragraph[] => {
   const actualStartTime = session.topics[0]?.startTime ?? session.metadata.startTime;
   const formattedStartTime = actualStartTime.toLocaleTimeString(undefined, {
     timeStyle: "short",
-    timeZone: "UTC",
   });
   const locationTextRun = new TextRun({
     text: `The meeting was held at the ${session.metadata.location}. `,
@@ -191,7 +194,6 @@ const makeTopicHeader = (topic: Topic): Table => {
         new Paragraph(
           topic.startTime.toLocaleTimeString(undefined, {
             timeStyle: "short",
-            timeZone: "UTC",
           })
         ),
       ],
@@ -262,7 +264,7 @@ const makeActionItemTextRuns = (
     new TextRun({
       text: ` to ${actionItem.text} by ${actionItem.dueDate.toLocaleDateString(
         "en-US",
-        { dateStyle: "short", timeZone: "UTC" }
+        { dateStyle: "short" }
       )}.`,
     }),
   ];
