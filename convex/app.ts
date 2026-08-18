@@ -131,6 +131,7 @@ const noteArg = v.object({
   assigneeName: v.optional(v.string()),
   dueDate: v.optional(v.number()),
   completedOn: v.optional(v.number()),
+  createdInMeetingId: v.optional(v.string()),
   moverId: v.optional(v.string()),
   moverName: v.optional(v.string()),
   seconderId: v.optional(v.string()),
@@ -177,6 +178,7 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
       : undefined,
   dueDate: note.dueDate,
   completedOn: note.completedOn,
+  createdInMeetingId: note.createdInMeetingId,
   mover: note.mover,
   seconder: note.seconder,
   votesFor: note.votesFor,
@@ -955,6 +957,17 @@ export const advanceTopic = mutation({
   },
 });
 
+// Action items can only ever be created during a meeting, so instead of a
+// free-floating "created on" timestamp, every action item is stamped with
+// the meeting it was created in at creation time. That link (rather than a
+// raw date) is what "created before/after this meeting" comparisons and the
+// Action Items screen's "created" field are based on - see
+// src/util/actionItems.ts and mapMeetingToSession.ts.
+const stampCreatedInMeeting = <T extends { type: string }>(
+  note: T,
+  meetingId: string
+): T => (note.type === "action_item" ? { ...note, createdInMeetingId: meetingId } : note);
+
 export const addCurrentNote = mutation({
   args: { meetingId: v.id("meetings"), note: noteArg },
   handler: async (ctx, args) => {
@@ -962,7 +975,10 @@ export const addCurrentNote = mutation({
     if (!meeting) return;
     const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
     await ctx.db.patch(args.meetingId, {
-      currentNotes: [...(meeting.currentNotes ?? []), { id: id(), ...args.note }],
+      currentNotes: [
+        ...(meeting.currentNotes ?? []),
+        { id: id(), ...stampCreatedInMeeting(args.note, args.meetingId) },
+      ],
     });
     const activeTopic = meeting.liveAgenda[currentLiveTopicIndex(meeting)];
     await notifyActionItemAssignee(
@@ -1021,7 +1037,13 @@ export const addMinuteNote = mutation({
     await ctx.db.patch(args.meetingId, {
       minutes: meeting.minutes.map((minute) =>
         minute.id === args.minuteId
-          ? { ...minute, notes: [...(minute.notes ?? []), { id: id(), ...args.note }] }
+          ? {
+              ...minute,
+              notes: [
+                ...(minute.notes ?? []),
+                { id: id(), ...stampCreatedInMeeting(args.note, args.meetingId) },
+              ],
+            }
           : minute
       ),
     });
@@ -1097,7 +1119,7 @@ export const updateMinuteDuration = mutation({
 });
 
 export const removeMinuteNote = mutation({
-  args: { meetingId: v.id("meetings"), minuteId: v.string(), index: v.number() },
+  args: { meetingId: v.id("meetings"), minuteId: v.string(), noteId: v.string() },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
@@ -1105,7 +1127,7 @@ export const removeMinuteNote = mutation({
     await ctx.db.patch(args.meetingId, {
       minutes: meeting.minutes.map((minute) =>
         minute.id === args.minuteId
-          ? { ...minute, notes: (minute.notes ?? []).filter((_, index) => index !== args.index) }
+          ? { ...minute, notes: (minute.notes ?? []).filter((note) => note.id !== args.noteId) }
           : minute
       ),
     });
@@ -1116,7 +1138,14 @@ const patchActionItemNote = (
   meeting: Doc<"meetings">,
   minuteId: string | undefined,
   noteId: string,
-  patch: { dueDate?: number; completedOn?: number }
+  patch: {
+    text?: string;
+    assigneeId?: string;
+    assigneeName?: string;
+    dueDate?: number;
+    completedOn?: number;
+    createdInMeetingId?: string;
+  }
 ) => {
   const applyPatch = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number]) =>
     note.id === noteId && note.type === "action_item"
@@ -1187,12 +1216,19 @@ export const setActionItemCompletedOn = mutation({
   },
 });
 
-export const updateActionItemDueDate = mutation({
+// Full edit of an action item - officer-only, unlike setActionItemCompletedOn
+// (which also allows the assignee to toggle their own item's completion).
+export const updateActionItem = mutation({
   args: {
     meetingId: v.id("meetings"),
     minuteId: v.optional(v.string()),
     noteId: v.string(),
+    text: v.string(),
+    assigneeId: v.string(),
+    assigneeName: v.string(),
     dueDate: v.number(),
+    completedOn: v.optional(v.number()),
+    createdInMeetingId: v.string(),
   },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
@@ -1203,7 +1239,12 @@ export const updateActionItemDueDate = mutation({
     await ctx.db.patch(
       args.meetingId,
       patchActionItemNote(meeting, args.minuteId, args.noteId, {
+        text: args.text,
+        assigneeId: args.assigneeId,
+        assigneeName: args.assigneeName,
         dueDate: args.dueDate,
+        completedOn: args.completedOn,
+        createdInMeetingId: args.createdInMeetingId,
       })
     );
   },

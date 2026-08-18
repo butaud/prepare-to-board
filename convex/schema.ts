@@ -11,6 +11,7 @@ const note = v.object({
   assigneeName: v.optional(v.string()),
   dueDate: v.optional(v.number()),
   completedOn: v.optional(v.number()),
+  createdInMeetingId: v.optional(v.string()),
   moverId: v.optional(v.string()),
   moverName: v.optional(v.string()),
   seconderId: v.optional(v.string()),

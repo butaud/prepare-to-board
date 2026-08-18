@@ -597,7 +597,7 @@ const CompletedMinuteNotes = ({
 
   return (
     <div className="minutes-notes-section">
-      {existingNotes.map((note, i) => (
+      {existingNotes.map((note) => (
         <EditableNote
           key={note.id}
           note={note}
@@ -636,7 +636,7 @@ const CompletedMinuteNotes = ({
             void removeMinuteNote({
               meetingId: meeting.id,
               minuteId: minute.id,
-              index: i,
+              noteId: note.id,
             });
           }}
         />

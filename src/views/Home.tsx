@@ -172,7 +172,14 @@ export const Home = () => {
             <div className="meeting-group">
               <p className="meeting-group-label">Assigned to me</p>
               {myActionItems.map((item) => (
-                <ActionItemRow key={item.id} item={item} canToggle />
+                <ActionItemRow
+                  key={item.id}
+                  item={item}
+                  canToggle
+                  canEdit={false}
+                  members={org.members}
+                  meetings={org.meetings}
+                />
               ))}
             </div>
           )}
@@ -180,7 +187,14 @@ export const Home = () => {
             <div className="meeting-group">
               <p className="meeting-group-label">From recent meetings</p>
               {otherRecentItems.map((item) => (
-                <ActionItemRow key={item.id} item={item} canToggle={isOfficer} />
+                <ActionItemRow
+                  key={item.id}
+                  item={item}
+                  canToggle={isOfficer}
+                  canEdit={false}
+                  members={org.members}
+                  meetings={org.meetings}
+                />
               ))}
             </div>
           )}
