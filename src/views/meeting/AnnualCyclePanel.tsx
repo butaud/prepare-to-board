@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { LuRepeat } from "react-icons/lu";
 import { CalendarItem, Organization } from "../../schema";
 import { isCalendarItemCompleted, monthsWithinContext, MONTH_NAMES } from "../../util/calendarItems";
 
@@ -39,9 +38,8 @@ export const AnnualCyclePanel = ({ organization, referenceDate }: AnnualCyclePan
           onClick={() => setIsOpen(true)}
           aria-expanded={false}
           aria-controls="annual-cycle-panel-content"
-          title="Annual Cycle"
         >
-          <LuRepeat aria-hidden="true" />
+          Annual cycle items
         </button>
       </aside>
     );
