@@ -96,26 +96,61 @@ const mapNote = (note: SourceNote): Note => {
   return motionNote;
 };
 
+// A meeting's actual end, for deciding whether an action item was already
+// reported as closed by the time of the previous meeting. Falls back to the
+// scheduled date if the meeting was never actually run live.
+const computeMeetingEndTime = (meeting: Meeting): number => {
+  const start = meeting.liveStartTime ?? meeting.date;
+  const totalMinutes = (meeting.minutes ?? [])
+    .filter((m) => m !== null)
+    .reduce((sum, m) => sum + m.durationMinutes, 0);
+  return start.getTime() + totalMinutes * 60 * 1000;
+};
+
 // Action items carry their completion status in place on the original
 // minute/note they were created on - completing one from an older meeting's
 // always-editable minutes page mutates that same note rather than creating a
-// new one. So the current, correct completion status of every past action
-// item is just whatever's on the note right now: no separate "completed
-// since last meeting" tracking is needed, this naturally covers both
-// still-open carried-forward items and ones resolved since.
+// new one, so the note's current completedOn is always up to date.
+//
+// An item belongs in this meeting's carried-forward list when it was
+// created in an earlier meeting (per its createdInMeetingId, not raw
+// timestamps - action items can only be created during a meeting, so
+// meeting order is what "before/after" means here) and it wasn't *already*
+// reported as closed by the end of the immediately preceding meeting. That
+// second condition keeps items that were just resolved since the last
+// meeting (worth reporting as newly "Done") without re-listing items that
+// were already closed out and reported done long ago.
 const buildPastActionItems = (
   meeting: Meeting,
   organization: Organization
 ): PastActionItem[] => {
+  const meetingsById = new Map(organization.meetings.map((m) => [m.id, m]));
+  const previousMeeting = organization.meetings
+    .filter((m) => m.id !== meeting.id && m.date.getTime() < meeting.date.getTime())
+    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+  const previousMeetingEndTime = previousMeeting
+    ? computeMeetingEndTime(previousMeeting)
+    : undefined;
+
   const pastActionItems: PastActionItem[] = [];
-  for (const otherMeeting of organization.meetings) {
-    if (otherMeeting.id === meeting.id) continue;
-    if (otherMeeting.date.getTime() >= meeting.date.getTime()) continue;
-    for (const minute of otherMeeting.minutes ?? []) {
+  for (const sourceMeeting of organization.meetings) {
+    for (const minute of sourceMeeting.minutes ?? []) {
       if (!minute) continue;
       for (const note of minute.notes ?? []) {
         if (!note || note.type !== "action_item") continue;
         if (note.dueDate === undefined) continue;
+
+        const createdInMeeting = note.createdInMeetingId
+          ? (meetingsById.get(note.createdInMeetingId) ?? sourceMeeting)
+          : sourceMeeting;
+        if (createdInMeeting.date.getTime() >= meeting.date.getTime()) continue;
+
+        const alreadyClosedAsOfPreviousMeeting =
+          note.completedOn !== undefined &&
+          previousMeetingEndTime !== undefined &&
+          note.completedOn < previousMeetingEndTime;
+        if (alreadyClosedAsOfPreviousMeeting) continue;
+
         pastActionItems.push({
           text: note.text,
           assignee: personFromBoardMemberOrName(note.assignee),

@@ -26,3 +26,48 @@
   font-weight: 600;
   color: var(--primary-color);
 }
+
+/* Compound selector beats the global `button:not(.cl-button)` rule in
+   index.css, which otherwise wins on specificity and forces these back to
+   full-size solid-primary-color buttons instead of inline text links. */
+.action-item-context button.action-item-link-btn {
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--primary-color-light);
+  text-decoration: underline;
+  font-size: inherit;
+}
+
+.action-item-context button.action-item-delete-btn {
+  color: var(--danger-color-strong, #c0392b);
+}
+
+.action-item-editing {
+  padding: 9px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-item-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9em;
+}
+
+.action-item-edit-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+}
+
+.action-item-edit-actions {
+  display: flex;
+  gap: 8px;
+}

@@ -83,7 +83,14 @@ export const ActionItems = () => {
         <section className="action-items-section">
           <h3>Open ({openItems.length})</h3>
           {openItems.map((item) => (
-            <ActionItemRow key={item.id} item={item} canToggle={canToggle(item)} />
+            <ActionItemRow
+              key={item.id}
+              item={item}
+              canToggle={canToggle(item)}
+              canEdit={isOfficer}
+              members={org.members}
+              meetings={org.meetings}
+            />
           ))}
         </section>
       )}
@@ -92,7 +99,14 @@ export const ActionItems = () => {
         <section className="action-items-section">
           <h3>Completed ({completedItems.length})</h3>
           {completedItems.map((item) => (
-            <ActionItemRow key={item.id} item={item} canToggle={canToggle(item)} />
+            <ActionItemRow
+              key={item.id}
+              item={item}
+              canToggle={canToggle(item)}
+              canEdit={isOfficer}
+              members={org.members}
+              meetings={org.meetings}
+            />
           ))}
         </section>
       )}
