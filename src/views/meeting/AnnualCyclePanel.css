@@ -14,18 +14,23 @@ button.annual-cycle-panel-toggle {
   height: auto;
   width: auto;
   writing-mode: vertical-rl;
+  /* This button is rotated 180deg (so the text reads bottom-to-top), which
+     also visually flips border-radius/box-shadow left-right - the values
+     below are pre-rotation and land on the correct visual side once
+     rotated: straight edge against the screen's right edge, rounded edge
+     facing inward to match .annual-cycle-panel-content's open state. */
   transform: rotate(180deg);
   white-space: nowrap;
   background: var(--primary-color);
   color: var(--background-color);
   border: none;
-  border-radius: 8px 0 0 8px;
+  border-radius: 0 8px 8px 0;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 14px 8px;
-  box-shadow: -2px 2px 8px var(--shadow-color);
+  box-shadow: 2px -2px 8px var(--shadow-color);
 }
 
 .annual-cycle-panel-content {
