@@ -649,6 +649,7 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                   label="Outcome/Goal"
                   emptyClickBehavior="single"
                   placeholder="Add outcome/goal"
+                  autoFocus
                 />
               </div>
               {(selectedTopic.details || isOfficer) && (
