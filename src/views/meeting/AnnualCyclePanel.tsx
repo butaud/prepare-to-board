@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LuRepeat } from "react-icons/lu";
 import { CalendarItem, Organization } from "../../schema";
 import { isCalendarItemCompleted, monthsWithinContext, MONTH_NAMES } from "../../util/calendarItems";
 
@@ -30,45 +31,59 @@ export const AnnualCyclePanel = ({ organization, referenceDate }: AnnualCyclePan
     .map((month) => ({ month, items: itemsByMonth.get(month) ?? [] }))
     .filter((entry) => entry.items.length > 0);
 
+  if (!isOpen) {
+    return (
+      <aside className="annual-cycle-panel">
+        <button
+          className="annual-cycle-panel-toggle"
+          onClick={() => setIsOpen(true)}
+          aria-expanded={false}
+          aria-controls="annual-cycle-panel-content"
+          title="Annual Cycle"
+        >
+          <LuRepeat aria-hidden="true" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
-    <aside className={`annual-cycle-panel${isOpen ? " is-open" : ""}`}>
-      <button
-        className="annual-cycle-panel-toggle"
-        onClick={() => setIsOpen((open) => !open)}
-        aria-expanded={isOpen}
-        aria-controls="annual-cycle-panel-content"
-      >
-        <span aria-hidden="true">{isOpen ? "»" : "«"}</span>
-        <span className="annual-cycle-panel-toggle-label">Annual Cycle</span>
-      </button>
-      {isOpen && (
-        <div className="annual-cycle-panel-content" id="annual-cycle-panel-content">
+    <aside className="annual-cycle-panel is-open">
+      <div className="annual-cycle-panel-content" id="annual-cycle-panel-content">
+        <div className="annual-cycle-panel-header">
           <h3>Annual Cycle</h3>
-          {monthEntries.length === 0 ? (
-            <p className="minutes-hint">No recurring items near this month.</p>
-          ) : (
-            monthEntries.map(({ month, items }) => (
-              <div key={month} className="annual-cycle-panel-month">
-                <h4>{MONTH_NAMES[month - 1]}</h4>
-                <ul>
-                  {items.map((item) => (
-                    <li
-                      key={item.id}
-                      className={
-                        isCalendarItemCompleted(item.completedOn, referenceDate)
-                          ? "is-completed"
-                          : undefined
-                      }
-                    >
-                      {item.text}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))
-          )}
+          <button
+            className="annual-cycle-panel-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close annual cycle panel"
+          >
+            &times;
+          </button>
         </div>
-      )}
+        {monthEntries.length === 0 ? (
+          <p className="minutes-hint">No recurring items near this month.</p>
+        ) : (
+          monthEntries.map(({ month, items }) => (
+            <div key={month} className="annual-cycle-panel-month">
+              <h4>{MONTH_NAMES[month - 1]}</h4>
+              <ul>
+                {items.map((item) => (
+                  <li
+                    key={item.id}
+                    className={
+                      isCalendarItemCompleted(item.completedOn, referenceDate)
+                        ? "is-completed"
+                        : undefined
+                    }
+                  >
+                    {item.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        )}
+      </div>
     </aside>
   );
 };

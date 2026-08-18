@@ -3,25 +3,21 @@
   top: 140px;
   right: 0;
   z-index: 20;
-  display: flex;
-  align-items: flex-start;
-  max-height: calc(100vh - 160px);
 }
 
 .annual-cycle-panel-toggle {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 12px 6px;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   background: var(--primary-color);
   color: var(--background-color);
   border: none;
   border-radius: 8px 0 0 8px;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  box-shadow: -2px 2px 8px var(--shadow-color);
 }
 
 .annual-cycle-panel-content {
@@ -36,9 +32,32 @@
   box-shadow: -2px 2px 8px var(--shadow-color);
 }
 
-.annual-cycle-panel-content h3 {
-  margin: 0 0 10px 0;
+.annual-cycle-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.annual-cycle-panel-header h3 {
+  margin: 0;
   font-size: 1rem;
+}
+
+.annual-cycle-panel-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--font-color);
+  opacity: 0.6;
+}
+
+.annual-cycle-panel-close:hover {
+  opacity: 1;
 }
 
 .annual-cycle-panel-month {
