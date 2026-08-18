@@ -1003,6 +1003,10 @@ export const MeetingMinutes = () => {
   );
   const [hoveredInsertionAfterTopicId, setHoveredInsertionAfterTopicId] =
     useState<string | null>(null);
+  // Insertion cursors only appear after non-completed timeline entries, so
+  // once every topic has been covered there's nothing to hover to add a
+  // new one - this trailing control is always available regardless.
+  const [isAddingAtEnd, setIsAddingAtEnd] = useState(false);
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editingDuration, setEditingDuration] = useState("");
   const [editingMinuteId, setEditingMinuteId] = useState<string | null>(null);
@@ -1160,7 +1164,7 @@ export const MeetingMinutes = () => {
       resizeObserver.disconnect();
       window.removeEventListener("resize", handleResize);
     };
-  }, [addingAfterTopicId, hoveredInsertionAfterTopicId]);
+  }, [addingAfterTopicId, hoveredInsertionAfterTopicId, isAddingAtEnd]);
 
   // Derive the meeting-active topic before any early returns so hook count stays stable.
   // "Meeting active" means the topic currently being discussed in the live meeting.
@@ -1268,6 +1272,7 @@ export const MeetingMinutes = () => {
     setNewTopicDuration(5);
     setAddingAfterTopicId(null);
     setHoveredInsertionAfterTopicId(null);
+    setIsAddingAtEnd(false);
   };
 
   // Remaining topics (after current), split into deferred and upcoming
@@ -1911,6 +1916,7 @@ export const MeetingMinutes = () => {
           onClick={() => {
             setAddingAfterTopicId(null);
             setHoveredInsertionAfterTopicId(null);
+            setIsAddingAtEnd(false);
           }}
         >
           Cancel
@@ -2537,6 +2543,13 @@ export const MeetingMinutes = () => {
 
           {agendaTimelineEntries.map(renderInsertionCursor)}
         </div>
+        {isAddingAtEnd ? (
+          renderAddTopicForm()
+        ) : (
+          <button className="btn-secondary" onClick={() => setIsAddingAtEnd(true)}>
+            + Add Topic
+          </button>
+        )}
       </aside>
 
     </div>
