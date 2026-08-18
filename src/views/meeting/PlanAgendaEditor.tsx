@@ -13,6 +13,7 @@ import { usePlanAgendaEditMode } from "../../hooks/PlanAgendaEditMode";
 import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { EditableInteger, EditableString } from "../../ui/doc/EditableValue";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
+import { handleMarkdownLinkPaste } from "../../util/linkPaste";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import {
   AGENDA_EVENT_GAP_PX,
@@ -679,6 +680,9 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
                           autoFocus
                           value={draftDetails}
                           onChange={(e) => setDraftDetails(e.target.value)}
+                          onPaste={(e) =>
+                            handleMarkdownLinkPaste(e, draftDetails, setDraftDetails)
+                          }
                           onKeyDown={(e) => {
                             if (e.key === "Escape") setIsEditingDetails(false);
                           }}
