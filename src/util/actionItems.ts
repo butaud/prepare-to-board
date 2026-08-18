@@ -34,6 +34,12 @@ export const extractActionItems = (meetings: Meeting[]): ActionItemWithContext[]
   );
 };
 
+// Action item text is rendered as "<assignee> to <text>." (app and docx
+// export both append the period), so a trailing period typed by the user
+// would otherwise show up doubled.
+export const stripTrailingPeriod = (text: string): string =>
+  text.endsWith(".") ? text.slice(0, -1) : text;
+
 export const meetingLink = (meeting: Meeting): string => {
   if (meeting.status === "live") return `/meetings/${meeting.id}/present`;
   if (meeting.status === "completed") return `/meetings/${meeting.id}/minutes`;

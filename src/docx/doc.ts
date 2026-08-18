@@ -40,6 +40,7 @@ import {
   TopicHeaderCellMargins,
   TopicHeaderCellShading,
 } from "./style";
+import { stripTrailingPeriod } from "../util/actionItems";
 
 const isTextNote = (note: Topic["notes"][number]): note is TextNote => note.type === "text";
 const isActionItemNote = (note: Topic["notes"][number]): note is ActionItemNote =>
@@ -262,7 +263,7 @@ const makeActionItemTextRuns = (
     }),
     makeSpeakerReference(actionItem.assignee),
     new TextRun({
-      text: ` to ${actionItem.text} by ${actionItem.dueDate.toLocaleDateString(
+      text: ` to ${stripTrailingPeriod(actionItem.text)} by ${actionItem.dueDate.toLocaleDateString(
         "en-US",
         { dateStyle: "short" }
       )}.`,
