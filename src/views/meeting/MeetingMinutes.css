@@ -365,6 +365,18 @@
   box-shadow: 0 0 0 3px var(--primary-color-subtle);
 }
 
+.action-item-sentence-row {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-item-sentence-row input[type="text"] {
+  flex: 1 1 200px;
+  min-width: 160px;
+  width: auto;
+}
+
 .minutes-actions {
   display: flex;
   gap: 12px;

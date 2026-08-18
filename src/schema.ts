@@ -10,11 +10,16 @@ export type TextNote = {
 
 export type BoardMemberType = "board" | "administration" | "other";
 
+export type BoardMemberSalutation = "Mr." | "Mrs." | "Miss";
+
 export type BoardMember = {
   id: Id;
   name: string;
   email?: string;
+  /** Office/role on the board (President, Treasurer, etc.). */
   title?: string;
+  /** Salutation used when referring to this member in minutes. */
+  salutation?: BoardMemberSalutation;
   accountId?: Id;
   type?: BoardMemberType;
 };
@@ -147,6 +152,7 @@ export type Organization = {
   id: Id;
   name: string;
   committeeDocUrl?: string;
+  calendarContextMonths?: number;
   meetings: Meeting[];
   members: BoardMember[];
   memberships: Membership[];
@@ -237,4 +243,21 @@ export const getUserProfileFormalName = (
   const lastName = getUserProfileLastName(profile);
   if (!lastName) return undefined;
   return `${profile.title} ${lastName}`;
+};
+
+export const getBoardMemberLastName = (
+  member: BoardMember | undefined
+): string | undefined => {
+  const parts = member?.name.trim().split(/\s+/);
+  return parts?.[parts.length - 1];
+};
+
+// Formats a board member for minutes references, e.g. "Mr. Smith". Falls
+// back to the full name when no salutation has been set on the member yet.
+export const getBoardMemberFormalName = (
+  member: BoardMember | undefined
+): string | undefined => {
+  if (!member) return undefined;
+  if (!member.salutation) return member.name;
+  return `${member.salutation} ${getBoardMemberLastName(member)}`;
 };

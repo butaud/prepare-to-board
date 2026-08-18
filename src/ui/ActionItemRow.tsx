@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { useMutation } from "convex/react";
 import DatePicker from "react-datepicker";
 import { api } from "../convexClient";
-import { BoardMember, Meeting } from "../schema";
+import { BoardMember, getBoardMemberFormalName, Meeting } from "../schema";
 import {
   type ActionItemWithContext,
   formatRelativeMeetingDate,
   meetingLink,
+  stripTrailingPeriod,
 } from "../util/actionItems";
 import { NoteDisplay } from "./NoteDisplay";
 import "react-datepicker/dist/react-datepicker.css";
@@ -70,7 +71,7 @@ export const ActionItemRow = ({
       meetingId: item.meeting.id,
       minuteId: item.minuteId,
       noteId: item.id,
-      text: text.trim(),
+      text: stripTrailingPeriod(text.trim()),
       assigneeId: assignee.id,
       assigneeName: assignee.name,
       dueDate: dueDate.getTime(),
@@ -92,29 +93,38 @@ export const ActionItemRow = ({
     return (
       <div className="action-item action-item-editing">
         <div className="action-item-edit-row">
-          <label htmlFor={`action-item-text-${item.id}`}>Action:</label>
-          <input
-            id={`action-item-text-${item.id}`}
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            autoFocus
-          />
-        </div>
-        <div className="action-item-edit-row">
-          <label htmlFor={`action-item-assignee-${item.id}`}>Assignee:</label>
           <select
             id={`action-item-assignee-${item.id}`}
+            aria-label="Assignee"
             value={assigneeId}
             onChange={(e) => setAssigneeId(e.target.value)}
+            autoFocus
           >
-            <option value="">Required</option>
+            <option value="">Assignee</option>
             {members.map((member) => (
               <option key={member.id} value={member.id}>
                 {member.name}
               </option>
             ))}
           </select>
+          <span>to</span>
+          <input
+            id={`action-item-text-${item.id}`}
+            type="text"
+            aria-label="Action"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            autoCapitalize="off"
+          />
+          <span>by</span>
+          <DatePicker
+            id={`action-item-due-${item.id}`}
+            selected={dueDate}
+            onChange={setDueDate}
+            dateFormat="M/d/yyyy"
+            placeholderText="Due date"
+            popperProps={{ placement: "bottom", strategy: "fixed" }}
+          />
         </div>
         <div className="action-item-edit-row">
           <label htmlFor={`action-item-created-${item.id}`}>Created in meeting:</label>
@@ -129,17 +139,6 @@ export const ActionItemRow = ({
               </option>
             ))}
           </select>
-        </div>
-        <div className="action-item-edit-row">
-          <label htmlFor={`action-item-due-${item.id}`}>Due date:</label>
-          <DatePicker
-            id={`action-item-due-${item.id}`}
-            selected={dueDate}
-            onChange={setDueDate}
-            dateFormat="M/d/yyyy"
-            placeholderText="Required"
-            popperProps={{ placement: "bottom", strategy: "fixed" }}
-          />
         </div>
         <div className="action-item-edit-row">
           <label htmlFor={`action-item-completed-${item.id}`}>
@@ -190,7 +189,9 @@ export const ActionItemRow = ({
       />
       <div className="action-item-context">
         {item.assignee ? (
-          <span className="action-item-assignee">{item.assignee.name}</span>
+          <span className="action-item-assignee">
+            {getBoardMemberFormalName(item.assignee)}
+          </span>
         ) : (
           <span>Unassigned</span>
         )}

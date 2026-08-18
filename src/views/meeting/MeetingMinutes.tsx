@@ -13,6 +13,7 @@ import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { PendingNote } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import { BoardMember, getCanonicalTopicId, Meeting, Note, Topic } from "../../schema";
+import { stripTrailingPeriod } from "../../util/actionItems";
 import { api } from "../../convexClient";
 
 import "react-datepicker/dist/react-datepicker.css";
@@ -145,37 +146,34 @@ const ActionItemForm = ({
   return (
     <div className="note-form">
       <h5 className="note-form-title">Action Item</h5>
-      <div className="minutes-form-row">
-        <label>Action:</label>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="What needs to be done?"
-          autoFocus
-          style={{ width: "100%", maxWidth: 500 }}
-        />
-      </div>
-      <div className="minutes-form-row">
-        <label>Assignee:</label>
+      <div className="minutes-form-row action-item-sentence-row">
         <select
+          aria-label="Assignee"
           value={selectedMemberId}
           onChange={(e) => setSelectedMemberId(e.target.value)}
           style={{ padding: "6px 8px", borderRadius: 4, border: "1px solid var(--color-border, #ddd)" }}
         >
-          <option value="">Required</option>
+          <option value="">Assignee</option>
           {members.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
-      </div>
-      <div className="minutes-form-row">
-        <label>Due date:</label>
+        <span>to</span>
+        <input
+          type="text"
+          aria-label="Action"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="review the budget"
+          autoCapitalize="off"
+          autoFocus
+        />
+        <span>by</span>
         <DatePicker
           selected={dueDate}
           onChange={setDueDate}
           dateFormat="M/d/yyyy"
-          placeholderText="Required"
+          placeholderText="Due date"
           popperProps={{ placement: "bottom", strategy: "fixed" }}
         />
       </div>
@@ -188,7 +186,7 @@ const ActionItemForm = ({
             if (!canSubmit || !dueDate || !assignee) return;
             onAdd({
               type: "action_item",
-              text: text.trim(),
+              text: stripTrailingPeriod(text.trim()),
               assignee,
               dueDate: dueDate.getTime(),
               completedOn: initialNote?.completedOn,
@@ -708,7 +706,11 @@ const PostMeetingMinutes = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const dateStr = meeting.date.toISOString().slice(0, 10);
+      const dateStr = [
+        meeting.date.getFullYear(),
+        String(meeting.date.getMonth() + 1).padStart(2, "0"),
+        String(meeting.date.getDate()).padStart(2, "0"),
+      ].join("-");
       a.download = `Board Meeting Minutes - ${dateStr}.docx`;
       document.body.appendChild(a);
       a.click();

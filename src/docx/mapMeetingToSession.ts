@@ -2,6 +2,7 @@
 // local Session shape that doc.ts knows how to render.
 import {
   BoardMember,
+  getBoardMemberLastName,
   Meeting,
   MotionNote as SourceMotionNote,
   Note as SourceNote,
@@ -40,11 +41,21 @@ const MONTH_NAMES = [
 const personFromBoardMemberOrName = (
   member: BoardMember | undefined,
   fallbackName?: string
-): Person => ({
-  title: "",
-  firstName: "",
-  lastName: member?.name ?? fallbackName ?? "Unknown",
-});
+): Person => {
+  if (member) {
+    // Only split off a last name once a salutation is set - otherwise fall
+    // back to the full name, since "title: '', lastName: <first+last>" is
+    // how makeSpeakerReference already renders a plain full name.
+    return {
+      title: member.salutation ?? "",
+      firstName: "",
+      lastName: member.salutation
+        ? (getBoardMemberLastName(member) ?? member.name)
+        : member.name,
+    };
+  }
+  return { title: "", firstName: "", lastName: fallbackName ?? "Unknown" };
+};
 
 const mapMotionOutcome = (
   status: SourceMotionNote["status"]
@@ -213,22 +224,39 @@ const buildCaller = (
   };
 };
 
-const buildCalendar = (organization: Organization): CalendarMonthEntry[] => {
+const DEFAULT_CALENDAR_CONTEXT_MONTHS = 2;
+
+// Builds the calendar entries for the months around `referenceDate` - the
+// trailing `contextMonths`, the current month, and the upcoming
+// `contextMonths` - in chronological order, wrapping across year
+// boundaries (e.g. Nov/Dec/Jan/Feb/Mar). calendarItems only carry a month
+// number (1-12), not a year, so "trailing"/"upcoming" is relative to the
+// reference month only.
+const buildCalendar = (
+  organization: Organization,
+  referenceDate: Date,
+  contextMonths: number
+): CalendarMonthEntry[] => {
   const itemsByMonth = new Map<number, Organization["calendarItems"]>();
   for (const item of organization.calendarItems) {
     const existing = itemsByMonth.get(item.month) ?? [];
     existing.push(item);
     itemsByMonth.set(item.month, existing);
   }
+  const referenceMonth = referenceDate.getMonth() + 1;
   const entries: CalendarMonthEntry[] = [];
-  MONTH_NAMES.forEach((name, index) => {
-    const items = itemsByMonth.get(index + 1);
-    if (!items || items.length === 0) return;
+  const seenMonths = new Set<number>();
+  for (let offset = -contextMonths; offset <= contextMonths; offset++) {
+    const month = (((referenceMonth - 1 + offset) % 12) + 12) % 12 + 1;
+    if (seenMonths.has(month)) continue;
+    seenMonths.add(month);
+    const items = itemsByMonth.get(month);
+    if (!items || items.length === 0) continue;
     entries.push({
-      month: name,
+      month: MONTH_NAMES[month - 1],
       items: items.map((item) => ({ text: item.text, completed: item.completed })),
     });
-  });
+  }
   return entries;
 };
 
@@ -272,7 +300,11 @@ export const mapMeetingToSession = (
       caller: buildCaller(meeting, members),
       committeeDocUrl: organization.committeeDocUrl,
     },
-    calendar: buildCalendar(organization),
+    calendar: buildCalendar(
+      organization,
+      meeting.date,
+      organization.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS
+    ),
     topics,
     committees: buildCommittees(organization),
     pastActionItems: buildPastActionItems(meeting, organization),

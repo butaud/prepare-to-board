@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import {
   BoardMember,
+  BoardMemberSalutation,
   BoardMemberType,
   CalendarItem,
   Committee,
@@ -62,10 +63,42 @@ const BoardMemberTypeSelect = ({
   </select>
 );
 
+const boardMemberSalutations: BoardMemberSalutation[] = ["Mr.", "Mrs.", "Miss"];
+
+const BoardMemberSalutationSelect = ({
+  value,
+  onChange,
+  selectRef,
+}: {
+  value: BoardMemberSalutation | undefined;
+  onChange?: (salutation: BoardMemberSalutation | undefined) => void;
+  selectRef?: React.Ref<HTMLSelectElement>;
+}) => (
+  <select
+    ref={selectRef}
+    aria-label="Title"
+    defaultValue={value ?? ""}
+    onChange={
+      onChange
+        ? (e) =>
+            onChange((e.target.value || undefined) as BoardMemberSalutation | undefined)
+        : undefined
+    }
+  >
+    <option value="">-</option>
+    {boardMemberSalutations.map((s) => (
+      <option key={s} value={s}>
+        {s}
+      </option>
+    ))}
+  </select>
+);
+
 const AddBoardMemberForm = ({ org }: { org: Organization }) => {
   const addBoardMember = useMutation(api.app.addBoardMember);
   const [name, setName] = useState("");
-  const [title, setTitle] = useState("");
+  const [office, setOffice] = useState("");
+  const [salutation, setSalutation] = useState<BoardMemberSalutation | undefined>(undefined);
   const [email, setEmail] = useState("");
   const [type, setType] = useState<BoardMemberType>("other");
   const [showing, setShowing] = useState(false);
@@ -75,12 +108,14 @@ const AddBoardMemberForm = ({ org }: { org: Organization }) => {
     void addBoardMember({
       organizationId: org.id,
       name: name.trim(),
-      title: title.trim() || undefined,
+      title: office.trim() || undefined,
+      salutation,
       email: email.trim() || undefined,
       type,
     }).then(() => {
       setName("");
-      setTitle("");
+      setOffice("");
+      setSalutation(undefined);
       setEmail("");
       setType("other");
       setShowing(false);
@@ -98,7 +133,8 @@ const AddBoardMemberForm = ({ org }: { org: Organization }) => {
   return (
     <div className="add-board-member-form">
       <input placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-      <input placeholder="Title (e.g. President)" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <BoardMemberSalutationSelect value={salutation} onChange={setSalutation} />
+      <input placeholder="Office (e.g. President)" value={office} onChange={(e) => setOffice(e.target.value)} />
       <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <BoardMemberTypeSelect value={type} onChange={setType} />
       <button onClick={handleAdd} disabled={!name.trim()}>Add</button>
@@ -235,6 +271,64 @@ const AddCalendarItemForm = ({ org }: { org: Organization }) => {
   );
 };
 
+const DEFAULT_CALENDAR_CONTEXT_MONTHS = 2;
+
+const CalendarContextMonthsField = ({ org }: { org: Organization }) => {
+  const updateCalendarContextMonths = useMutation(api.app.updateCalendarContextMonths);
+  const [editing, setEditing] = useState(false);
+  const [months, setMonths] = useState(
+    String(org.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS)
+  );
+
+  if (editing) {
+    return (
+      <div className="committee-doc-url-field">
+        <input
+          type="number"
+          min={0}
+          value={months}
+          onChange={(e) => setMonths(e.target.value)}
+          autoFocus
+          style={{ width: 80 }}
+        />
+        <button
+          className="btn-small btn-primary"
+          onClick={() => {
+            const parsed = Number(months);
+            void updateCalendarContextMonths({
+              organizationId: org.id,
+              calendarContextMonths: Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined,
+            }).then(() => setEditing(false));
+          }}
+        >
+          Save
+        </button>
+        <button
+          className="btn-small btn-secondary"
+          onClick={() => {
+            setMonths(String(org.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS));
+            setEditing(false);
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="committee-doc-url-field">
+      <span className="manage-note">
+        Months of calendar context in exported minutes (trailing/upcoming):{" "}
+        {org.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS}
+      </span>
+      <button className="btn-small btn-secondary" onClick={() => setEditing(true)} title="Edit">
+        <SlPencil />
+      </button>
+    </div>
+  );
+};
+
 const BoardCalendarManager = ({ org }: { org: Organization }) => {
   const itemsByMonth = new Map<number, CalendarItem[]>();
   org.calendarItems.forEach((item) => {
@@ -246,6 +340,7 @@ const BoardCalendarManager = ({ org }: { org: Organization }) => {
   return (
     <div className="manage-section">
       <h3>Board Calendar</h3>
+      <CalendarContextMonthsField org={org} />
       {org.calendarItems.length === 0 ? (
         <p className="manage-note">No recurring calendar items yet.</p>
       ) : (
@@ -506,6 +601,7 @@ export const Manage = () => {
             <tr>
               <th>Name</th>
               <th>Title</th>
+              <th>Office</th>
               <th>Type</th>
               <th>Role</th>
               {showActionsColumn && <th></th>}
@@ -514,7 +610,7 @@ export const Manage = () => {
           <tbody>
             {org.memberships.length === 0 && unclaimedBoardMembers.length === 0 && (
               <tr>
-                <td colSpan={showActionsColumn ? 5 : 4}>No members yet.</td>
+                <td colSpan={showActionsColumn ? 6 : 5}>No members yet.</td>
               </tr>
             )}
             {org.memberships.map((member) => {
@@ -637,18 +733,22 @@ const UnclaimedBoardMemberRow = ({
   const updateBoardMember = useMutation(api.app.updateBoardMember);
   const [editing, setEditing] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
-  const titleRef = useRef<HTMLInputElement>(null);
+  const salutationRef = useRef<HTMLSelectElement>(null);
+  const officeRef = useRef<HTMLInputElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
 
   const handleSave = () => {
     const newName = nameRef.current?.value ?? "";
-    const newTitle = titleRef.current?.value ?? "";
+    const newSalutation = (salutationRef.current?.value ||
+      undefined) as BoardMemberSalutation | undefined;
+    const newOffice = officeRef.current?.value ?? "";
     const newType = (typeRef.current?.value as BoardMemberType) || "other";
     if (!newName.trim()) return;
     void updateBoardMember({
       memberId: boardMember.id,
       name: newName.trim(),
-      title: newTitle.trim() || undefined,
+      salutation: newSalutation,
+      title: newOffice.trim() || undefined,
       type: newType,
     }).then(() => setEditing(false));
   };
@@ -657,7 +757,8 @@ const UnclaimedBoardMemberRow = ({
     return (
       <tr className="member unclaimed-member">
         <td><input ref={nameRef} defaultValue={boardMember.name} autoFocus style={{ width: "100%" }} /></td>
-        <td><input ref={titleRef} defaultValue={boardMember.title ?? ""} placeholder="Title" style={{ width: "100%" }} /></td>
+        <td><BoardMemberSalutationSelect value={boardMember.salutation} selectRef={salutationRef} /></td>
+        <td><input ref={officeRef} defaultValue={boardMember.title ?? ""} placeholder="Office" style={{ width: "100%" }} /></td>
         <td><BoardMemberTypeSelect value={boardMember.type} selectRef={typeRef} /></td>
         <td><em>Not joined</em></td>
         <td>
@@ -671,6 +772,7 @@ const UnclaimedBoardMemberRow = ({
   return (
     <tr className="member unclaimed-member">
       <td>{boardMember.name}</td>
+      <td>{boardMember.salutation ?? "-"}</td>
       <td>{boardMember.title ?? "-"}</td>
       <td>{boardMemberTypeLabels[boardMember.type ?? "other"]}</td>
       <td><em>Not joined</em></td>
@@ -717,7 +819,8 @@ const MemberNode = ({
   const updateRole = useMutation(api.app.updateMembershipRole);
   const updateBoardMember = useMutation(api.app.updateBoardMember);
   const [editingDetails, setEditingDetails] = useState(false);
-  const titleRef = useRef<HTMLInputElement>(null);
+  const salutationRef = useRef<HTMLSelectElement>(null);
+  const officeRef = useRef<HTMLInputElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
 
   const saveDetails = () => {
@@ -725,11 +828,14 @@ const MemberNode = ({
       setEditingDetails(false);
       return;
     }
+    const newSalutation = (salutationRef.current?.value ||
+      undefined) as BoardMemberSalutation | undefined;
     const newType = (typeRef.current?.value as BoardMemberType) || "other";
     void updateBoardMember({
       memberId: boardMember.id,
       name: boardMember.name,
-      title: titleRef.current?.value.trim() || undefined,
+      salutation: newSalutation,
+      title: officeRef.current?.value.trim() || undefined,
       type: newType,
     }).then(() => setEditingDetails(false));
   };
@@ -753,7 +859,14 @@ const MemberNode = ({
       <td className={isSelf ? "me" : ""}>{name + (isSelf ? " (me)" : "")}</td>
       <td>
         {isOfficer && editingDetails ? (
-          <input ref={titleRef} defaultValue={boardMember?.title ?? ""} autoFocus placeholder="Title" style={{ width: "100%" }} />
+          <BoardMemberSalutationSelect value={boardMember?.salutation} selectRef={salutationRef} />
+        ) : (
+          <>{boardMember?.salutation ?? "-"}</>
+        )}
+      </td>
+      <td>
+        {isOfficer && editingDetails ? (
+          <input ref={officeRef} defaultValue={boardMember?.title ?? ""} autoFocus placeholder="Office" style={{ width: "100%" }} />
         ) : (
           <>{boardMember?.title ?? "-"}</>
         )}
@@ -783,7 +896,7 @@ const MemberNode = ({
                 <button className="btn-small btn-secondary" onClick={() => setEditingDetails(false)}>Cancel</button>
               </span>
             ) : (
-              <button className="btn-small btn-secondary" onClick={() => setEditingDetails(true)} title="Edit title/type">
+              <button className="btn-small btn-secondary" onClick={() => setEditingDetails(true)} title="Edit title/office/type">
                 <SlPencil />
               </button>
             )

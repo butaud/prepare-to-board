@@ -174,6 +174,8 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
             members.find((member) => member._id === note.assigneeId)?.name ??
             note.assigneeName ??
             "",
+          salutation: members.find((member) => member._id === note.assigneeId)
+            ?.salutation,
         }
       : undefined,
   dueDate: note.dueDate,
@@ -193,6 +195,8 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
             note.moverName ??
             note.mover ??
             "",
+          salutation: members.find((member) => member._id === note.moverId)
+            ?.salutation,
         }
       : undefined,
   seconderMember:
@@ -204,6 +208,8 @@ const serializeNote = (note: NonNullable<Doc<"meetings">["currentNotes"]>[number
             note.seconderName ??
             note.seconder ??
             "",
+          salutation: members.find((member) => member._id === note.seconderId)
+            ?.salutation,
         }
       : undefined,
   status: note.status,
@@ -422,6 +428,7 @@ export const me = query({
           id: org._id,
           name: org.name,
           committeeDocUrl: org.committeeDocUrl,
+          calendarContextMonths: org.calendarContextMonths,
           memberships: orgMemberships.map((m, index) => ({
             userId: m.userId,
             role: m.role,
@@ -432,6 +439,7 @@ export const me = query({
             name: m.name,
             email: m.email,
             title: m.title,
+            salutation: m.salutation,
             accountId: m.accountId,
             type: m.type,
           })),
@@ -1256,12 +1264,19 @@ const boardMemberType = v.union(
   v.literal("other")
 );
 
+const boardMemberSalutation = v.union(
+  v.literal("Mr."),
+  v.literal("Mrs."),
+  v.literal("Miss")
+);
+
 export const addBoardMember = mutation({
   args: {
     organizationId: v.id("organizations"),
     name: v.string(),
     email: v.optional(v.string()),
     title: v.optional(v.string()),
+    salutation: v.optional(boardMemberSalutation),
     type: v.optional(boardMemberType),
   },
   handler: async (ctx, args) => {
@@ -1278,6 +1293,7 @@ export const updateBoardMember = mutation({
     memberId: v.id("boardMembers"),
     name: v.optional(v.string()),
     title: v.optional(v.string()),
+    salutation: v.optional(boardMemberSalutation),
     type: v.optional(boardMemberType),
   },
   handler: async (ctx, args) => {
@@ -1287,6 +1303,7 @@ export const updateBoardMember = mutation({
     await ctx.db.patch(args.memberId, {
       name: args.name,
       title: args.title,
+      salutation: args.salutation,
       type: args.type,
     });
   },
@@ -1385,6 +1402,19 @@ export const updateCommitteeDocUrl = mutation({
   handler: async (ctx, args) => {
     await requireRole(ctx, args.organizationId, ["admin"]);
     await ctx.db.patch(args.organizationId, { committeeDocUrl: args.committeeDocUrl });
+  },
+});
+
+export const updateCalendarContextMonths = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    calendarContextMonths: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, args.organizationId, ["admin"]);
+    await ctx.db.patch(args.organizationId, {
+      calendarContextMonths: args.calendarContextMonths,
+    });
   },
 });
 
