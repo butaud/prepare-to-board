@@ -661,35 +661,37 @@ export const MeetingView = () => {
   return (
     <div className="meeting-view-content">
       <div className="plan-header">
-        <div className="plan-field-row plan-start-time">
-          <span className="plan-field-label">Start Time:</span>
-          {isOfficer ? (
-            <DatePicker
-              selected={meeting.date}
-              onChange={handleStartDateChange}
-              showTimeSelect
-              timeIntervals={5}
-              dateFormat="MMMM d, yyyy h:mm aa"
-              popperProps={{ placement: "bottom", strategy: "fixed" }}
-              portalId="datepicker-portal"
-            />
-          ) : (
-            <span>
-              {meeting.date.toLocaleString(undefined, {
-                dateStyle: "long",
-                timeStyle: "short",
-              })}
-            </span>
-          )}
-        </div>
-        <div className="plan-field-row">
-          {targetEndTimeControl}
-          {isOverrun && (
-            <span className="overrun-warning">
-              ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
-              over target
-            </span>
-          )}
+        <div className="plan-header-times">
+          <div className="plan-field-row plan-start-time">
+            <span className="plan-field-label">Start Time:</span>
+            {isOfficer ? (
+              <DatePicker
+                selected={meeting.date}
+                onChange={handleStartDateChange}
+                showTimeSelect
+                timeIntervals={5}
+                dateFormat="MMMM d, yyyy h:mm aa"
+                popperProps={{ placement: "bottom", strategy: "fixed" }}
+                portalId="datepicker-portal"
+              />
+            ) : (
+              <span>
+                {meeting.date.toLocaleString(undefined, {
+                  dateStyle: "long",
+                  timeStyle: "short",
+                })}
+              </span>
+            )}
+          </div>
+          <div className="plan-field-row">
+            {targetEndTimeControl}
+            {isOverrun && (
+              <span className="overrun-warning">
+                ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+                over target
+              </span>
+            )}
+          </div>
         </div>
         <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
       </div>
