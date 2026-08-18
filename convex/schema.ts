@@ -70,6 +70,9 @@ export default defineSchema({
     // around the current month in the exported minutes document. Defaults
     // to 2 when unset - see buildCalendar in mapMeetingToSession.ts.
     calendarContextMonths: v.optional(v.number()),
+    // 1 = January ... 12 = December. The month the annual cycle page starts
+    // displaying from. Defaults to January (1) when unset.
+    boardYearStartMonth: v.optional(v.number()),
   }),
 
   memberships: defineTable({
@@ -156,7 +159,13 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     month: v.number(), // 1 = January ... 12 = December
     text: v.string(),
+    // Deprecated: superseded by completedOn (kept required/always-false so
+    // existing rows don't need a migration).
     completed: v.boolean(),
+    // When this recurring item was last completed. It's treated as
+    // "currently completed" while this is within the last 12 months - see
+    // isCalendarItemCompleted in util/calendarItems.ts.
+    completedOn: v.optional(v.number()),
   }).index("by_org", ["organizationId"]),
 
   committees: defineTable({

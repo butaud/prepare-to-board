@@ -4,7 +4,6 @@ import {
   BoardMember,
   BoardMemberSalutation,
   BoardMemberType,
-  CalendarItem,
   Committee,
   Organization,
   Role,
@@ -17,21 +16,6 @@ import { EditOrganization } from "../ui/forms/Organization";
 import { api } from "../convexClient";
 
 import "./Manage.css";
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
 
 const boardMemberTypes: BoardMemberType[] = ["board", "administration", "other"];
 const boardMemberTypeLabels: Record<BoardMemberType, string> = {
@@ -139,229 +123,6 @@ const AddBoardMemberForm = ({ org }: { org: Organization }) => {
       <BoardMemberTypeSelect value={type} onChange={setType} />
       <button onClick={handleAdd} disabled={!name.trim()}>Add</button>
       <button onClick={() => setShowing(false)}>Cancel</button>
-    </div>
-  );
-};
-
-const CalendarItemRow = ({ item }: { item: CalendarItem }) => {
-  const updateCalendarItem = useMutation(api.app.updateCalendarItem);
-  const deleteCalendarItem = useMutation(api.app.deleteCalendarItem);
-  const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(item.text);
-
-  if (editing) {
-    return (
-      <li className="calendar-item">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          autoFocus
-          style={{ width: "100%" }}
-        />
-        <button
-          className="btn-small btn-primary"
-          onClick={() => {
-            if (!text.trim()) return;
-            void updateCalendarItem({
-              calendarItemId: item.id,
-              text: text.trim(),
-            }).then(() => setEditing(false));
-          }}
-        >
-          Save
-        </button>
-        <button
-          className="btn-small btn-secondary"
-          onClick={() => {
-            setText(item.text);
-            setEditing(false);
-          }}
-        >
-          Cancel
-        </button>
-      </li>
-    );
-  }
-
-  return (
-    <li className={`calendar-item${item.completed ? " is-completed" : ""}`}>
-      <label className="calendar-item-checkbox">
-        <input
-          type="checkbox"
-          checked={item.completed}
-          onChange={(e) =>
-            void updateCalendarItem({
-              calendarItemId: item.id,
-              completed: e.target.checked,
-            })
-          }
-        />
-        <span>{item.text}</span>
-      </label>
-      <span className="calendar-item-actions">
-        <button
-          className="btn-small btn-secondary"
-          onClick={() => setEditing(true)}
-          title="Edit"
-        >
-          <SlPencil />
-        </button>
-        <button
-          className="btn-small btn-secondary"
-          onClick={() => void deleteCalendarItem({ calendarItemId: item.id })}
-          title="Delete"
-        >
-          <SlTrash />
-        </button>
-      </span>
-    </li>
-  );
-};
-
-const AddCalendarItemForm = ({ org }: { org: Organization }) => {
-  const addCalendarItem = useMutation(api.app.addCalendarItem);
-  const [text, setText] = useState("");
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [showing, setShowing] = useState(false);
-
-  const handleAdd = () => {
-    if (!text.trim()) return;
-    void addCalendarItem({
-      organizationId: org.id,
-      month,
-      text: text.trim(),
-    }).then(() => {
-      setText("");
-      setShowing(false);
-    });
-  };
-
-  if (!showing) {
-    return (
-      <button onClick={() => setShowing(true)}>
-        <SlPlus /> Add calendar item
-      </button>
-    );
-  }
-
-  return (
-    <div className="add-calendar-item-form">
-      <select
-        aria-label="Month"
-        value={month}
-        onChange={(e) => setMonth(Number(e.target.value))}
-      >
-        {MONTH_NAMES.map((name, index) => (
-          <option key={name} value={index + 1}>
-            {name}
-          </option>
-        ))}
-      </select>
-      <input
-        placeholder="Recurring item *"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        autoFocus
-      />
-      <button onClick={handleAdd} disabled={!text.trim()}>
-        Add
-      </button>
-      <button onClick={() => setShowing(false)}>Cancel</button>
-    </div>
-  );
-};
-
-const DEFAULT_CALENDAR_CONTEXT_MONTHS = 2;
-
-const CalendarContextMonthsField = ({ org }: { org: Organization }) => {
-  const updateCalendarContextMonths = useMutation(api.app.updateCalendarContextMonths);
-  const [editing, setEditing] = useState(false);
-  const [months, setMonths] = useState(
-    String(org.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS)
-  );
-
-  if (editing) {
-    return (
-      <div className="committee-doc-url-field">
-        <input
-          type="number"
-          min={0}
-          value={months}
-          onChange={(e) => setMonths(e.target.value)}
-          autoFocus
-          style={{ width: 80 }}
-        />
-        <button
-          className="btn-small btn-primary"
-          onClick={() => {
-            const parsed = Number(months);
-            void updateCalendarContextMonths({
-              organizationId: org.id,
-              calendarContextMonths: Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined,
-            }).then(() => setEditing(false));
-          }}
-        >
-          Save
-        </button>
-        <button
-          className="btn-small btn-secondary"
-          onClick={() => {
-            setMonths(String(org.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS));
-            setEditing(false);
-          }}
-        >
-          Cancel
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="committee-doc-url-field">
-      <span className="manage-note">
-        Months of calendar context in exported minutes (trailing/upcoming):{" "}
-        {org.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS}
-      </span>
-      <button className="btn-small btn-secondary" onClick={() => setEditing(true)} title="Edit">
-        <SlPencil />
-      </button>
-    </div>
-  );
-};
-
-const BoardCalendarManager = ({ org }: { org: Organization }) => {
-  const itemsByMonth = new Map<number, CalendarItem[]>();
-  org.calendarItems.forEach((item) => {
-    const existing = itemsByMonth.get(item.month) ?? [];
-    existing.push(item);
-    itemsByMonth.set(item.month, existing);
-  });
-
-  return (
-    <div className="manage-section">
-      <h3>Board Calendar</h3>
-      <CalendarContextMonthsField org={org} />
-      {org.calendarItems.length === 0 ? (
-        <p className="manage-note">No recurring calendar items yet.</p>
-      ) : (
-        MONTH_NAMES.map((name, index) => {
-          const items = itemsByMonth.get(index + 1);
-          if (!items || items.length === 0) return null;
-          return (
-            <div key={name} className="calendar-month-group">
-              <h4>{name}</h4>
-              <ul className="calendar-item-list">
-                {items.map((item) => (
-                  <CalendarItemRow key={item.id} item={item} />
-                ))}
-              </ul>
-            </div>
-          );
-        })
-      )}
-      <div className="manage-actions">
-        <AddCalendarItemForm org={org} />
-      </div>
     </div>
   );
 };
@@ -659,7 +420,6 @@ export const Manage = () => {
         happens, they can use the same invite link as a new user to get access
         to it again.
       </p>
-      {isAdmin && <BoardCalendarManager org={org} />}
       {isAdmin && <CommitteesManager org={org} />}
     </div>
   );

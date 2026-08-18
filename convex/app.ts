@@ -429,6 +429,7 @@ export const me = query({
           name: org.name,
           committeeDocUrl: org.committeeDocUrl,
           calendarContextMonths: org.calendarContextMonths,
+          boardYearStartMonth: org.boardYearStartMonth,
           memberships: orgMemberships.map((m, index) => ({
             userId: m.userId,
             role: m.role,
@@ -452,7 +453,7 @@ export const me = query({
             id: c._id,
             month: c.month,
             text: c.text,
-            completed: c.completed,
+            completedOn: c.completedOn,
           })),
           committees: committees.map((c) => ({
             id: c._id,
@@ -1331,16 +1332,45 @@ export const updateCalendarItem = mutation({
     calendarItemId: v.id("calendarItems"),
     month: v.optional(v.number()),
     text: v.optional(v.string()),
-    completed: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.calendarItemId);
     if (!item) return;
     await requireRole(ctx, item.organizationId, ["admin"]);
-    await ctx.db.patch(args.calendarItemId, {
-      month: args.month,
-      text: args.text,
-      completed: args.completed,
+    // month/text are required fields on this table - only patch the ones
+    // actually provided, since patching a required field to undefined
+    // unsets it and fails schema validation.
+    const patch: { month?: number; text?: string } = {};
+    if (args.month !== undefined) patch.month = args.month;
+    if (args.text !== undefined) patch.text = args.text;
+    await ctx.db.patch(args.calendarItemId, patch);
+  },
+});
+
+export const setCalendarItemCompletedOn = mutation({
+  args: {
+    calendarItemId: v.id("calendarItems"),
+    completedOn: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.calendarItemId);
+    if (!item) return;
+    // Checking off a recurring item is a routine operational task, unlike
+    // adding/editing/deleting items themselves - officers can do it too.
+    await requireRole(ctx, item.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.calendarItemId, { completedOn: args.completedOn });
+  },
+});
+
+export const updateBoardYearStartMonth = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    boardYearStartMonth: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, args.organizationId, ["admin"]);
+    await ctx.db.patch(args.organizationId, {
+      boardYearStartMonth: args.boardYearStartMonth,
     });
   },
 });

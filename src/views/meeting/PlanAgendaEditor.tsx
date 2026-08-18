@@ -7,7 +7,7 @@ import {
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
 import { MdDelete } from "react-icons/md";
-import { getCanonicalTopicId, Meeting, Topic } from "../../schema";
+import { getCanonicalTopicId, Meeting, Organization, Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { usePlanAgendaEditMode } from "../../hooks/PlanAgendaEditMode";
 import { usePrivateNotes } from "../../hooks/PrivateNotes";
@@ -15,6 +15,7 @@ import { EditableInteger, EditableString } from "../../ui/doc/EditableValue";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { handleMarkdownLinkPaste } from "../../util/linkPaste";
 import { renderMarkdownBlocks } from "../../util/markdown";
+import { AnnualCyclePanel } from "./AnnualCyclePanel";
 import {
   AGENDA_EVENT_GAP_PX,
   AGENDA_EVENT_MIN_HEIGHT_PX,
@@ -92,6 +93,7 @@ type Entry = {
 export type PlanAgendaEditorProps = {
   meeting: Meeting;
   isOfficer: boolean;
+  organization: Organization;
   startTime: Date;
   targetEndTime: Date | null;
   children?: ReactNode;
@@ -100,6 +102,7 @@ export type PlanAgendaEditorProps = {
 export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   meeting,
   isOfficer,
+  organization,
   startTime,
   targetEndTime,
   children,
@@ -570,6 +573,7 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
 
   return (
     <div className="meeting-minutes plan-agenda-layout" ref={layoutRef}>
+      <AnnualCyclePanel organization={organization} referenceDate={startTime} />
       <svg className="minutes-agenda-connections" aria-hidden="true" focusable="false">
         <path ref={connectionRef} className="minutes-agenda-connection-line is-active is-hidden" />
       </svg>

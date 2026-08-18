@@ -1,0 +1,74 @@
+import { useState } from "react";
+import { CalendarItem, Organization } from "../../schema";
+import { isCalendarItemCompleted, monthsWithinContext, MONTH_NAMES } from "../../util/calendarItems";
+
+import "./AnnualCyclePanel.css";
+
+const DEFAULT_CALENDAR_CONTEXT_MONTHS = 2;
+
+export type AnnualCyclePanelProps = {
+  organization: Organization;
+  /** The meeting date the "nearby months" window is centered on. */
+  referenceDate: Date;
+};
+
+// A collapsible reminder of the org's recurring annual-cycle items due
+// around this meeting's month, so officers can fold them into the agenda
+// without leaving the editor - see GH issue #53.
+export const AnnualCyclePanel = ({ organization, referenceDate }: AnnualCyclePanelProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const contextMonths = organization.calendarContextMonths ?? DEFAULT_CALENDAR_CONTEXT_MONTHS;
+  const months = monthsWithinContext(referenceDate, contextMonths);
+
+  const itemsByMonth = new Map<number, CalendarItem[]>();
+  organization.calendarItems.forEach((item) => {
+    const existing = itemsByMonth.get(item.month) ?? [];
+    existing.push(item);
+    itemsByMonth.set(item.month, existing);
+  });
+  const monthEntries = months
+    .map((month) => ({ month, items: itemsByMonth.get(month) ?? [] }))
+    .filter((entry) => entry.items.length > 0);
+
+  return (
+    <aside className={`annual-cycle-panel${isOpen ? " is-open" : ""}`}>
+      <button
+        className="annual-cycle-panel-toggle"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-expanded={isOpen}
+        aria-controls="annual-cycle-panel-content"
+      >
+        <span aria-hidden="true">{isOpen ? "»" : "«"}</span>
+        <span className="annual-cycle-panel-toggle-label">Annual Cycle</span>
+      </button>
+      {isOpen && (
+        <div className="annual-cycle-panel-content" id="annual-cycle-panel-content">
+          <h3>Annual Cycle</h3>
+          {monthEntries.length === 0 ? (
+            <p className="minutes-hint">No recurring items near this month.</p>
+          ) : (
+            monthEntries.map(({ month, items }) => (
+              <div key={month} className="annual-cycle-panel-month">
+                <h4>{MONTH_NAMES[month - 1]}</h4>
+                <ul>
+                  {items.map((item) => (
+                    <li
+                      key={item.id}
+                      className={
+                        isCalendarItemCompleted(item.completedOn, referenceDate)
+                          ? "is-completed"
+                          : undefined
+                      }
+                    >
+                      {item.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </aside>
+  );
+};
