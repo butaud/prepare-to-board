@@ -14,7 +14,22 @@
 }
 
 .plan-header {
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-bottom: 12px;
+}
+
+/* Collapsed, it sits inline with the start/end time fields; expanded, it
+   needs the full width to lay out its fields and attendance grid. */
+.plan-header .meeting-details-accordion {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.plan-header .meeting-details-accordion:has(.meeting-details-body) {
+  flex-basis: 100%;
 }
 
 /* .meeting-minutes normally supplies its own top padding since it's the
@@ -32,11 +47,6 @@
   flex-wrap: wrap;
   font-size: 0.9rem;
   color: var(--muted-text-color);
-  margin: 6px 0 0;
-
-  &:first-child {
-    margin-top: 0;
-  }
 }
 
 .plan-field-label {

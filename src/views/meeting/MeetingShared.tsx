@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLoadMeetingFromParams } from "../../hooks/Meeting";
 import { getMeetingDisplayStatus } from "../../schema";
 import { useLoadedAccount } from "../../hooks/Account";
@@ -12,7 +12,7 @@ import {
   MdPublish,
   MdStopCircle,
 } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "convex/react";
 import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
@@ -24,23 +24,21 @@ export const MeetingShared = () => {
   const me = useLoadedAccount();
   const { meeting, outlet } = useLoadMeetingFromParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  // The edit-agenda page has its own URL (.../edit) rather than being local
+  // component state, so it reopens on refresh and is a real, linkable/
+  // back-button-able page instead of a transient toggle.
+  const isEditingAgenda = location.pathname.endsWith("/edit");
   const deleteMeeting = useMutation(api.app.deleteMeeting);
   const startMeeting = useMutation(api.app.startMeeting);
   const setMeetingStatus = useMutation(api.app.setMeetingStatus);
   const recordMeetingViewed = useMutation(api.app.recordMeetingViewed);
   const meetingId = meeting?.id;
-  const meetingStatus = meeting?.status;
-  const [isEditingAgenda, setIsEditingAgenda] = useState(false);
   useEffect(() => {
     if (meetingId) {
       void recordMeetingViewed({ meetingId });
     }
   }, [meetingId, recordMeetingViewed]);
-  // Leaving the Plan page (different meeting, or the meeting moved past
-  // draft/published) shouldn't leave edit mode stuck on for next time.
-  useEffect(() => {
-    setIsEditingAgenda(false);
-  }, [meetingId, meetingStatus]);
   if (meeting === undefined) {
     return <p>Loading...</p>;
   }
@@ -108,7 +106,11 @@ export const MeetingShared = () => {
     if (meeting.status === "draft" || meeting.status === "published") {
       actions.push({
         label: isEditingAgenda ? "Done Editing" : "Edit Agenda",
-        onClick: () => setIsEditingAgenda(!isEditingAgenda),
+        onClick: () => {
+          void navigate(
+            isEditingAgenda ? `/meetings/${meeting.id}` : `/meetings/${meeting.id}/edit`
+          );
+        },
         icon: <MdEdit />,
       });
     }
@@ -120,12 +122,10 @@ export const MeetingShared = () => {
     });
   }
   return (
-    <PlanAgendaEditModeContext.Provider
-      value={{ isEditingAgenda, setIsEditingAgenda }}
-    >
+    <PlanAgendaEditModeContext.Provider value={{ isEditingAgenda }}>
       <div>
         <SubHeader
-          dynamicTitleParts={{ [meeting.id]: breadcrumbTitle }}
+          dynamicTitleParts={{ [meeting.id]: breadcrumbTitle, edit: "Edit Agenda" }}
           partsToIgnore={["present", "minutes"]}
           actions={actions}
           tabs={tabs}

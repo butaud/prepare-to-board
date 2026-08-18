@@ -578,9 +578,6 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
         <path ref={connectionRef} className="minutes-agenda-connection-line is-active is-hidden" />
       </svg>
       <div className="minutes-topic-main">
-        <div className="plan-edit-mode-bar">
-          <span className="plan-edit-mode-label">Editing Agenda</span>
-        </div>
         {children}
         <section ref={topicDetailRef} className="minutes-section minutes-topic-detail-section">
           {selectedTopic && isOfficer && (

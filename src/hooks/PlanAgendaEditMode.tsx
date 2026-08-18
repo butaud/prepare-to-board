@@ -2,7 +2,6 @@ import { createContext, useContext } from "react";
 
 export type PlanAgendaEditModeContextValue = {
   isEditingAgenda: boolean;
-  setIsEditingAgenda: (value: boolean) => void;
 };
 
 export const PlanAgendaEditModeContext = createContext<

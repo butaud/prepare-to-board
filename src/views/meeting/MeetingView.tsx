@@ -16,6 +16,7 @@ import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
 import { PlanAgendaEditor } from "./PlanAgendaEditor";
+import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingView.css";
@@ -655,6 +656,8 @@ export const MeetingView = () => {
     targetEndTime && <span>Target end time: {formatTime(targetEndTime)}</span>
   );
 
+  const members = me.root.selectedOrganization.members;
+
   return (
     <div className="meeting-view-content">
       <div className="plan-header">
@@ -688,6 +691,7 @@ export const MeetingView = () => {
             </span>
           )}
         </div>
+        <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
       </div>
       <PlanAgendaEditor
         meeting={meeting}
