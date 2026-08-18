@@ -22,21 +22,7 @@ import {
   TextNote,
   Topic,
 } from "./model";
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
+import { isCalendarItemCompleted, monthsWithinContext, MONTH_NAMES } from "../util/calendarItems";
 
 const personFromBoardMemberOrName = (
   member: BoardMember | undefined,
@@ -243,18 +229,16 @@ const buildCalendar = (
     existing.push(item);
     itemsByMonth.set(item.month, existing);
   }
-  const referenceMonth = referenceDate.getMonth() + 1;
   const entries: CalendarMonthEntry[] = [];
-  const seenMonths = new Set<number>();
-  for (let offset = -contextMonths; offset <= contextMonths; offset++) {
-    const month = (((referenceMonth - 1 + offset) % 12) + 12) % 12 + 1;
-    if (seenMonths.has(month)) continue;
-    seenMonths.add(month);
+  for (const month of monthsWithinContext(referenceDate, contextMonths)) {
     const items = itemsByMonth.get(month);
     if (!items || items.length === 0) continue;
     entries.push({
       month: MONTH_NAMES[month - 1],
-      items: items.map((item) => ({ text: item.text, completed: item.completed })),
+      items: items.map((item) => ({
+        text: item.text,
+        completed: isCalendarItemCompleted(item.completedOn, referenceDate),
+      })),
     });
   }
   return entries;

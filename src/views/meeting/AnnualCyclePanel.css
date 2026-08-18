@@ -1,0 +1,113 @@
+.annual-cycle-panel {
+  position: fixed;
+  top: 140px;
+  right: 0;
+  z-index: 20;
+}
+
+/* button.annual-cycle-panel-toggle (not just .annual-cycle-panel-toggle) to
+   out-specificity index.css's global `button:not(.cl-button)` rule, which
+   otherwise wins the cascade and keeps its display:inline-flex/fixed
+   height - clipping the vertical text down to a couple of characters. */
+button.annual-cycle-panel-toggle {
+  display: block;
+  height: auto;
+  width: auto;
+  writing-mode: vertical-rl;
+  /* This button is rotated 180deg (so the text reads bottom-to-top), which
+     also visually flips border-radius/box-shadow left-right - the values
+     below are pre-rotation and land on the correct visual side once
+     rotated: straight edge against the screen's right edge, rounded edge
+     facing inward to match .annual-cycle-panel-content's open state. */
+  transform: rotate(180deg);
+  white-space: nowrap;
+  background: var(--primary-color);
+  color: var(--background-color);
+  border: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 14px 8px;
+  box-shadow: 2px -2px 8px var(--shadow-color);
+}
+
+.annual-cycle-panel-content {
+  width: 260px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  padding: 14px 16px;
+  box-shadow: -2px 2px 8px var(--shadow-color);
+}
+
+.annual-cycle-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.annual-cycle-panel-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.annual-cycle-panel-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--font-color);
+  opacity: 0.6;
+}
+
+.annual-cycle-panel-close:hover {
+  opacity: 1;
+}
+
+.annual-cycle-panel-month {
+  margin-bottom: 12px;
+}
+
+.annual-cycle-panel-month:last-child {
+  margin-bottom: 0;
+}
+
+.annual-cycle-panel-month h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.annual-cycle-panel-month ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+}
+
+.annual-cycle-panel-month li.is-completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+@media (max-width: 750px) {
+  .annual-cycle-panel {
+    top: auto;
+    bottom: 12px;
+  }
+
+  .annual-cycle-panel-content {
+    width: min(260px, 70vw);
+  }
+}

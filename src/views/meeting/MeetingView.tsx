@@ -692,6 +692,7 @@ export const MeetingView = () => {
       <PlanAgendaEditor
         meeting={meeting}
         isOfficer={isOfficer}
+        organization={me.root.selectedOrganization}
         startTime={meeting.date}
         targetEndTime={targetEndTime}
       >

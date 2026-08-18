@@ -8,6 +8,7 @@ import { MeetingView } from "./views/meeting/MeetingView";
 import { MeetingPresent } from "./views/meeting/MeetingPresent";
 import { MeetingShared } from "./views/meeting/MeetingShared";
 import { Manage } from "./views/Manage";
+import { AnnualCycle } from "./views/AnnualCycle";
 import { Invite } from "./views/Invite";
 import { MeetingList } from "./views/meeting/MeetingList";
 import { AuthenticatedShared } from "./views/AuthenticatedShared";
@@ -31,6 +32,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="meetings" element={<MeetingList />} />
             <Route path="action-items" element={<ActionItems />} />
+            <Route path="annual-cycle" element={<AnnualCycle />} />
             {isAdmin && <Route path="manage" element={<Manage />} />}
             <Route path="members" element={<Manage />} />
             <Route path="meetings/:meetingId" element={<MeetingShared />}>

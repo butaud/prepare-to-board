@@ -139,7 +139,8 @@ export type CalendarItem = {
   id: Id;
   month: number; // 1 = January ... 12 = December
   text: string;
-  completed: boolean;
+  /** When this recurring item was last completed, if ever. */
+  completedOn?: number;
 };
 
 export type Committee = {
@@ -153,6 +154,7 @@ export type Organization = {
   name: string;
   committeeDocUrl?: string;
   calendarContextMonths?: number;
+  boardYearStartMonth?: number;
   meetings: Meeting[];
   members: BoardMember[];
   memberships: Membership[];
