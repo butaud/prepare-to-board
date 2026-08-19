@@ -29,7 +29,9 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
   const [time, setTime] = useState<Date | null>(null);
   // Driven explicitly rather than left to react-datepicker's own
   // close-on-select handling, which doesn't reliably close the popup.
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  // Starts open so the calendar is visible as soon as the dialog opens,
+  // matching the input itself being autofocused.
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(true);
   // When a day is clicked, the browser moves DOM focus back to the text
   // input as soon as the clicked day cell unmounts (since it's no longer
   // in the DOM to hold focus) - and, at least under CDP-driven clicks,
