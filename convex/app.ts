@@ -1127,6 +1127,114 @@ export const updateMinuteDuration = mutation({
   },
 });
 
+// The four mutations below back the post-meeting "Edit Minutes" view -
+// officers reshaping what actually got covered (and when) after the
+// meeting has already ended, so each requires the meeting to be completed
+// rather than working off the live-meeting "current topic" pointer that
+// advanceTopic/skipTopic rely on.
+const requireCompletedMeeting = (meeting: Doc<"meetings">) => {
+  if (meeting.status !== "completed") {
+    throw new ConvexError("Minutes can only be edited after the meeting is completed");
+  }
+};
+
+const clampInsertIndex = (index: number | undefined, length: number) =>
+  index === undefined ? length : Math.max(0, Math.min(index, length));
+
+export const addSkippedTopicToMinutes = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    plannedTopicId: v.string(),
+    durationMinutes: v.optional(v.number()),
+    insertIndex: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    requireCompletedMeeting(meeting);
+    if (args.durationMinutes !== undefined && args.durationMinutes < 1) {
+      throw new ConvexError("Duration must be at least 1 minute");
+    }
+    const plannedTopic = meeting.plannedAgenda.find(
+      (topic) => topic.id === args.plannedTopicId
+    );
+    if (!plannedTopic) throw new ConvexError("Planned topic not found");
+    if (meeting.minutes.some((minute) => minute.topic.plannedTopicId === plannedTopic.id)) {
+      throw new ConvexError("Topic has already been covered");
+    }
+    const minute = {
+      id: id(),
+      topic: { ...plannedTopic, id: id(), plannedTopicId: plannedTopic.id },
+      durationMinutes: args.durationMinutes ?? plannedTopic.durationMinutes ?? 5,
+      notes: [],
+    };
+    const minutes = [...meeting.minutes];
+    minutes.splice(clampInsertIndex(args.insertIndex, minutes.length), 0, minute);
+    await ctx.db.patch(args.meetingId, { minutes });
+    return minute.id;
+  },
+});
+
+export const addUnplannedMinute = mutation({
+  args: {
+    meetingId: v.id("meetings"),
+    title: v.string(),
+    durationMinutes: v.number(),
+    insertIndex: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    requireCompletedMeeting(meeting);
+    if (args.durationMinutes < 1) {
+      throw new ConvexError("Duration must be at least 1 minute");
+    }
+    const minute = {
+      id: id(),
+      topic: { id: id(), title: args.title, durationMinutes: args.durationMinutes },
+      durationMinutes: args.durationMinutes,
+      notes: [],
+    };
+    const minutes = [...meeting.minutes];
+    minutes.splice(clampInsertIndex(args.insertIndex, minutes.length), 0, minute);
+    await ctx.db.patch(args.meetingId, { minutes });
+    return minute.id;
+  },
+});
+
+export const removeMinute = mutation({
+  args: { meetingId: v.id("meetings"), minuteId: v.string() },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    requireCompletedMeeting(meeting);
+    await ctx.db.patch(args.meetingId, {
+      minutes: meeting.minutes.filter((minute) => minute.id !== args.minuteId),
+    });
+  },
+});
+
+export const reorderMinutes = mutation({
+  args: { meetingId: v.id("meetings"), minuteIds: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const meeting = await ctx.db.get(args.meetingId);
+    if (!meeting) return;
+    await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    requireCompletedMeeting(meeting);
+    const byId = new Map(meeting.minutes.map((minute) => [minute.id, minute]));
+    const reordered = args.minuteIds
+      .map((minuteId) => byId.get(minuteId))
+      .filter((minute) => minute !== undefined);
+    if (reordered.length !== meeting.minutes.length) {
+      throw new ConvexError("minuteIds must include every existing minute exactly once");
+    }
+    await ctx.db.patch(args.meetingId, { minutes: reordered });
+  },
+});
+
 export const removeMinuteNote = mutation({
   args: { meetingId: v.id("meetings"), minuteId: v.string(), noteId: v.string() },
   handler: async (ctx, args) => {
