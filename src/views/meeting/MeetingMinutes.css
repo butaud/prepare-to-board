@@ -997,6 +997,10 @@
   opacity: 0.7;
 }
 
+.minutes-edit-duration-input {
+  width: 56px;
+}
+
 /* Badges */
 .badge {
   font-size: 0.7rem;
