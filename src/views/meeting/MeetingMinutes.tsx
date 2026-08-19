@@ -816,41 +816,31 @@ const PostMeetingMinutes = () => {
                   {topic?.outcome && (
                     <div className="minutes-item-notes">{topic.outcome}</div>
                   )}
-                  {isOfficer ? (
-                    <CompletedMinuteNotes
-                      minute={minute}
-                      meeting={meeting}
-                      members={members}
-                      canToggleAny={Boolean(isOfficer)}
-                      myBoardMemberId={myBoardMemberId}
-                    />
-                  ) : (
-                    notes.length > 0 && (
-                      <div className="minutes-item-structured-notes">
-                        {notes.map((note, ni) => (
-                          <NoteDisplay
-                            key={ni}
-                            note={note}
-                            completion={
-                              note.type === "action_item"
-                                ? {
-                                    canToggle:
-                                      note.assignee?.id !== undefined &&
-                                      note.assignee.id === myBoardMemberId,
-                                    onToggle: (completedOn) =>
-                                      void setActionItemCompletedOn({
-                                        meetingId: meeting.id,
-                                        minuteId: minute.id,
-                                        noteId: note.id,
-                                        completedOn,
-                                      }),
-                                  }
-                                : undefined
-                            }
-                          />
-                        ))}
-                      </div>
-                    )
+                  {notes.length > 0 && (
+                    <div className="minutes-item-structured-notes">
+                      {notes.map((note, ni) => (
+                        <NoteDisplay
+                          key={ni}
+                          note={note}
+                          completion={
+                            note.type === "action_item"
+                              ? {
+                                  canToggle:
+                                    note.assignee?.id !== undefined &&
+                                    note.assignee.id === myBoardMemberId,
+                                  onToggle: (completedOn) =>
+                                    void setActionItemCompletedOn({
+                                      meetingId: meeting.id,
+                                      minuteId: minute.id,
+                                      noteId: note.id,
+                                      completedOn,
+                                    }),
+                                }
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
                   )}
                   {!privateNotes.isLoading && (
                     <PrivateNoteEditor
