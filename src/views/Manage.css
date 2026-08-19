@@ -39,7 +39,11 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    thead th:last-child {
+    /* Every column but the first (name) shrinks to its content instead of
+       auto-layout handing it a share of the table's leftover width - that
+       mismatch was stretching the Role column across a big gap of empty
+       space between the dropdown and the actions buttons. */
+    thead th:not(:first-child) {
       width: 1%;
       white-space: nowrap;
     }
