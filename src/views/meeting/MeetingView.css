@@ -14,7 +14,24 @@
 }
 
 .plan-header {
-  margin-bottom: 4px;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-bottom: 12px;
+}
+
+.plan-header-times {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Stays in place beside the stacked start/end time fields whether
+   collapsed or expanded - it just grows taller, not wider, when opened. */
+.plan-header .meeting-details-accordion {
+  flex: 1 1 240px;
+  min-width: 200px;
 }
 
 /* .meeting-minutes normally supplies its own top padding since it's the
@@ -32,11 +49,6 @@
   flex-wrap: wrap;
   font-size: 0.9rem;
   color: var(--muted-text-color);
-  margin: 6px 0 0;
-
-  &:first-child {
-    margin-top: 0;
-  }
 }
 
 .plan-field-label {

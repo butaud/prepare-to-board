@@ -179,21 +179,3 @@ input.plan-duration-display {
   margin-top: 8px;
 }
 
-.plan-edit-mode-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  background: var(--primary-color-subtle);
-  border-radius: 6px;
-}
-
-.plan-edit-mode-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--primary-color);
-}

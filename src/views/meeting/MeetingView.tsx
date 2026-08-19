@@ -16,6 +16,7 @@ import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
 import { PlanAgendaEditor } from "./PlanAgendaEditor";
+import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingView.css";
@@ -655,39 +656,49 @@ export const MeetingView = () => {
     targetEndTime && <span>Target end time: {formatTime(targetEndTime)}</span>
   );
 
+  const members = me.root.selectedOrganization.members;
+
   return (
     <div className="meeting-view-content">
       <div className="plan-header">
-        <div className="plan-field-row plan-start-time">
-          <span className="plan-field-label">Start Time:</span>
-          {isOfficer ? (
-            <DatePicker
-              selected={meeting.date}
-              onChange={handleStartDateChange}
-              showTimeSelect
-              timeIntervals={5}
-              dateFormat="MMMM d, yyyy h:mm aa"
-              popperProps={{ placement: "bottom", strategy: "fixed" }}
-              portalId="datepicker-portal"
-            />
-          ) : (
-            <span>
-              {meeting.date.toLocaleString(undefined, {
-                dateStyle: "long",
-                timeStyle: "short",
-              })}
-            </span>
-          )}
+        <div className="plan-header-times">
+          <div className="plan-field-row plan-start-time">
+            <span className="plan-field-label">Start Time:</span>
+            {isOfficer ? (
+              <DatePicker
+                selected={meeting.date}
+                onChange={handleStartDateChange}
+                showTimeSelect
+                timeIntervals={5}
+                dateFormat="MMMM d, yyyy h:mm aa"
+                popperProps={{ placement: "bottom", strategy: "fixed" }}
+                portalId="datepicker-portal"
+              />
+            ) : (
+              <span>
+                {meeting.date.toLocaleString(undefined, {
+                  dateStyle: "long",
+                  timeStyle: "short",
+                })}
+              </span>
+            )}
+          </div>
+          <div className="plan-field-row">
+            {targetEndTimeControl}
+            {isOverrun && (
+              <span className="overrun-warning">
+                ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+                over target
+              </span>
+            )}
+          </div>
         </div>
-        <div className="plan-field-row">
-          {targetEndTimeControl}
-          {isOverrun && (
-            <span className="overrun-warning">
-              ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
-              over target
-            </span>
-          )}
-        </div>
+        <MeetingDetailsAccordion
+          meeting={meeting}
+          members={members}
+          isOfficer={isOfficer}
+          showAttendance={false}
+        />
       </div>
       <PlanAgendaEditor
         meeting={meeting}
