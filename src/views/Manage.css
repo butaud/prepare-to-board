@@ -42,23 +42,13 @@
     /* Every column but the first (name) shrinks to its content instead of
        auto-layout handing it a share of the table's leftover width - that
        mismatch was stretching the Role column across a big gap of empty
-       space between the dropdown and the actions buttons. */
-    thead th:not(:first-child) {
+       space between the dropdown and the actions buttons. Scoped away from
+       the members table below, which pins column widths explicitly instead
+       (auto-layout's content-based sizing fought with that table's mix of
+       always-on dropdowns and double-click-editable text fields). */
+    &:not(.members-table) thead th:not(:first-child) {
       width: 1%;
       white-space: nowrap;
-    }
-
-    /* Name and Office switch between static text and an input when
-       double-clicked; without a reserved minimum width, entering edit mode
-       changes the column's preferred size and reflows the whole table. */
-    th.member-name,
-    td.member-name {
-      min-width: 170px;
-    }
-
-    th.member-office,
-    td.member-office {
-      min-width: 150px;
     }
 
     tr.member {
@@ -84,6 +74,56 @@
 
     td.me {
       font-weight: 600;
+    }
+  }
+
+  /* Fixed, explicit column widths rather than auto-layout, sized so
+     Title/Office/Type/Role/Actions each fit their heaviest control (a
+     select's widest option, or the actions column's link picker + button)
+     and Name gets what's left. table-layout: fixed needs every column
+     accounted for - an unspecified column doesn't reliably claim the
+     remaining space itself; browsers instead scale the specified ones to
+     fill the table, which starts eating into the others. Percentages
+     (rather than px) keep that scaling proportional if the actions column
+     is ever omitted for a reader with neither role. Because these are
+     deterministic, switching Name/Office between display text and an
+     input never changes the column width the way content-driven
+     auto-layout did. */
+  table.members-table {
+    table-layout: fixed;
+
+    .col-name {
+      width: 16%;
+    }
+
+    .col-title {
+      width: 10%;
+    }
+
+    .col-office {
+      width: 15%;
+    }
+
+    .col-type {
+      width: 18%;
+    }
+
+    .col-role {
+      width: 14%;
+    }
+
+    .col-actions {
+      width: 27%;
+    }
+
+    /* A <select>'s closed-state rendering can be wider than its cell (sized
+       to its longest option, e.g. "Administration"), overflowing into the
+       next column instead of respecting table-layout: fixed's assigned
+       width. Forcing it to fill the cell instead makes it truncate to that
+       width - the full option list in the open dropdown is unaffected. */
+    select {
+      width: 100%;
+      box-sizing: border-box;
     }
   }
 
@@ -116,9 +156,9 @@
     opacity: 0.65;
   }
 
-  /* Fills whatever width the (min-width-constrained) cell already has,
-     rather than the input's own default size, so the column doesn't
-     resize when a field switches into edit mode. */
+  /* Fills whatever width the (fixed-width) cell already has, rather than
+     the input's own default size, so entering edit mode doesn't change how
+     much space the field takes up. */
   .manage-editable-field {
     width: 100%;
     box-sizing: border-box;

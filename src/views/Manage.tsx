@@ -352,12 +352,20 @@ export const Manage = () => {
       )}
       <div className="manage-section">
         <h3>Organization Members</h3>
-        <table>
+        <table className="members-table">
+          <colgroup>
+            <col className="col-name" />
+            <col className="col-title" />
+            <col className="col-office" />
+            <col className="col-type" />
+            <col className="col-role" />
+            {showActionsColumn && <col className="col-actions" />}
+          </colgroup>
           <thead>
             <tr>
-              <th className="member-name">Name</th>
+              <th>Name</th>
               <th>Title</th>
-              <th className="member-office">Office</th>
+              <th>Office</th>
               <th>Type</th>
               <th>Role</th>
               {showActionsColumn && <th></th>}
@@ -505,7 +513,7 @@ const UnclaimedBoardMemberRow = ({
 
   return (
     <tr className="member unclaimed-member">
-      <td className="member-name">
+      <td>
         {isOfficer ? (
           <EditableString
             as="span"
@@ -530,7 +538,7 @@ const UnclaimedBoardMemberRow = ({
           (boardMember.salutation ?? "-")
         )}
       </td>
-      <td className="member-office">
+      <td>
         {isOfficer ? (
           <EditableString
             as="span"
@@ -638,7 +646,7 @@ const MemberNode = ({
 
   return (
     <tr className="member">
-      <td className={`member-name${isSelf ? " me" : ""}`}>
+      <td className={isSelf ? "me" : ""}>
         {canEditDetails ? (
           <EditableString
             as="span"
@@ -664,7 +672,7 @@ const MemberNode = ({
           (boardMember?.salutation ?? "-")
         )}
       </td>
-      <td className="member-office">
+      <td>
         {canEditDetails ? (
           <EditableString
             as="span"
