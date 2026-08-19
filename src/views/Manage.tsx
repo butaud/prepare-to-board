@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import {
   BoardMember,
@@ -13,6 +13,7 @@ import { SlPlus, SlPencil, SlTrash } from "react-icons/sl";
 import { useLoadedAccount } from "../hooks/Account";
 import { SubHeader } from "../ui/SubHeader";
 import { EditOrganization } from "../ui/forms/Organization";
+import { EditableString } from "../ui/doc/EditableValue";
 import { api } from "../convexClient";
 
 import "./Manage.css";
@@ -27,16 +28,13 @@ const boardMemberTypeLabels: Record<BoardMemberType, string> = {
 const BoardMemberTypeSelect = ({
   value,
   onChange,
-  selectRef,
 }: {
   value: BoardMemberType | undefined;
   onChange?: (type: BoardMemberType) => void;
-  selectRef?: React.Ref<HTMLSelectElement>;
 }) => (
   <select
-    ref={selectRef}
     aria-label="Type"
-    defaultValue={value ?? "other"}
+    value={value ?? "other"}
     onChange={onChange ? (e) => onChange(e.target.value as BoardMemberType) : undefined}
   >
     {boardMemberTypes.map((t) => (
@@ -52,16 +50,13 @@ const boardMemberSalutations: BoardMemberSalutation[] = ["Mr.", "Mrs.", "Miss"];
 const BoardMemberSalutationSelect = ({
   value,
   onChange,
-  selectRef,
 }: {
   value: BoardMemberSalutation | undefined;
   onChange?: (salutation: BoardMemberSalutation | undefined) => void;
-  selectRef?: React.Ref<HTMLSelectElement>;
 }) => (
   <select
-    ref={selectRef}
     aria-label="Title"
-    defaultValue={value ?? ""}
+    value={value ?? ""}
     onChange={
       onChange
         ? (e) =>
@@ -357,7 +352,15 @@ export const Manage = () => {
       )}
       <div className="manage-section">
         <h3>Organization Members</h3>
-        <table>
+        <table className="members-table">
+          <colgroup>
+            <col className="col-name" />
+            <col className="col-title" />
+            <col className="col-office" />
+            <col className="col-type" />
+            <col className="col-role" />
+            {showActionsColumn && <col className="col-actions" />}
+          </colgroup>
           <thead>
             <tr>
               <th>Name</th>
@@ -491,58 +494,80 @@ const UnclaimedBoardMemberRow = ({
   linkableAccountEntries: BoardMember[];
 }) => {
   const updateBoardMember = useMutation(api.app.updateBoardMember);
-  const [editing, setEditing] = useState(false);
-  const nameRef = useRef<HTMLInputElement>(null);
-  const salutationRef = useRef<HTMLSelectElement>(null);
-  const officeRef = useRef<HTMLInputElement>(null);
-  const typeRef = useRef<HTMLSelectElement>(null);
 
-  const handleSave = () => {
-    const newName = nameRef.current?.value ?? "";
-    const newSalutation = (salutationRef.current?.value ||
-      undefined) as BoardMemberSalutation | undefined;
-    const newOffice = officeRef.current?.value ?? "";
-    const newType = (typeRef.current?.value as BoardMemberType) || "other";
-    if (!newName.trim()) return;
+  // updateBoardMember patches every field on each call, so a single-field
+  // edit still has to carry forward the member's current values for
+  // everything else - matching the convention used for meeting metadata.
+  const saveField = (
+    changes: Partial<Pick<BoardMember, "name" | "salutation" | "title" | "type">>
+  ) => {
     void updateBoardMember({
       memberId: boardMember.id,
-      name: newName.trim(),
-      salutation: newSalutation,
-      title: newOffice.trim() || undefined,
-      type: newType,
-    }).then(() => setEditing(false));
+      name: boardMember.name,
+      salutation: boardMember.salutation,
+      title: boardMember.title,
+      type: boardMember.type,
+      ...changes,
+    });
   };
-
-  if (editing) {
-    return (
-      <tr className="member unclaimed-member">
-        <td><input ref={nameRef} defaultValue={boardMember.name} autoFocus style={{ width: "100%" }} /></td>
-        <td><BoardMemberSalutationSelect value={boardMember.salutation} selectRef={salutationRef} /></td>
-        <td><input ref={officeRef} defaultValue={boardMember.title ?? ""} placeholder="Office" style={{ width: "100%" }} /></td>
-        <td><BoardMemberTypeSelect value={boardMember.type} selectRef={typeRef} /></td>
-        <td><em>Not joined</em></td>
-        <td>
-          <button className="btn-small btn-primary" onClick={handleSave}>Save</button>
-          <button className="btn-small btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
-        </td>
-      </tr>
-    );
-  }
 
   return (
     <tr className="member unclaimed-member">
-      <td>{boardMember.name}</td>
-      <td>{boardMember.salutation ?? "-"}</td>
-      <td>{boardMember.title ?? "-"}</td>
-      <td>{boardMemberTypeLabels[boardMember.type ?? "other"]}</td>
+      <td>
+        {isOfficer ? (
+          <EditableString
+            as="span"
+            className="manage-editable-field"
+            value={boardMember.name}
+            onValueChange={(newValue) => saveField({ name: newValue })}
+            canEdit
+            autoFocus
+            label="Name"
+          />
+        ) : (
+          boardMember.name
+        )}
+      </td>
+      <td>
+        {isOfficer ? (
+          <BoardMemberSalutationSelect
+            value={boardMember.salutation}
+            onChange={(newValue) => saveField({ salutation: newValue })}
+          />
+        ) : (
+          (boardMember.salutation ?? "-")
+        )}
+      </td>
+      <td>
+        {isOfficer ? (
+          <EditableString
+            as="span"
+            className="manage-editable-field"
+            value={boardMember.title ?? ""}
+            onValueChange={(newValue) => saveField({ title: newValue || undefined })}
+            canEdit
+            autoFocus
+            label="Office"
+            emptyClickBehavior="single"
+            placeholder="Add office"
+          />
+        ) : (
+          (boardMember.title ?? "-")
+        )}
+      </td>
+      <td>
+        {isOfficer ? (
+          <BoardMemberTypeSelect
+            value={boardMember.type}
+            onChange={(newValue) => saveField({ type: newValue })}
+          />
+        ) : (
+          boardMemberTypeLabels[boardMember.type ?? "other"]
+        )}
+      </td>
       <td><em>Not joined</em></td>
       {(isOfficer || isAdmin) && (
         <td className="member-actions">
-          {isOfficer && (
-            <button className="btn-small btn-secondary" onClick={() => setEditing(true)} title="Edit">
-              <SlPencil />
-            </button>
-          )}
           {isAdmin && (
             <LinkToAccountControl
               unclaimedMemberId={boardMember.id}
@@ -578,27 +603,32 @@ const MemberNode = ({
 }: MemberNodeProps) => {
   const updateRole = useMutation(api.app.updateMembershipRole);
   const updateBoardMember = useMutation(api.app.updateBoardMember);
-  const [editingDetails, setEditingDetails] = useState(false);
-  const salutationRef = useRef<HTMLSelectElement>(null);
-  const officeRef = useRef<HTMLInputElement>(null);
-  const typeRef = useRef<HTMLSelectElement>(null);
 
-  const saveDetails = () => {
-    if (!boardMember) {
-      setEditingDetails(false);
-      return;
-    }
-    const newSalutation = (salutationRef.current?.value ||
-      undefined) as BoardMemberSalutation | undefined;
-    const newType = (typeRef.current?.value as BoardMemberType) || "other";
+  const canEditDetails = isOfficer && Boolean(boardMember);
+
+  // updateBoardMember patches every field on each call, so a single-field
+  // edit still has to carry forward the member's current values for
+  // everything else - matching the convention used for meeting metadata.
+  const saveField = (
+    changes: Partial<Pick<BoardMember, "name" | "salutation" | "title" | "type">>
+  ) => {
+    if (!boardMember) return;
     void updateBoardMember({
       memberId: boardMember.id,
       name: boardMember.name,
-      salutation: newSalutation,
-      title: officeRef.current?.value.trim() || undefined,
-      type: newType,
-    }).then(() => setEditingDetails(false));
+      salutation: boardMember.salutation,
+      title: boardMember.title,
+      type: boardMember.type,
+      ...changes,
+    });
   };
+
+  // The board member record's name is what minutes/exports actually use
+  // (frozen at join time, independent of the account's live Clerk name) -
+  // this is the one officers/admins should control so minutes read cleanly
+  // without asking a member to fix a typo or capitalization in their own
+  // account name.
+  const displayName = boardMember?.name ?? name;
 
   const handleRoleChange = (newRole: Role) => {
     if (startingRole !== newRole) {
@@ -616,24 +646,55 @@ const MemberNode = ({
 
   return (
     <tr className="member">
-      <td className={isSelf ? "me" : ""}>{name + (isSelf ? " (me)" : "")}</td>
-      <td>
-        {isOfficer && editingDetails ? (
-          <BoardMemberSalutationSelect value={boardMember?.salutation} selectRef={salutationRef} />
+      <td className={isSelf ? "me" : ""}>
+        {canEditDetails ? (
+          <EditableString
+            as="span"
+            className="manage-editable-field"
+            value={displayName}
+            onValueChange={(newValue) => saveField({ name: newValue })}
+            canEdit
+            autoFocus
+            label="Name"
+          />
         ) : (
-          <>{boardMember?.salutation ?? "-"}</>
+          displayName
+        )}
+        {isSelf ? " (me)" : ""}
+      </td>
+      <td>
+        {canEditDetails ? (
+          <BoardMemberSalutationSelect
+            value={boardMember?.salutation}
+            onChange={(newValue) => saveField({ salutation: newValue })}
+          />
+        ) : (
+          (boardMember?.salutation ?? "-")
         )}
       </td>
       <td>
-        {isOfficer && editingDetails ? (
-          <input ref={officeRef} defaultValue={boardMember?.title ?? ""} autoFocus placeholder="Office" style={{ width: "100%" }} />
+        {canEditDetails ? (
+          <EditableString
+            as="span"
+            className="manage-editable-field"
+            value={boardMember?.title ?? ""}
+            onValueChange={(newValue) => saveField({ title: newValue || undefined })}
+            canEdit
+            autoFocus
+            label="Office"
+            emptyClickBehavior="single"
+            placeholder="Add office"
+          />
         ) : (
-          <>{boardMember?.title ?? "-"}</>
+          (boardMember?.title ?? "-")
         )}
       </td>
       <td>
-        {isOfficer && editingDetails ? (
-          <BoardMemberTypeSelect value={boardMember?.type} selectRef={typeRef} />
+        {canEditDetails ? (
+          <BoardMemberTypeSelect
+            value={boardMember?.type}
+            onChange={(newValue) => saveField({ type: newValue })}
+          />
         ) : (
           boardMemberTypeLabels[boardMember?.type ?? "other"]
         )}
@@ -647,22 +708,7 @@ const MemberNode = ({
           isMemberAdmin={startingRole === "admin"}
         />
       </td>
-      {(isOfficer || isAdmin) && (
-        <td className="member-actions">
-          {isOfficer && boardMember && (
-            editingDetails ? (
-              <span style={{ display: "flex", gap: 4 }}>
-                <button className="btn-small btn-primary" onClick={saveDetails}>Save</button>
-                <button className="btn-small btn-secondary" onClick={() => setEditingDetails(false)}>Cancel</button>
-              </span>
-            ) : (
-              <button className="btn-small btn-secondary" onClick={() => setEditingDetails(true)} title="Edit title/office/type">
-                <SlPencil />
-              </button>
-            )
-          )}
-        </td>
-      )}
+      {(isOfficer || isAdmin) && <td className="member-actions" />}
     </tr>
   );
 };
