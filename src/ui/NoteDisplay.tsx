@@ -1,5 +1,5 @@
 import { getBoardMemberFormalName, Note } from "../schema";
-import { stripTrailingPeriod } from "../util/actionItems";
+import { formatActionItemSentence, stripTrailingPeriod } from "../util/actionItems";
 import { PendingNote } from "../util/data";
 import { renderMarkdownBlocks } from "../util/markdown";
 
@@ -86,7 +86,7 @@ export const NoteDisplay = ({ note, completion, hideAssignee }: NoteDisplayProps
             {` to ${stripTrailingPeriod(note.text)}.`}
           </span>
         ) : (
-          <span>{note.text}</span>
+          <span>{formatActionItemSentence(note.text)}</span>
         )}
         {isComplete ? (
           <span className="note-action-due">

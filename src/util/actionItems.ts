@@ -40,6 +40,17 @@ export const extractActionItems = (meetings: Meeting[]): ActionItemWithContext[]
 export const stripTrailingPeriod = (text: string): string =>
   text.endsWith(".") ? text.slice(0, -1) : text;
 
+// Stored action item text is written to read naturally as "<assignee> to
+// <text>." - lowercase-first, no trailing period. Contexts that show the
+// text on its own (Home page, Action Items page) instead of prefixed with
+// an assignee need it to read as a standalone sentence, so this
+// capitalizes the first letter and appends a period.
+export const formatActionItemSentence = (text: string): string => {
+  const trimmed = stripTrailingPeriod(text.trim());
+  if (!trimmed) return trimmed;
+  return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}.`;
+};
+
 export const meetingLink = (meeting: Meeting): string => {
   if (meeting.status === "live") return `/meetings/${meeting.id}/present`;
   if (meeting.status === "completed") return `/meetings/${meeting.id}/minutes`;
