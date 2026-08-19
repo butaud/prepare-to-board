@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FC } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -23,6 +23,7 @@ import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { EditableInteger } from "../../ui/doc/EditableValue";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import {
@@ -973,38 +974,6 @@ const PostMeetingMinutes = () => {
   );
 };
 
-// A plain, always-editable number input rather than the double-click-to-edit
-// EditableInteger used elsewhere - this whole view is already in "edit
-// mode", so there's no need for a separate per-field affordance, and a
-// standard input reliably commits on blur (matching the live-meeting
-// duration inputs) instead of requiring a double-click to open first.
-const MinuteDurationInput: FC<{
-  durationMinutes: number;
-  onSave: (durationMinutes: number) => void;
-}> = ({ durationMinutes, onSave }) => {
-  const [value, setValue] = useState(String(durationMinutes));
-  useEffect(() => {
-    setValue(String(durationMinutes));
-  }, [durationMinutes]);
-  return (
-    <input
-      type="number"
-      min={1}
-      className="minutes-edit-duration-input"
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={() => {
-        const parsed = parseInt(value, 10);
-        if (!isNaN(parsed) && parsed > 0) {
-          onSave(parsed);
-        } else {
-          setValue(String(durationMinutes));
-        }
-      }}
-    />
-  );
-};
-
 // --- PostMeetingMinutesEdit — officer-only editing of what was covered ---
 // after a meeting has ended: move a skipped topic into the covered list,
 // add a topic nobody had planned, reorder or re-time what's there, and
@@ -1140,15 +1109,20 @@ const PostMeetingMinutesEdit = () => {
                               {minute.topic?.title ?? "(unknown)"}
                             </span>
                             <span className="minutes-item-duration">
-                              <MinuteDurationInput
-                                durationMinutes={minute.durationMinutes}
-                                onSave={(newDuration) =>
+                              <EditableInteger
+                                as="span"
+                                value={minute.durationMinutes}
+                                onValueChange={(newDuration) =>
                                   void updateMinuteDuration({
                                     meetingId: meeting.id,
                                     minuteId: minute.id,
                                     durationMinutes: newDuration,
                                   })
                                 }
+                                canEdit
+                                label="Duration"
+                                className="plan-duration-display"
+                                autoFocus
                               />{" "}
                               min
                             </span>
