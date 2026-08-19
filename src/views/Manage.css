@@ -123,8 +123,12 @@
        width - the full option list in the open dropdown is unaffected.
        Leaving a few px of the cell's own right padding unclaimed (rather
        than filling 100% of it) keeps a visible gap before the next
-       column's content. */
+       column's content. The global select's 80px min-width (index.css) is
+       wider than this table's narrower columns (Title, Role) need, and
+       was silently winning over the width below - it has to be cleared
+       here for that width to actually take effect. */
     select {
+      min-width: 0;
       width: calc(100% - 6px);
       box-sizing: border-box;
     }
