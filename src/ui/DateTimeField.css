@@ -1,0 +1,13 @@
+.datetime-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.datetime-field .react-datepicker-wrapper input {
+  width: 150px;
+}
+
+.datetime-field input[type="time"] {
+  width: 110px;
+}

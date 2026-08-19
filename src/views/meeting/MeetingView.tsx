@@ -7,7 +7,6 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
-import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { computeProjectedEndTime } from "../../util/data";
@@ -17,8 +16,9 @@ import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
 import { PlanAgendaEditor } from "./PlanAgendaEditor";
 import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { DateTimeField } from "../../ui/DateTimeField";
+import { TimeOfDayInput } from "../../ui/TimeOfDayInput";
 
-import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
 import "../meeting/MeetingMinutes.css";
@@ -639,17 +639,10 @@ export const MeetingView = () => {
   const targetEndTimeControl = isOfficer ? (
     <label className="target-end-time-field">
       Target end time:
-      <DatePicker
+      <TimeOfDayInput
         selected={targetEndTime}
         onChange={handleTargetEndTimeChange}
-        showTimeSelect
-        showTimeSelectOnly
-        timeIntervals={5}
-        dateFormat="h:mm aa"
-        placeholderText="Not set"
-        isClearable
-        popperProps={{ placement: "bottom", strategy: "fixed" }}
-        portalId="datepicker-portal"
+        aria-label="Target end time"
       />
     </label>
   ) : (
@@ -665,13 +658,9 @@ export const MeetingView = () => {
           <div className="plan-field-row plan-start-time">
             <span className="plan-field-label">Start Time:</span>
             {isOfficer ? (
-              <DatePicker
+              <DateTimeField
                 selected={meeting.date}
-                onChange={handleStartDateChange}
-                showTimeSelect
-                timeIntervals={5}
-                dateFormat="MMMM d, yyyy h:mm aa"
-                popperProps={{ placement: "bottom", strategy: "fixed" }}
+                onChange={(picked) => handleStartDateChange(picked)}
                 portalId="datepicker-portal"
               />
             ) : (

@@ -23,6 +23,7 @@ import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { DateTimeField } from "../../ui/DateTimeField";
 import { EditableInteger } from "../../ui/doc/EditableValue";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
@@ -1037,16 +1038,11 @@ const PostMeetingMinutesEdit = () => {
           <h2>Edit Minutes</h2>
           <label className="minutes-edit-start-time">
             <span className="plan-field-label">Start Time:</span>
-            <DatePicker
+            <DateTimeField
               selected={meeting.date}
-              onChange={(picked) => {
-                if (!picked) return;
-                void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() });
-              }}
-              showTimeSelect
-              timeIntervals={5}
-              dateFormat="MMMM d, yyyy h:mm aa"
-              popperProps={{ placement: "bottom", strategy: "fixed" }}
+              onChange={(picked) =>
+                void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() })
+              }
               portalId="datepicker-portal"
             />
           </label>

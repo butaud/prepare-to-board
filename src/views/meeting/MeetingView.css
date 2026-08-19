@@ -55,10 +55,6 @@
   font-weight: 600;
 }
 
-.plan-start-time input {
-  width: 190px;
-}
-
 .target-end-time-field {
   display: flex;
   align-items: center;
