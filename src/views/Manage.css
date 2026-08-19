@@ -119,10 +119,13 @@
     /* A <select>'s closed-state rendering can be wider than its cell (sized
        to its longest option, e.g. "Administration"), overflowing into the
        next column instead of respecting table-layout: fixed's assigned
-       width. Forcing it to fill the cell instead makes it truncate to that
-       width - the full option list in the open dropdown is unaffected. */
+       width. Constraining it to the cell instead makes it truncate to that
+       width - the full option list in the open dropdown is unaffected.
+       Leaving a few px of the cell's own right padding unclaimed (rather
+       than filling 100% of it) keeps a visible gap before the next
+       column's content. */
     select {
-      width: 100%;
+      width: calc(100% - 6px);
       box-sizing: border-box;
     }
   }
