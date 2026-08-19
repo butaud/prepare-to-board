@@ -987,6 +987,7 @@ const PostMeetingMinutesEdit = () => {
   const navigate = useNavigate();
   const isOfficer = Boolean(me?.canWrite(meeting));
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
+  const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
 
   const updateMeetingDate = useMutation(api.app.updateMeetingDate);
   const updateMinuteDuration = useMutation(api.app.updateMinuteDuration);
@@ -1138,6 +1139,13 @@ const PostMeetingMinutesEdit = () => {
                               Remove
                             </button>
                           </div>
+                          <CompletedMinuteNotes
+                            minute={minute}
+                            meeting={meeting}
+                            members={members}
+                            canToggleAny={isOfficer}
+                            myBoardMemberId={myBoardMemberId}
+                          />
                         </li>
                       )}
                     </Draggable>
