@@ -48,6 +48,19 @@
       white-space: nowrap;
     }
 
+    /* Name and Office switch between static text and an input when
+       double-clicked; without a reserved minimum width, entering edit mode
+       changes the column's preferred size and reflows the whole table. */
+    th.member-name,
+    td.member-name {
+      min-width: 170px;
+    }
+
+    th.member-office,
+    td.member-office {
+      min-width: 150px;
+    }
+
     tr.member {
       font-size: 0.95em;
       transition: background-color 0.1s ease;
@@ -101,6 +114,14 @@
 
   .unclaimed-member td {
     opacity: 0.65;
+  }
+
+  /* Fills whatever width the (min-width-constrained) cell already has,
+     rather than the input's own default size, so the column doesn't
+     resize when a field switches into edit mode. */
+  .manage-editable-field {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .member-actions {

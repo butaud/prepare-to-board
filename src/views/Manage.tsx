@@ -13,7 +13,7 @@ import { SlPlus, SlPencil, SlTrash } from "react-icons/sl";
 import { useLoadedAccount } from "../hooks/Account";
 import { SubHeader } from "../ui/SubHeader";
 import { EditOrganization } from "../ui/forms/Organization";
-import { EditableString, EditableSelect } from "../ui/doc/EditableValue";
+import { EditableString } from "../ui/doc/EditableValue";
 import { api } from "../convexClient";
 
 import "./Manage.css";
@@ -28,16 +28,13 @@ const boardMemberTypeLabels: Record<BoardMemberType, string> = {
 const BoardMemberTypeSelect = ({
   value,
   onChange,
-  selectRef,
 }: {
   value: BoardMemberType | undefined;
   onChange?: (type: BoardMemberType) => void;
-  selectRef?: React.Ref<HTMLSelectElement>;
 }) => (
   <select
-    ref={selectRef}
     aria-label="Type"
-    defaultValue={value ?? "other"}
+    value={value ?? "other"}
     onChange={onChange ? (e) => onChange(e.target.value as BoardMemberType) : undefined}
   >
     {boardMemberTypes.map((t) => (
@@ -53,16 +50,13 @@ const boardMemberSalutations: BoardMemberSalutation[] = ["Mr.", "Mrs.", "Miss"];
 const BoardMemberSalutationSelect = ({
   value,
   onChange,
-  selectRef,
 }: {
   value: BoardMemberSalutation | undefined;
   onChange?: (salutation: BoardMemberSalutation | undefined) => void;
-  selectRef?: React.Ref<HTMLSelectElement>;
 }) => (
   <select
-    ref={selectRef}
     aria-label="Title"
-    defaultValue={value ?? ""}
+    value={value ?? ""}
     onChange={
       onChange
         ? (e) =>
@@ -361,9 +355,9 @@ export const Manage = () => {
         <table>
           <thead>
             <tr>
-              <th>Name</th>
+              <th className="member-name">Name</th>
               <th>Title</th>
-              <th>Office</th>
+              <th className="member-office">Office</th>
               <th>Type</th>
               <th>Role</th>
               {showActionsColumn && <th></th>}
@@ -511,38 +505,40 @@ const UnclaimedBoardMemberRow = ({
 
   return (
     <tr className="member unclaimed-member">
-      <td>
-        <EditableString
-          as="span"
-          value={boardMember.name}
-          onValueChange={(newValue) => saveField({ name: newValue })}
-          canEdit={isOfficer}
-          label="Name"
-        />
-      </td>
-      <td>
-        <EditableSelect
-          as="span"
-          value={boardMember.salutation ?? ""}
-          displayLabel={boardMember.salutation ?? "-"}
-          onValueChange={(newValue) =>
-            saveField({ salutation: (newValue || undefined) as BoardMemberSalutation | undefined })
-          }
-          options={[
-            { value: "", label: "-" },
-            ...boardMemberSalutations.map((s) => ({ value: s, label: s })),
-          ]}
-          canEdit={isOfficer}
-          label="Title"
-        />
-      </td>
-      <td>
+      <td className="member-name">
         {isOfficer ? (
           <EditableString
             as="span"
+            className="manage-editable-field"
+            value={boardMember.name}
+            onValueChange={(newValue) => saveField({ name: newValue })}
+            canEdit
+            autoFocus
+            label="Name"
+          />
+        ) : (
+          boardMember.name
+        )}
+      </td>
+      <td>
+        {isOfficer ? (
+          <BoardMemberSalutationSelect
+            value={boardMember.salutation}
+            onChange={(newValue) => saveField({ salutation: newValue })}
+          />
+        ) : (
+          (boardMember.salutation ?? "-")
+        )}
+      </td>
+      <td className="member-office">
+        {isOfficer ? (
+          <EditableString
+            as="span"
+            className="manage-editable-field"
             value={boardMember.title ?? ""}
             onValueChange={(newValue) => saveField({ title: newValue || undefined })}
             canEdit
+            autoFocus
             label="Office"
             emptyClickBehavior="single"
             placeholder="Add office"
@@ -552,15 +548,14 @@ const UnclaimedBoardMemberRow = ({
         )}
       </td>
       <td>
-        <EditableSelect
-          as="span"
-          value={boardMember.type ?? "other"}
-          displayLabel={boardMemberTypeLabels[boardMember.type ?? "other"]}
-          onValueChange={(newValue) => saveField({ type: newValue as BoardMemberType })}
-          options={boardMemberTypes.map((t) => ({ value: t, label: boardMemberTypeLabels[t] }))}
-          canEdit={isOfficer}
-          label="Type"
-        />
+        {isOfficer ? (
+          <BoardMemberTypeSelect
+            value={boardMember.type}
+            onChange={(newValue) => saveField({ type: newValue })}
+          />
+        ) : (
+          boardMemberTypeLabels[boardMember.type ?? "other"]
+        )}
       </td>
       <td><em>Not joined</em></td>
       {(isOfficer || isAdmin) && (
@@ -643,13 +638,15 @@ const MemberNode = ({
 
   return (
     <tr className="member">
-      <td className={isSelf ? "me" : ""}>
+      <td className={`member-name${isSelf ? " me" : ""}`}>
         {canEditDetails ? (
           <EditableString
             as="span"
+            className="manage-editable-field"
             value={displayName}
             onValueChange={(newValue) => saveField({ name: newValue })}
             canEdit
+            autoFocus
             label="Name"
           />
         ) : (
@@ -658,28 +655,24 @@ const MemberNode = ({
         {isSelf ? " (me)" : ""}
       </td>
       <td>
-        <EditableSelect
-          as="span"
-          value={boardMember?.salutation ?? ""}
-          displayLabel={boardMember?.salutation ?? "-"}
-          onValueChange={(newValue) =>
-            saveField({ salutation: (newValue || undefined) as BoardMemberSalutation | undefined })
-          }
-          options={[
-            { value: "", label: "-" },
-            ...boardMemberSalutations.map((s) => ({ value: s, label: s })),
-          ]}
-          canEdit={canEditDetails}
-          label="Title"
-        />
+        {canEditDetails ? (
+          <BoardMemberSalutationSelect
+            value={boardMember?.salutation}
+            onChange={(newValue) => saveField({ salutation: newValue })}
+          />
+        ) : (
+          (boardMember?.salutation ?? "-")
+        )}
       </td>
-      <td>
+      <td className="member-office">
         {canEditDetails ? (
           <EditableString
             as="span"
+            className="manage-editable-field"
             value={boardMember?.title ?? ""}
             onValueChange={(newValue) => saveField({ title: newValue || undefined })}
             canEdit
+            autoFocus
             label="Office"
             emptyClickBehavior="single"
             placeholder="Add office"
@@ -689,15 +682,14 @@ const MemberNode = ({
         )}
       </td>
       <td>
-        <EditableSelect
-          as="span"
-          value={boardMember?.type ?? "other"}
-          displayLabel={boardMemberTypeLabels[boardMember?.type ?? "other"]}
-          onValueChange={(newValue) => saveField({ type: newValue as BoardMemberType })}
-          options={boardMemberTypes.map((t) => ({ value: t, label: boardMemberTypeLabels[t] }))}
-          canEdit={canEditDetails}
-          label="Type"
-        />
+        {canEditDetails ? (
+          <BoardMemberTypeSelect
+            value={boardMember?.type}
+            onChange={(newValue) => saveField({ type: newValue })}
+          />
+        ) : (
+          boardMemberTypeLabels[boardMember?.type ?? "other"]
+        )}
       </td>
       <td>
         <RolePicker
