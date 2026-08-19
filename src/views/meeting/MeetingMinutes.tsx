@@ -7,8 +7,10 @@ import {
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
 import DatePicker from "react-datepicker";
+import { useNavigate } from "react-router-dom";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
+import { useMinutesEditMode } from "../../hooks/MinutesEditMode";
 import { usePrivateNotes } from "../../hooks/PrivateNotes";
 import { PendingNote } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
@@ -21,6 +23,7 @@ import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { EditableInteger } from "../../ui/doc/EditableValue";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import {
@@ -971,9 +974,253 @@ const PostMeetingMinutes = () => {
   );
 };
 
+// --- PostMeetingMinutesEdit — officer-only editing of what was covered ---
+// after a meeting has ended: move a skipped topic into the covered list,
+// add a topic nobody had planned, reorder or re-time what's there, and
+// drop something that shouldn't have been marked covered. Entered via the
+// "Edit Minutes" action in the meeting's action bar (MeetingShared), which
+// gives this its own /minutes/edit URL - see MinutesEditModeContext.
+
+const PostMeetingMinutesEdit = () => {
+  const meeting = useMeeting();
+  const me = useLoadedAccount();
+  const navigate = useNavigate();
+  const isOfficer = Boolean(me?.canWrite(meeting));
+  const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
+
+  const updateMeetingDate = useMutation(api.app.updateMeetingDate);
+  const updateMinuteDuration = useMutation(api.app.updateMinuteDuration);
+  const removeMinute = useMutation(api.app.removeMinute);
+  const reorderMinutes = useMutation(api.app.reorderMinutes);
+  const addSkippedTopicToMinutes = useMutation(api.app.addSkippedTopicToMinutes);
+  const addUnplannedMinute = useMutation(api.app.addUnplannedMinute);
+
+  const [isAddingTopic, setIsAddingTopic] = useState(false);
+  const [newTopicTitle, setNewTopicTitle] = useState("");
+  const [newTopicDuration, setNewTopicDuration] = useState(5);
+
+  const completedMinutes = (meeting.minutes ?? []).filter((m) => m !== null);
+  const coveredTopicIds = new Set(
+    completedMinutes.map((m) => m.topic?.plannedTopic?.id).filter(Boolean)
+  );
+  const skippedTopics = (meeting.plannedAgenda ?? [])
+    .filter((t) => t !== null)
+    .filter((t) => !coveredTopicIds.has(t.id));
+
+  if (!isOfficer) {
+    return <p>You do not have permission to edit minutes.</p>;
+  }
+
+  const handleAddTopic = () => {
+    if (!newTopicTitle.trim()) return;
+    void addUnplannedMinute({
+      meetingId: meeting.id,
+      title: newTopicTitle.trim(),
+      durationMinutes: newTopicDuration,
+    });
+    setNewTopicTitle("");
+    setNewTopicDuration(5);
+    setIsAddingTopic(false);
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const srcIdx = result.source.index;
+    const destIdx = result.destination.index;
+    if (srcIdx === destIdx) return;
+    const next = [...completedMinutes];
+    const [moved] = next.splice(srcIdx, 1);
+    next.splice(destIdx, 0, moved);
+    void reorderMinutes({
+      meetingId: meeting.id,
+      minuteIds: next.map((minute) => minute.id),
+    });
+  };
+
+  return (
+    <div className="meeting-minutes-completed minutes-edit">
+      <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
+
+      <div className="minutes-completed-header">
+        <div>
+          <h2>Edit Minutes</h2>
+          <label className="minutes-edit-start-time">
+            <span className="plan-field-label">Start Time:</span>
+            <DatePicker
+              selected={meeting.date}
+              onChange={(picked) => {
+                if (!picked) return;
+                void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() });
+              }}
+              showTimeSelect
+              timeIntervals={5}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              popperProps={{ placement: "bottom", strategy: "fixed" }}
+              portalId="datepicker-portal"
+            />
+          </label>
+        </div>
+        <div className="minutes-completed-header-actions">
+          <button
+            className="btn-secondary"
+            onClick={() => void navigate(`/meetings/${meeting.id}/minutes`)}
+          >
+            Done Editing
+          </button>
+        </div>
+      </div>
+
+      <section className="minutes-section">
+        <h3>Covered Topics</h3>
+        <p className="minutes-hint">
+          Drag to reorder, edit durations inline, or remove a topic that shouldn't
+          have been marked covered.
+        </p>
+        {completedMinutes.length === 0 ? (
+          <p>No topics covered yet.</p>
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="minutes-edit-covered">
+              {(provided) => (
+                <ol
+                  className="minutes-list"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {completedMinutes.map((minute, index) => (
+                    <Draggable key={minute.id} draggableId={minute.id} index={index}>
+                      {(provided, snapshot) => (
+                        <li
+                          className={`minutes-item minutes-edit-item${
+                            snapshot.isDragging ? " dragging" : ""
+                          }`}
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          style={provided.draggableProps.style}
+                        >
+                          <div className="minutes-item-header">
+                            <span className="drag-handle" {...provided.dragHandleProps}>
+                              ⠿
+                            </span>
+                            <span className="minutes-item-title">
+                              {!minute.topic?.plannedTopic && (
+                                <span className="badge badge-unplanned">Unplanned</span>
+                              )}{" "}
+                              {minute.topic?.title ?? "(unknown)"}
+                            </span>
+                            <span className="minutes-item-duration">
+                              <EditableInteger
+                                as="span"
+                                value={minute.durationMinutes}
+                                onValueChange={(newDuration) =>
+                                  void updateMinuteDuration({
+                                    meetingId: meeting.id,
+                                    minuteId: minute.id,
+                                    durationMinutes: newDuration,
+                                  })
+                                }
+                                canEdit
+                                label="Duration"
+                                className="plan-duration-display"
+                              />{" "}
+                              min
+                            </span>
+                            <button
+                              className="btn-small btn-secondary"
+                              onClick={() =>
+                                void removeMinute({
+                                  meetingId: meeting.id,
+                                  minuteId: minute.id,
+                                })
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </li>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </ol>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
+        {isAddingTopic ? (
+          <div className="minutes-edit-add-form">
+            <input
+              type="text"
+              value={newTopicTitle}
+              onChange={(e) => setNewTopicTitle(e.target.value)}
+              placeholder="Topic title"
+              autoFocus
+            />
+            <input
+              type="number"
+              min={1}
+              value={newTopicDuration}
+              onChange={(e) => setNewTopicDuration(Number(e.target.value))}
+            />
+            <span className="minutes-edit-unit">min</span>
+            <button className="btn-small btn-primary" onClick={handleAddTopic}>
+              Add
+            </button>
+            <button
+              className="btn-small btn-secondary"
+              onClick={() => setIsAddingTopic(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button className="btn-small btn-secondary" onClick={() => setIsAddingTopic(true)}>
+            + Add Topic
+          </button>
+        )}
+      </section>
+
+      {skippedTopics.length > 0 && (
+        <section className="minutes-section">
+          <h3>Skipped</h3>
+          <p className="minutes-hint">
+            Move a planned topic into Covered Topics if it was actually discussed.
+          </p>
+          <ul className="minutes-list">
+            {skippedTopics.map((topic) => (
+              <li key={topic.id} className="minutes-item">
+                <div className="minutes-item-header">
+                  <span className="minutes-item-title">
+                    <span className="badge badge-skipped">Skipped</span> {topic.title}
+                  </span>
+                  <span className="minutes-item-duration">
+                    {topic.durationMinutes ?? "?"} min planned
+                  </span>
+                  <button
+                    className="btn-small btn-secondary"
+                    onClick={() =>
+                      void addSkippedTopicToMinutes({
+                        meetingId: meeting.id,
+                        plannedTopicId: topic.id,
+                      })
+                    }
+                  >
+                    + Add to Covered
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+};
+
 export const MeetingMinutes = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
+  const { isEditingMinutes } = useMinutesEditMode();
 
   const minutesLayoutRef = useRef<HTMLDivElement | null>(null);
   const topicDetailRef = useRef<HTMLElement | null>(null);
@@ -1712,7 +1959,7 @@ export const MeetingMinutes = () => {
 
   // Completed meeting view
   if (meeting.status === "completed") {
-    return <PostMeetingMinutes />;
+    return isEditingMinutes ? <PostMeetingMinutesEdit /> : <PostMeetingMinutes />;
   }
 
   if (meeting.status !== "live") {

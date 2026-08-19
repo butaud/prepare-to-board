@@ -3,6 +3,7 @@ import { useLoadMeetingFromParams } from "../../hooks/Meeting";
 import { getMeetingDisplayStatus } from "../../schema";
 import { useLoadedAccount } from "../../hooks/Account";
 import { PlanAgendaEditModeContext } from "../../hooks/PlanAgendaEditMode";
+import { MinutesEditModeContext } from "../../hooks/MinutesEditMode";
 import { SubHeader, SubHeaderAction, SubHeaderTab } from "../../ui/SubHeader";
 import { SlTrash } from "react-icons/sl";
 import {
@@ -25,10 +26,16 @@ export const MeetingShared = () => {
   const { meeting, outlet } = useLoadMeetingFromParams();
   const navigate = useNavigate();
   const location = useLocation();
-  // The edit-agenda page has its own URL (.../edit) rather than being local
-  // component state, so it reopens on refresh and is a real, linkable/
-  // back-button-able page instead of a transient toggle.
-  const isEditingAgenda = location.pathname.endsWith("/edit");
+  // The edit-agenda and edit-minutes pages each have their own URL rather
+  // than being local component state, so they reopen on refresh and are
+  // real, linkable/back-button-able pages instead of a transient toggle.
+  // Exact matches (not endsWith) because both URLs end in "/edit".
+  const isEditingAgenda = meeting
+    ? location.pathname === `/meetings/${meeting.id}/edit`
+    : false;
+  const isEditingMinutes = meeting
+    ? location.pathname === `/meetings/${meeting.id}/minutes/edit`
+    : false;
   const deleteMeeting = useMutation(api.app.deleteMeeting);
   const startMeeting = useMutation(api.app.startMeeting);
   const setMeetingStatus = useMutation(api.app.setMeetingStatus);
@@ -114,6 +121,19 @@ export const MeetingShared = () => {
         icon: <MdEdit />,
       });
     }
+    if (meeting.status === "completed") {
+      actions.push({
+        label: isEditingMinutes ? "Done Editing" : "Edit Minutes",
+        onClick: () => {
+          void navigate(
+            isEditingMinutes
+              ? `/meetings/${meeting.id}/minutes`
+              : `/meetings/${meeting.id}/minutes/edit`
+          );
+        },
+        icon: <MdEdit />,
+      });
+    }
     actions.push({
       label: "Delete",
       onClick: onDeleteClick,
@@ -123,15 +143,20 @@ export const MeetingShared = () => {
   }
   return (
     <PlanAgendaEditModeContext.Provider value={{ isEditingAgenda }}>
-      <div>
-        <SubHeader
-          dynamicTitleParts={{ [meeting.id]: breadcrumbTitle, edit: "Edit Agenda" }}
-          partsToIgnore={["present", "minutes"]}
-          actions={actions}
-          tabs={tabs}
-        />
-        {outlet}
-      </div>
+      <MinutesEditModeContext.Provider value={{ isEditingMinutes }}>
+        <div>
+          <SubHeader
+            dynamicTitleParts={{
+              [meeting.id]: breadcrumbTitle,
+              edit: isEditingMinutes ? "Edit Minutes" : "Edit Agenda",
+            }}
+            partsToIgnore={["present", "minutes"]}
+            actions={actions}
+            tabs={tabs}
+          />
+          {outlet}
+        </div>
+      </MinutesEditModeContext.Provider>
     </PlanAgendaEditModeContext.Provider>
   );
 };

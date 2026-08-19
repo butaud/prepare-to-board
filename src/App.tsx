@@ -39,6 +39,7 @@ function App() {
               <Route index element={<MeetingView />} />
               <Route path="present" element={<MeetingPresent />} />
               <Route path="minutes" element={<MeetingMinutes />} />
+              <Route path="minutes/edit" element={<MeetingMinutes />} />
               <Route path="edit" element={<MeetingView />} />
             </Route>
           </Route>
