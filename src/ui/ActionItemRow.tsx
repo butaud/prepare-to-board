@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation } from "convex/react";
-import DatePicker from "react-datepicker";
 import { api } from "../convexClient";
 import { BoardMember, getBoardMemberFormalName, Meeting } from "../schema";
 import {
@@ -10,8 +9,8 @@ import {
   meetingLink,
   stripTrailingPeriod,
 } from "../util/actionItems";
+import { DateOnlyInput } from "./DateOnlyInput";
 import { NoteDisplay } from "./NoteDisplay";
-import "react-datepicker/dist/react-datepicker.css";
 import "./ActionItemRow.css";
 
 const formatMeetingOption = (meeting: Meeting): string =>
@@ -117,13 +116,11 @@ export const ActionItemRow = ({
             autoCapitalize="off"
           />
           <span>by</span>
-          <DatePicker
+          <DateOnlyInput
             id={`action-item-due-${item.id}`}
             selected={dueDate}
             onChange={setDueDate}
-            dateFormat="M/d/yyyy"
-            placeholderText="Due date"
-            popperProps={{ placement: "bottom", strategy: "fixed" }}
+            aria-label="Due date"
           />
         </div>
         <div className="action-item-edit-row">
@@ -151,11 +148,10 @@ export const ActionItemRow = ({
             Completed
           </label>
           {isCompleted && (
-            <DatePicker
+            <DateOnlyInput
               selected={completedOn}
               onChange={(date) => date && setCompletedOn(date)}
-              dateFormat="M/d/yyyy"
-              popperProps={{ placement: "bottom", strategy: "fixed" }}
+              aria-label="Completed on"
             />
           )}
         </div>

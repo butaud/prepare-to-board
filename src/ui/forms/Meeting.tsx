@@ -1,12 +1,11 @@
-import { FC, useRef, useState } from "react";
+import { FC, useState } from "react";
 import { useMutation } from "convex/react";
 import { useNavigate } from "react-router-dom";
-import DatePicker from "react-datepicker";
 import { Meeting } from "../../schema";
 import { api } from "../../convexClient";
+import { DateOnlyInput } from "../DateOnlyInput";
 import { TimeOfDayInput } from "../TimeOfDayInput";
 
-import "react-datepicker/dist/react-datepicker.css";
 import { useLoadedAccount } from "../../hooks/Account";
 
 export type CreateMeetingProps = {
@@ -27,20 +26,6 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
   // click (defaultDate) take precedence.
   const [date, setDate] = useState<Date | null>(defaultDate ?? new Date());
   const [time, setTime] = useState<Date | null>(null);
-  // Driven explicitly rather than left to react-datepicker's own
-  // close-on-select handling, which doesn't reliably close the popup.
-  // Starts open so the calendar is visible as soon as the dialog opens,
-  // matching the input itself being autofocused.
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(true);
-  // When a day is clicked, the browser moves DOM focus back to the text
-  // input as soon as the clicked day cell unmounts (since it's no longer
-  // in the DOM to hold focus) - and, at least under CDP-driven clicks,
-  // that refocus is immediately followed by a genuine click event on the
-  // input itself, which would otherwise reopen the popup we just closed.
-  // Ignoring input-clicks that land within this window of a selection
-  // filters that out while still responding to any real, intentional
-  // re-click (which lands well after the browser's own refocus does).
-  const lastDateSelectedAtRef = useRef(0);
 
   if (!me.root.selectedOrganization) {
     return null;
@@ -72,26 +57,7 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
       <div>
         <label>
           Meeting date
-          <DatePicker
-            selected={date}
-            onChange={(picked) => {
-              setDate(picked);
-              setIsDatePickerOpen(false);
-              lastDateSelectedAtRef.current = Date.now();
-            }}
-            dateFormat="M/d/yyyy"
-            autoFocus
-            open={isDatePickerOpen}
-            onInputClick={() => {
-              if (Date.now() - lastDateSelectedAtRef.current < 250) return;
-              setIsDatePickerOpen(true);
-            }}
-            onClickOutside={() => setIsDatePickerOpen(false)}
-            popperProps={{
-              placement: "bottom",
-              strategy: "fixed",
-            }}
-          />
+          <DateOnlyInput selected={date} onChange={setDate} autoFocus />
         </label>
       </div>
       <div>

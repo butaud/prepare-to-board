@@ -6,7 +6,6 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
-import DatePicker from "react-datepicker";
 import { useNavigate } from "react-router-dom";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
@@ -18,12 +17,12 @@ import { BoardMember, getCanonicalTopicId, Meeting, Note, Topic } from "../../sc
 import { stripTrailingPeriod } from "../../util/actionItems";
 import { api } from "../../convexClient";
 
-import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingMinutes.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
 import { DateTimeField } from "../../ui/DateTimeField";
+import { DateOnlyInput } from "../../ui/DateOnlyInput";
 import { EditableInteger } from "../../ui/doc/EditableValue";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
@@ -173,12 +172,10 @@ const ActionItemForm = ({
           autoFocus
         />
         <span>by</span>
-        <DatePicker
+        <DateOnlyInput
           selected={dueDate}
           onChange={setDueDate}
-          dateFormat="M/d/yyyy"
-          placeholderText="Due date"
-          popperProps={{ placement: "bottom", strategy: "fixed" }}
+          aria-label="Due date"
         />
       </div>
       <div className="minutes-actions">
@@ -1043,7 +1040,6 @@ const PostMeetingMinutesEdit = () => {
               onChange={(picked) =>
                 void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() })
               }
-              portalId="datepicker-portal"
             />
           </label>
         </div>

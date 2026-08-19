@@ -661,7 +661,6 @@ export const MeetingView = () => {
               <DateTimeField
                 selected={meeting.date}
                 onChange={(picked) => handleStartDateChange(picked)}
-                portalId="datepicker-portal"
               />
             ) : (
               <span>

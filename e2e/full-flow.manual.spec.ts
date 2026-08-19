@@ -18,7 +18,7 @@ test("admin, officer, and member can collaborate through a full meeting lifecycl
     Math.floor(Date.now() / 86_400_000) % 12,
     (Date.now() % 20) + 1
   );
-  const meetingDateInput = `${meetingDate.getMonth() + 1}/${meetingDate.getDate()}/${meetingDate.getFullYear()}`;
+  const meetingDateInput = `${meetingDate.getFullYear()}-${String(meetingDate.getMonth() + 1).padStart(2, "0")}-${String(meetingDate.getDate()).padStart(2, "0")}`;
   const meetingDatePattern = new RegExp(
     `${meetingDate.getMonth() + 1}\\/${meetingDate.getDate()}\\/${meetingDate.getFullYear()}`
   );
@@ -79,7 +79,7 @@ test("admin, officer, and member can collaborate through a full meeting lifecycl
   );
   await admin.getByRole("button", { name: /create a new meeting/i }).click();
   await admin.getByLabel("Meeting date").fill(meetingDateInput);
-  await admin.getByLabel("Meeting time").fill("7:00 PM");
+  await admin.getByLabel("Meeting time").fill("19:00");
   await admin.getByRole("button", { name: "Save" }).click();
   let createdMeetingHref: string | null = null;
   await expect

@@ -19,7 +19,7 @@ test("member and officer access stays aligned with organization roles", async ({
   const runId = Date.now().toString(36);
   let orgName = `E2E Access Board ${runId}`;
   const draftDate = new Date(2180, Number(runId.charCodeAt(0)) % 12, 3);
-  const draftDateInput = `${draftDate.getMonth() + 1}/${draftDate.getDate()}/${draftDate.getFullYear()}`;
+  const draftDateInput = `${draftDate.getFullYear()}-${String(draftDate.getMonth() + 1).padStart(2, "0")}-${String(draftDate.getDate()).padStart(2, "0")}`;
   const draftDatePattern = new RegExp(
     `${draftDate.getMonth() + 1}\\/${draftDate.getDate()}\\/${draftDate.getFullYear()}`
   );
@@ -75,7 +75,7 @@ test("member and officer access stays aligned with organization roles", async ({
   await admin.getByRole("link", { name: /meetings/i }).click();
   await admin.getByRole("button", { name: /create a new meeting/i }).click();
   await admin.getByLabel("Meeting date").fill(draftDateInput);
-  await admin.getByLabel("Meeting time").fill("6:30 PM");
+  await admin.getByLabel("Meeting time").fill("18:30");
   await admin.getByRole("button", { name: "Save" }).click();
   await expect(admin.getByRole("link", { name: draftDatePattern }).last()).toBeVisible();
 

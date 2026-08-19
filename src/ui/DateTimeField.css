@@ -4,7 +4,7 @@
   gap: 8px;
 }
 
-.datetime-field .react-datepicker-wrapper input {
+.datetime-field input[type="date"] {
   width: 150px;
 }
 
