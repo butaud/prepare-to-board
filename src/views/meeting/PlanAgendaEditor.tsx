@@ -30,6 +30,7 @@ import {
 } from "./agendaTimeline";
 
 import "./MeetingMinutes.css";
+import "./MeetingPageLayout.css";
 import "./PlanAgendaEditor.css";
 
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;

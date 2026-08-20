@@ -20,9 +20,9 @@ import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
 import { DateTimeField } from "../../ui/DateTimeField";
 import { TimeOfDayInput } from "../../ui/TimeOfDayInput";
 
+import "./MeetingPageLayout.css";
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
-import "../meeting/MeetingMinutes.css";
 import { NoteDisplay } from "../../ui/NoteDisplay";
 
 const formatDuration = (totalSeconds: number): string => {

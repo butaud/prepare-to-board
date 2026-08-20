@@ -69,15 +69,6 @@ button.plan-topic-delete:hover:not(:disabled) {
   box-shadow: none;
 }
 
-.plan-duration-display {
-  display: inline;
-}
-
-input.plan-duration-display {
-  width: 60px;
-  min-width: 60px;
-}
-
 /* The trailing "add topic" slot (after the last item) is the golden path
    for building an agenda, so it stays permanently visible and reads as a
    card rather than the thin hover-reveal strip used between items. */

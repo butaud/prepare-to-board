@@ -36,47 +36,6 @@
   opacity: 0;
 }
 
-.meeting-minutes-completed {
-  max-width: var(--meeting-content-max-width);
-  margin: 0 auto;
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.minutes-date {
-  opacity: 0.7;
-  font-size: 1rem;
-  margin: 0;
-}
-
-.minutes-completed-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.minutes-completed-header h2 {
-  margin: 0 0 4px 0;
-}
-
-/* Lets the accordion share the row with the header text instead of
-   shrinking to its own content width, mirroring .plan-header's layout. */
-.minutes-completed-header .meeting-details-accordion {
-  flex: 1 1 240px;
-  min-width: 200px;
-}
-
-.minutes-completed-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .minutes-section {
   position: relative;
   z-index: 1;
@@ -1037,17 +996,6 @@
   background: var(--danger-color-subtle);
 }
 
-/* Overtime/undertime colors */
-.overtime {
-  color: var(--danger-color-strong);
-  font-weight: 600;
-}
-
-.undertime {
-  color: var(--completed-color);
-  font-weight: 600;
-}
-
 .minutes-remaining-item .drag-handle {
   cursor: grab;
   opacity: 0.4;
@@ -1065,17 +1013,6 @@
   border-radius: 6px;
   box-shadow: 0 4px 12px var(--shadow-color-strong);
   list-style: none;
-}
-
-.inline-duration-input {
-  width: 56px;
-  padding: 1px 4px;
-  font-size: inherit;
-  background-color: var(--background-color);
-  color: var(--font-color);
-  border: 1px solid var(--primary-color);
-  border-radius: 5px;
-  text-align: right;
 }
 
 /* Notes section */

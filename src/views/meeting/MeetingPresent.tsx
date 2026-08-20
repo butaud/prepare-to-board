@@ -11,7 +11,7 @@ import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { api } from "../../convexClient";
 
 import "./MeetingPresent.css";
-import "./MeetingMinutes.css";
+import "./MeetingPageLayout.css";
 
 const formatDuration = (totalSeconds: number): string => {
   const sign = totalSeconds < 0 ? "-" : "";

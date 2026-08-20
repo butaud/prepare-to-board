@@ -17,7 +17,7 @@ import { stripTrailingPeriod } from "../../util/actionItems";
 import { api } from "../../convexClient";
 
 import "./MeetingMinutes.css";
-import "./MeetingView.css";
+import "./MeetingPageLayout.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
