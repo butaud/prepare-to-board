@@ -20,7 +20,8 @@ import "./MeetingMinutes.css";
 import "./MeetingPageLayout.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
-import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { MeetingHeaderRow } from "../../ui/MeetingHeaderRow";
+import { MeetingPageHeader } from "../../ui/MeetingPageHeader";
 import { DateTimeField } from "../../ui/DateTimeField";
 import { DateOnlyInput } from "../../ui/DateOnlyInput";
 import { EditableInteger } from "../../ui/doc/EditableValue";
@@ -687,22 +688,20 @@ const PostMeetingMinutes = () => {
   // unplanned = live topics with no plannedTopic that have a minute
   return (
     <div className="meeting-minutes-completed">
-      <div className="minutes-completed-header">
-        <div>
-          <h2>Meeting Minutes</h2>
+      <MeetingPageHeader
+        meeting={meeting}
+        members={members}
+        isOfficer={Boolean(isOfficer)}
+        title="Meeting Minutes"
+        subtitle={
           <p className="minutes-date">
             {meeting.date.toLocaleString(undefined, {
               dateStyle: "full",
               timeStyle: "short",
             })}
           </p>
-        </div>
-        <MeetingDetailsAccordion
-          meeting={meeting}
-          members={members}
-          isOfficer={Boolean(isOfficer)}
-        />
-      </div>
+        }
+      />
 
       <IntegrityBanner
         unresolvedMotions={integrityIssues.unresolvedMotions}
@@ -956,9 +955,12 @@ const PostMeetingMinutesEdit = () => {
 
   return (
     <div className="meeting-minutes-completed minutes-edit">
-      <div className="minutes-completed-header">
-        <div>
-          <h2>Edit Minutes</h2>
+      <MeetingPageHeader
+        meeting={meeting}
+        members={members}
+        isOfficer={isOfficer}
+        title="Edit Minutes"
+        subtitle={
           <label className="minutes-edit-start-time">
             <span className="plan-field-label">Start Time:</span>
             <DateTimeField
@@ -968,9 +970,8 @@ const PostMeetingMinutesEdit = () => {
               }
             />
           </label>
-        </div>
-        <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
-      </div>
+        }
+      />
 
       <section className="minutes-section">
         <h3>Covered Topics</h3>
@@ -2166,24 +2167,21 @@ export const MeetingMinutes = () => {
 
   return (
     <div className="meeting-view-content">
-      <div className="plan-header">
-        <div className="plan-header-times">
-          <div className="plan-field-row plan-start-time">
-            <span className="plan-field-label">Start Time:</span>
-            <DateTimeField
-              selected={meeting.date}
-              onChange={(picked) =>
-                void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() })
-              }
-            />
-          </div>
+      <MeetingHeaderRow
+        meeting={meeting}
+        members={members}
+        isOfficer={Boolean(isOfficer)}
+      >
+        <div className="plan-field-row plan-start-time">
+          <span className="plan-field-label">Start Time:</span>
+          <DateTimeField
+            selected={meeting.date}
+            onChange={(picked) =>
+              void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() })
+            }
+          />
         </div>
-        <MeetingDetailsAccordion
-          meeting={meeting}
-          members={members}
-          isOfficer={Boolean(isOfficer)}
-        />
-      </div>
+      </MeetingHeaderRow>
       <div className="meeting-minutes plan-agenda-layout" ref={minutesLayoutRef}>
       <svg
         className={`minutes-agenda-connections${

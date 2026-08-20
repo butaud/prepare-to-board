@@ -16,7 +16,8 @@ import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
 import { PlanAgendaEditor } from "./PlanAgendaEditor";
-import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { MeetingHeaderRow } from "../../ui/MeetingHeaderRow";
+import { MeetingPageHeader } from "../../ui/MeetingPageHeader";
 import { DateTimeField } from "../../ui/DateTimeField";
 import { TimeOfDayInput } from "../../ui/TimeOfDayInput";
 
@@ -707,32 +708,29 @@ export const MeetingView = () => {
   if (isOfficer && isEditingAgenda) {
     return (
       <div className="meeting-view-content">
-        <div className="plan-header">
-          <div className="plan-header-times">
-            <div className="plan-field-row plan-start-time">
-              <span className="plan-field-label">Start Time:</span>
-              <DateTimeField
-                selected={meeting.date}
-                onChange={(picked) => handleStartDateChange(picked)}
-              />
-            </div>
-            <div className="plan-field-row">
-              {targetEndTimeControl}
-              {isOverrun && (
-                <span className="overrun-warning">
-                  ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
-                  over target
-                </span>
-              )}
-            </div>
+        <MeetingHeaderRow
+          meeting={meeting}
+          members={members}
+          isOfficer={isOfficer}
+          showAttendance={false}
+        >
+          <div className="plan-field-row plan-start-time">
+            <span className="plan-field-label">Start Time:</span>
+            <DateTimeField
+              selected={meeting.date}
+              onChange={(picked) => handleStartDateChange(picked)}
+            />
           </div>
-          <MeetingDetailsAccordion
-            meeting={meeting}
-            members={members}
-            isOfficer={isOfficer}
-            showAttendance={false}
-          />
-        </div>
+          <div className="plan-field-row">
+            {targetEndTimeControl}
+            {isOverrun && (
+              <span className="overrun-warning">
+                ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+                over target
+              </span>
+            )}
+          </div>
+        </MeetingHeaderRow>
         {agendaEditor}
       </div>
     );
@@ -740,23 +738,21 @@ export const MeetingView = () => {
 
   return (
     <div className="meeting-minutes-completed">
-      <div className="minutes-completed-header">
-        <div>
-          <h2>Meeting Agenda</h2>
+      <MeetingPageHeader
+        meeting={meeting}
+        members={members}
+        isOfficer={isOfficer}
+        showAttendance={false}
+        title="Meeting Agenda"
+        subtitle={
           <p className="minutes-date">
             {meeting.date.toLocaleString(undefined, {
               dateStyle: "full",
               timeStyle: "short",
             })}
           </p>
-        </div>
-        <MeetingDetailsAccordion
-          meeting={meeting}
-          members={members}
-          isOfficer={isOfficer}
-          showAttendance={false}
-        />
-      </div>
+        }
+      />
       {agendaEditor}
     </div>
   );
