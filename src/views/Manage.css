@@ -1,6 +1,7 @@
 .manage {
   padding-top: 4px;
-  max-width: 860px;
+  max-width: var(--page-content-max-width);
+  margin: 0 auto;
 
   .manage-section {
     border: 1px solid var(--border-color);

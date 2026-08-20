@@ -5,7 +5,7 @@
    instead of one component reaching into a sibling's stylesheet. */
 
 .meeting-view-content {
-  max-width: var(--meeting-content-max-width);
+  max-width: var(--page-content-max-width);
   margin: 0 auto;
 }
 
@@ -65,7 +65,7 @@
 }
 
 .meeting-minutes-completed {
-  max-width: var(--meeting-content-max-width);
+  max-width: var(--page-content-max-width);
   margin: 0 auto;
   padding: 24px 16px;
   display: flex;
