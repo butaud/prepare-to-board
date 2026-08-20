@@ -150,7 +150,6 @@ input.plan-duration-display {
 
 .plan-agenda-view {
   max-width: 900px;
-  margin: 0 auto;
   padding: 16px 0;
   display: flex;
   flex-direction: column;
