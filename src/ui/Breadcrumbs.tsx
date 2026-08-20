@@ -12,6 +12,7 @@ const constantTitles: Record<string, string> = {
   "/": "Home",
   meetings: "Meetings",
   "action-items": "Action Items",
+  "annual-cycle": "Annual Cycle",
   settings: "Settings",
   manage: "Manage",
   members: "Members",

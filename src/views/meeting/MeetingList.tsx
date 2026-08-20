@@ -138,7 +138,7 @@ export const MeetingList = () => {
   const sections = groupMeetings(myMeetings);
 
   return (
-    <div>
+    <div className="meeting-list-page">
       {isCreateMeetingOpen && (
         <CreateMeetingDialog
           closeDialog={() => {

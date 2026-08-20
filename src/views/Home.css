@@ -1,4 +1,6 @@
 .home {
+  max-width: var(--page-content-max-width);
+  margin: 0 auto;
   padding-top: 16px;
 
   .home-welcome {
