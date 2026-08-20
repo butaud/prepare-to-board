@@ -1,5 +1,5 @@
 .meeting-present {
-  max-width: 1200px;
+  max-width: var(--meeting-content-max-width);
   margin: 0 auto;
   padding: 24px 16px;
   display: flex;

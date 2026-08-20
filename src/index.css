@@ -26,6 +26,11 @@
 
   --border-color: hsl(217, 30%, 87%);
   --border-color-subtle: hsl(217, 20%, 93%);
+
+  /* Shared content width for the meeting pages (Plan, Take Minutes,
+     Present, Manage Agenda, Minutes) - keeps them visually consistent
+     without each page's CSS repeating the same max-width/margin pair. */
+  --meeting-content-max-width: 1200px;
 }
 
 /* dark mode */
