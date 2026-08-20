@@ -24,8 +24,6 @@ import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
 import { DateTimeField } from "../../ui/DateTimeField";
 import { DateOnlyInput } from "../../ui/DateOnlyInput";
 import { EditableInteger } from "../../ui/doc/EditableValue";
-import { exportSessionToDocx } from "../../docx/doc";
-import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import {
   AGENDA_BASE_SLOT_MINUTES,
   AGENDA_EVENT_GAP_PX,
@@ -684,44 +682,6 @@ const PostMeetingMinutes = () => {
     .filter((t) => t !== null)
     .filter((t) => !coveredTopicIds.has(t.id));
 
-  const organization = me.root.selectedOrganization;
-  const notifyBoardMinutesShared = useMutation(api.app.notifyBoardMinutesShared);
-  const [isNotifying, setIsNotifying] = useState(false);
-  const [notifySent, setNotifySent] = useState(false);
-  const handleNotifyBoard = async () => {
-    setIsNotifying(true);
-    try {
-      await notifyBoardMinutesShared({ meetingId: meeting.id });
-      setNotifySent(true);
-    } finally {
-      setIsNotifying(false);
-    }
-  };
-  const [isExporting, setIsExporting] = useState(false);
-  const handleExportDocx = async () => {
-    if (!organization) return;
-    setIsExporting(true);
-    try {
-      const session = mapMeetingToSession(meeting, organization);
-      const blob = await exportSessionToDocx(session);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const dateStr = [
-        meeting.date.getFullYear(),
-        String(meeting.date.getMonth() + 1).padStart(2, "0"),
-        String(meeting.date.getDate()).padStart(2, "0"),
-      ].join("-");
-      a.download = `Board Meeting Minutes - ${dateStr}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const integrityIssues = collectIntegrityIssues(
     completedMinutes.map((minute) => ({
       topicId: minute.topic?.id ?? minute.id,
@@ -733,46 +693,21 @@ const PostMeetingMinutes = () => {
   // unplanned = live topics with no plannedTopic that have a minute
   return (
     <div className="meeting-minutes-completed">
-      <MeetingDetailsAccordion
-        meeting={meeting}
-        members={members}
-        isOfficer={Boolean(isOfficer)}
-      />
       <div className="minutes-completed-header">
         <div>
           <h2>Meeting Minutes</h2>
           <p className="minutes-date">
-            {meeting.date.toLocaleDateString(undefined, {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
+            {meeting.date.toLocaleString(undefined, {
+              dateStyle: "full",
+              timeStyle: "short",
             })}
           </p>
         </div>
-        <div className="minutes-completed-header-actions">
-          {isOfficer && (
-            <button
-              className="btn-secondary"
-              onClick={() => void handleNotifyBoard()}
-              disabled={isNotifying}
-              title="Send an in-app notification to the board that these minutes are ready"
-            >
-              {isNotifying
-                ? "Notifying…"
-                : notifySent
-                  ? "Board Notified"
-                  : "Notify Board"}
-            </button>
-          )}
-          <button
-            className="btn-secondary"
-            onClick={() => void handleExportDocx()}
-            disabled={isExporting || !organization}
-          >
-            {isExporting ? "Exporting…" : "Export as Word (.docx)"}
-          </button>
-        </div>
+        <MeetingDetailsAccordion
+          meeting={meeting}
+          members={members}
+          isOfficer={Boolean(isOfficer)}
+        />
       </div>
 
       <IntegrityBanner

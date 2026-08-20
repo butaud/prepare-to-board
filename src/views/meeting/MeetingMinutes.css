@@ -63,6 +63,13 @@
   margin: 0 0 4px 0;
 }
 
+/* Lets the accordion share the row with the header text instead of
+   shrinking to its own content width, mirroring .plan-header's layout. */
+.minutes-completed-header .meeting-details-accordion {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
 .minutes-completed-header-actions {
   display: flex;
   align-items: center;

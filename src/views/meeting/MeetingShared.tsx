@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLoadMeetingFromParams } from "../../hooks/Meeting";
 import { getMeetingDisplayStatus } from "../../schema";
 import { useLoadedAccount } from "../../hooks/Account";
@@ -7,7 +7,9 @@ import { MinutesEditModeContext } from "../../hooks/MinutesEditMode";
 import { SubHeader, SubHeaderAction, SubHeaderTab } from "../../ui/SubHeader";
 import { SlTrash } from "react-icons/sl";
 import {
+  MdDownload,
   MdEdit,
+  MdNotificationsActive,
   MdOutlinePresentToAll,
   MdPlayCircleOutline,
   MdPublish,
@@ -18,6 +20,8 @@ import { useMutation } from "convex/react";
 import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
 import { api } from "../../convexClient";
+import { exportSessionToDocx } from "../../docx/doc";
+import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 
 import "./MeetingShared.css";
 
@@ -40,6 +44,10 @@ export const MeetingShared = () => {
   const startMeeting = useMutation(api.app.startMeeting);
   const setMeetingStatus = useMutation(api.app.setMeetingStatus);
   const recordMeetingViewed = useMutation(api.app.recordMeetingViewed);
+  const notifyBoardMinutesShared = useMutation(api.app.notifyBoardMinutesShared);
+  const [isNotifying, setIsNotifying] = useState(false);
+  const [notifySent, setNotifySent] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const meetingId = meeting?.id;
   useEffect(() => {
     if (meetingId) {
@@ -63,9 +71,53 @@ export const MeetingShared = () => {
     void deleteMeeting({ meetingId: meeting.id }).then(() => navigate("/meetings"));
   };
 
+  const handleNotifyBoard = async () => {
+    setIsNotifying(true);
+    try {
+      await notifyBoardMinutesShared({ meetingId: meeting.id });
+      setNotifySent(true);
+    } finally {
+      setIsNotifying(false);
+    }
+  };
+
+  const organization = me.root.selectedOrganization;
+  const handleExportDocx = async () => {
+    if (!organization) return;
+    setIsExporting(true);
+    try {
+      const session = mapMeetingToSession(meeting, organization);
+      const blob = await exportSessionToDocx(session);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = [
+        meeting.date.getFullYear(),
+        String(meeting.date.getMonth() + 1).padStart(2, "0"),
+        String(meeting.date.getDate()).padStart(2, "0"),
+      ].join("-");
+      a.download = `Board Meeting Minutes - ${dateStr}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const isOfficer = me?.canWrite(meeting);
   const tabs: SubHeaderTab[] = [];
   const actions: SubHeaderAction[] = [];
+  // Available to every viewer of a completed meeting, not just officers.
+  if (meeting.status === "completed") {
+    actions.push({
+      label: isExporting ? "Exporting…" : "Export as Word (.docx)",
+      onClick: () => void handleExportDocx(),
+      disabled: isExporting || !organization,
+      icon: <MdDownload />,
+    });
+  }
   if (isOfficer) {
     if (meeting.status === "draft") {
       actions.push({
@@ -122,6 +174,16 @@ export const MeetingShared = () => {
       });
     }
     if (meeting.status === "completed") {
+      actions.push({
+        label: isNotifying
+          ? "Notifying…"
+          : notifySent
+            ? "Board Notified"
+            : "Notify Board",
+        onClick: () => void handleNotifyBoard(),
+        disabled: isNotifying,
+        icon: <MdNotificationsActive />,
+      });
       actions.push({
         label: isEditingMinutes ? "Done Editing" : "Edit Minutes",
         onClick: () => {

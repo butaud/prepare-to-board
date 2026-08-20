@@ -741,12 +741,6 @@ export const MeetingView = () => {
   return (
     <div className="meeting-view-content">
       <div className="meeting-minutes-completed">
-        <MeetingDetailsAccordion
-          meeting={meeting}
-          members={members}
-          isOfficer={isOfficer}
-          showAttendance={false}
-        />
         <div className="minutes-completed-header">
           <div>
             <h2>Meeting Agenda</h2>
@@ -757,6 +751,12 @@ export const MeetingView = () => {
               })}
             </p>
           </div>
+          <MeetingDetailsAccordion
+            meeting={meeting}
+            members={members}
+            isOfficer={isOfficer}
+            showAttendance={false}
+          />
         </div>
         {agendaEditor}
       </div>
