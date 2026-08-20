@@ -17,6 +17,7 @@ import { stripTrailingPeriod } from "../../util/actionItems";
 import { api } from "../../convexClient";
 
 import "./MeetingMinutes.css";
+import "./MeetingView.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
 import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
@@ -1182,6 +1183,7 @@ export const MeetingMinutes = () => {
   const [editingCurrentNoteId, setEditingCurrentNoteId] = useState<string | null>(null);
   const advanceTopic = useMutation(api.app.advanceTopic);
   const skipTopic = useMutation(api.app.skipTopic);
+  const updateMeetingDate = useMutation(api.app.updateMeetingDate);
   const addTopic = useMutation(api.app.addTopic).withOptimisticUpdate(
     (localStore, rawArgs) => {
       const args = rawArgs as {
@@ -2186,7 +2188,26 @@ export const MeetingMinutes = () => {
   ]);
 
   return (
-    <div className="meeting-minutes" ref={minutesLayoutRef}>
+    <div className="meeting-view-content">
+      <div className="plan-header">
+        <div className="plan-header-times">
+          <div className="plan-field-row plan-start-time">
+            <span className="plan-field-label">Start Time:</span>
+            <DateTimeField
+              selected={meeting.date}
+              onChange={(picked) =>
+                void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() })
+              }
+            />
+          </div>
+        </div>
+        <MeetingDetailsAccordion
+          meeting={meeting}
+          members={members}
+          isOfficer={Boolean(isOfficer)}
+        />
+      </div>
+      <div className="meeting-minutes plan-agenda-layout" ref={minutesLayoutRef}>
       <svg
         className={`minutes-agenda-connections${
           isAgendaPaneOpen ? " is-tray-open" : ""
@@ -2206,11 +2227,6 @@ export const MeetingMinutes = () => {
         />
       </svg>
       <div className="minutes-topic-main">
-        <MeetingDetailsAccordion
-          meeting={meeting}
-          members={members}
-          isOfficer={Boolean(isOfficer)}
-        />
         <IntegrityBanner
           unresolvedMotions={integrityIssues.unresolvedMotions}
           unassignedActionItems={integrityIssues.unassignedActionItems}
@@ -2716,6 +2732,7 @@ export const MeetingMinutes = () => {
         )}
       </aside>
 
+      </div>
     </div>
   );
 };
