@@ -6,7 +6,6 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
-import { useNavigate } from "react-router-dom";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { useMinutesEditMode } from "../../hooks/MinutesEditMode";
@@ -907,7 +906,6 @@ const PostMeetingMinutes = () => {
 const PostMeetingMinutesEdit = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
-  const navigate = useNavigate();
   const isOfficer = Boolean(me?.canWrite(meeting));
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
   const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
@@ -963,8 +961,6 @@ const PostMeetingMinutesEdit = () => {
 
   return (
     <div className="meeting-minutes-completed minutes-edit">
-      <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
-
       <div className="minutes-completed-header">
         <div>
           <h2>Edit Minutes</h2>
@@ -978,14 +974,7 @@ const PostMeetingMinutesEdit = () => {
             />
           </label>
         </div>
-        <div className="minutes-completed-header-actions">
-          <button
-            className="btn-secondary"
-            onClick={() => void navigate(`/meetings/${meeting.id}/minutes`)}
-          >
-            Done Editing
-          </button>
-        </div>
+        <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
       </div>
 
       <section className="minutes-section">
@@ -1119,20 +1108,22 @@ const PostMeetingMinutesEdit = () => {
                   <span className="minutes-item-title">
                     <span className="badge badge-skipped">Skipped</span> {topic.title}
                   </span>
-                  <span className="minutes-item-duration">
-                    {topic.durationMinutes ?? "?"} min planned
+                  <span className="minutes-skipped-item-actions">
+                    <span className="minutes-item-duration">
+                      {topic.durationMinutes ?? "?"} min planned
+                    </span>
+                    <button
+                      className="btn-small btn-secondary"
+                      onClick={() =>
+                        void addSkippedTopicToMinutes({
+                          meetingId: meeting.id,
+                          plannedTopicId: topic.id,
+                        })
+                      }
+                    >
+                      + Add to Covered
+                    </button>
                   </span>
-                  <button
-                    className="btn-small btn-secondary"
-                    onClick={() =>
-                      void addSkippedTopicToMinutes({
-                        meetingId: meeting.id,
-                        plannedTopicId: topic.id,
-                      })
-                    }
-                  >
-                    + Add to Covered
-                  </button>
                 </div>
               </li>
             ))}

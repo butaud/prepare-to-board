@@ -937,6 +937,16 @@
   white-space: nowrap;
 }
 
+/* Groups the duration with the "+ Add to Covered" button as a single
+   flex item so .minutes-item-header's space-between pushes both to the
+   card's right edge together, instead of spacing the duration out to
+   its own spot between the title and the button. */
+.minutes-skipped-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .minutes-item-notes {
   margin-top: 6px;
   font-size: 0.875rem;
