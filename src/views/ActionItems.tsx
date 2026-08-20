@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MdOutlinePersonOutline, MdOutlineGroup } from "react-icons/md";
 import { SubHeader } from "../ui/SubHeader";
 import { ActionItemRow } from "../ui/ActionItemRow";
 import { useLoadedAccount } from "../hooks/Account";
@@ -51,25 +52,22 @@ export const ActionItems = () => {
 
   return (
     <div className="action-items-page">
-      <SubHeader />
-      <div className="action-items-header">
-        <h2>Action Items</h2>
-        <div className="action-items-filter">
-          <button
-            className={filter === "mine" ? "btn-small" : "btn-small btn-secondary"}
-            onClick={() => setFilter("mine")}
-            disabled={!myBoardMember}
-          >
-            Assigned to me
-          </button>
-          <button
-            className={filter === "all" ? "btn-small" : "btn-small btn-secondary"}
-            onClick={() => setFilter("all")}
-          >
-            All
-          </button>
-        </div>
-      </div>
+      <SubHeader
+        tabs={[
+          {
+            icon: <MdOutlinePersonOutline />,
+            label: "Assigned to me",
+            onClick: () => setFilter("mine"),
+            isActive: filter === "mine",
+          },
+          {
+            icon: <MdOutlineGroup />,
+            label: "All",
+            onClick: () => setFilter("all"),
+            isActive: filter === "all",
+          },
+        ]}
+      />
 
       {sorted.length === 0 && (
         <p className="empty-state">

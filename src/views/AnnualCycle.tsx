@@ -298,7 +298,6 @@ export const AnnualCycle = () => {
   return (
     <div className="manage annual-cycle">
       <SubHeader />
-      <h2>Annual Cycle</h2>
       <div className="manage-section">
         {isAdmin && (
           <>
