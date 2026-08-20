@@ -9,6 +9,7 @@ import {
 import { useMutation } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
+import { usePlanAgendaEditMode } from "../../hooks/PlanAgendaEditMode";
 import { computeProjectedEndTime } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import { Topic } from "../../schema";
@@ -40,6 +41,7 @@ const formatTime = (date: Date): string =>
 export const MeetingView = () => {
   const me = useLoadedAccount();
   const meeting = useMeeting();
+  const { isEditingAgenda } = usePlanAgendaEditMode();
   const [now, setNow] = useState(() => new Date());
   const [showAddTopic, setShowAddTopic] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
@@ -651,87 +653,113 @@ export const MeetingView = () => {
 
   const members = me.root.selectedOrganization.members;
 
-  return (
-    <div className="meeting-view-content">
-      <div className="plan-header">
-        <div className="plan-header-times">
-          <div className="plan-field-row plan-start-time">
-            <span className="plan-field-label">Start Time:</span>
-            {isOfficer ? (
+  const carryForwardSuggestions = isOfficer && carryForwardTopics.length > 0 && (
+    <div className="carry-forward-suggestions">
+      <h4>Carried forward from last meeting</h4>
+      <ul>
+        {carryForwardTopics.map((topic) => {
+          const added = carriedForwardIds.has(topic.id);
+          return (
+            <li key={topic.id}>
+              <span>
+                {topic.title}
+                {topic.durationMinutes ? ` (${topic.durationMinutes} min)` : ""}
+              </span>
+              <button
+                className="btn-small btn-secondary"
+                disabled={added}
+                onClick={() => {
+                  void addTopic({
+                    meetingId: meeting.id,
+                    list: "plannedAgenda",
+                    title: topic.title,
+                    durationMinutes: topic.durationMinutes,
+                  }).then(() => {
+                    setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
+                  });
+                }}
+              >
+                {added ? "Added" : "+ Add to agenda"}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+
+  const agendaEditor = (
+    <PlanAgendaEditor
+      meeting={meeting}
+      isOfficer={isOfficer}
+      organization={me.root.selectedOrganization}
+      startTime={meeting.date}
+      targetEndTime={targetEndTime}
+    >
+      {carryForwardSuggestions}
+    </PlanAgendaEditor>
+  );
+
+  // Officers actively editing the agenda get the two-column layout with
+  // editable start/end time fields and the timeline sidebar; everyone else
+  // (including officers who've stepped out of edit mode) gets a single,
+  // centered read view laid out like the post-meeting minutes page.
+  if (isOfficer && isEditingAgenda) {
+    return (
+      <div className="meeting-view-content">
+        <div className="plan-header">
+          <div className="plan-header-times">
+            <div className="plan-field-row plan-start-time">
+              <span className="plan-field-label">Start Time:</span>
               <DateTimeField
                 selected={meeting.date}
                 onChange={(picked) => handleStartDateChange(picked)}
               />
-            ) : (
-              <span>
-                {meeting.date.toLocaleString(undefined, {
-                  dateStyle: "long",
-                  timeStyle: "short",
-                })}
-              </span>
-            )}
+            </div>
+            <div className="plan-field-row">
+              {targetEndTimeControl}
+              {isOverrun && (
+                <span className="overrun-warning">
+                  ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
+                  over target
+                </span>
+              )}
+            </div>
           </div>
-          <div className="plan-field-row">
-            {targetEndTimeControl}
-            {isOverrun && (
-              <span className="overrun-warning">
-                ⚠ {totalPlannedMinutes - (meeting.expectedDurationMinutes ?? 0)} min
-                over target
-              </span>
-            )}
-          </div>
+          <MeetingDetailsAccordion
+            meeting={meeting}
+            members={members}
+            isOfficer={isOfficer}
+            showAttendance={false}
+          />
         </div>
+        {agendaEditor}
+      </div>
+    );
+  }
+
+  return (
+    <div className="meeting-view-content">
+      <div className="meeting-minutes-completed">
         <MeetingDetailsAccordion
           meeting={meeting}
           members={members}
           isOfficer={isOfficer}
           showAttendance={false}
         />
-      </div>
-      <PlanAgendaEditor
-        meeting={meeting}
-        isOfficer={isOfficer}
-        organization={me.root.selectedOrganization}
-        startTime={meeting.date}
-        targetEndTime={targetEndTime}
-      >
-        {isOfficer && carryForwardTopics.length > 0 && (
-          <div className="carry-forward-suggestions">
-            <h4>Carried forward from last meeting</h4>
-            <ul>
-              {carryForwardTopics.map((topic) => {
-                const added = carriedForwardIds.has(topic.id);
-                return (
-                  <li key={topic.id}>
-                    <span>
-                      {topic.title}
-                      {topic.durationMinutes
-                        ? ` (${topic.durationMinutes} min)`
-                        : ""}
-                    </span>
-                    <button
-                      className="btn-small btn-secondary"
-                      disabled={added}
-                      onClick={() => {
-                        void addTopic({
-                          meetingId: meeting.id,
-                          list: "plannedAgenda",
-                          title: topic.title,
-                          durationMinutes: topic.durationMinutes,
-                        }).then(() => {
-                          setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
-                        });
-                      }}
-                    >
-                      {added ? "Added" : "+ Add to agenda"}
-                    </button>
-                  </li>
-                );
+        <div className="minutes-completed-header">
+          <div>
+            <h2>Meeting Agenda</h2>
+            <p className="minutes-date">
+              {meeting.date.toLocaleString(undefined, {
+                dateStyle: "full",
+                timeStyle: "short",
               })}
-            </ul>
+            </p>
           </div>
-        )}
-      </PlanAgendaEditor>
+        </div>
+        {agendaEditor}
+      </div>
     </div>
   );
 };
