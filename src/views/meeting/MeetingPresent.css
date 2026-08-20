@@ -1,5 +1,5 @@
 .meeting-present {
-  max-width: 900px;
+  max-width: var(--meeting-content-max-width);
   margin: 0 auto;
   padding: 24px 16px;
   display: flex;
@@ -245,16 +245,6 @@
   white-space: nowrap;
 }
 
-.overtime {
-  color: var(--danger-color-strong);
-  font-weight: 600;
-}
-
-.undertime {
-  color: var(--completed-color);
-  font-weight: 600;
-}
-
 .present-topic-actions {
   display: flex;
   gap: 6px;
@@ -422,17 +412,6 @@
 
 .present-topic-item.dragging {
   box-shadow: 0 4px 12px var(--shadow-color-strong);
-}
-
-.inline-duration-input {
-  width: 56px;
-  padding: 1px 4px;
-  font-size: inherit;
-  background-color: var(--background-color);
-  color: var(--font-color);
-  border: 1px solid var(--primary-color);
-  border-radius: 5px;
-  text-align: right;
 }
 
 /* Mobile */

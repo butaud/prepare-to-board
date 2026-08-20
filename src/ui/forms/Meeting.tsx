@@ -1,10 +1,11 @@
 import { FC, useState } from "react";
 import { useMutation } from "convex/react";
-import DatePicker from "react-datepicker";
+import { useNavigate } from "react-router-dom";
 import { Meeting } from "../../schema";
 import { api } from "../../convexClient";
+import { DateOnlyInput } from "../DateOnlyInput";
+import { TimeOfDayInput } from "../TimeOfDayInput";
 
-import "react-datepicker/dist/react-datepicker.css";
 import { useLoadedAccount } from "../../hooks/Account";
 
 export type CreateMeetingProps = {
@@ -17,8 +18,13 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
   defaultDate = null,
 }) => {
   const me = useLoadedAccount();
+  const navigate = useNavigate();
   const createMeeting = useMutation(api.app.createMeeting);
-  const [date, setDate] = useState<Date | null>(defaultDate);
+  // Defaults to today rather than blank - a brand new meeting is far more
+  // often for the near future than not, so starting from today saves a
+  // click in the common case while still letting a specific calendar-day
+  // click (defaultDate) take precedence.
+  const [date, setDate] = useState<Date | null>(defaultDate ?? new Date());
   const [time, setTime] = useState<Date | null>(null);
 
   if (!me.root.selectedOrganization) {
@@ -40,7 +46,10 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
     void createMeeting({
       organizationId: selectedOrganization.id,
       date: fullDate.getTime(),
-    }).then((meetingId: string) => onCreated?.(meetingId));
+    }).then((meetingId: string) => {
+      onCreated?.(meetingId);
+      void navigate(`/meetings/${meetingId}/edit`);
+    });
   };
 
   return (
@@ -48,32 +57,16 @@ export const CreateMeeting: FC<CreateMeetingProps> = ({
       <div>
         <label>
           Meeting date
-          <DatePicker
-            selected={date}
-            onChange={setDate}
-            onSelect={setDate}
-            dateFormat="M/d/yyyy"
-            popperProps={{
-              placement: "bottom",
-              strategy: "fixed",
-            }}
-          />
+          <DateOnlyInput selected={date} onChange={setDate} autoFocus />
         </label>
       </div>
       <div>
         <label>
           Meeting time
-          <DatePicker
+          <TimeOfDayInput
             selected={time}
             onChange={setTime}
-            showTimeSelect
-            showTimeSelectOnly
-            timeIntervals={15}
-            dateFormat="h:mm aa"
-            popperProps={{
-              placement: "bottom",
-              strategy: "fixed",
-            }}
+            aria-label="Meeting time"
           />
         </label>
       </div>

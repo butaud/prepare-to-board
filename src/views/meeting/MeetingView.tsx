@@ -7,21 +7,23 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
-import DatePicker from "react-datepicker";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
+import { usePlanAgendaEditMode } from "../../hooks/PlanAgendaEditMode";
 import { computeProjectedEndTime } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
 import { Topic } from "../../schema";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
 import { PlanAgendaEditor } from "./PlanAgendaEditor";
-import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { MeetingHeaderRow } from "../../ui/MeetingHeaderRow";
+import { MeetingPageHeader } from "../../ui/MeetingPageHeader";
+import { DateTimeField } from "../../ui/DateTimeField";
+import { TimeOfDayInput } from "../../ui/TimeOfDayInput";
 
-import "react-datepicker/dist/react-datepicker.css";
+import "./MeetingPageLayout.css";
 import "./MeetingView.css";
 import "../meeting/MeetingPresent.css";
-import "../meeting/MeetingMinutes.css";
 import { NoteDisplay } from "../../ui/NoteDisplay";
 
 const formatDuration = (totalSeconds: number): string => {
@@ -40,6 +42,7 @@ const formatTime = (date: Date): string =>
 export const MeetingView = () => {
   const me = useLoadedAccount();
   const meeting = useMeeting();
+  const { isEditingAgenda } = usePlanAgendaEditMode();
   const [now, setNow] = useState(() => new Date());
   const [showAddTopic, setShowAddTopic] = useState(false);
   const [newTopicTitle, setNewTopicTitle] = useState("");
@@ -639,17 +642,10 @@ export const MeetingView = () => {
   const targetEndTimeControl = isOfficer ? (
     <label className="target-end-time-field">
       Target end time:
-      <DatePicker
+      <TimeOfDayInput
         selected={targetEndTime}
         onChange={handleTargetEndTimeChange}
-        showTimeSelect
-        showTimeSelectOnly
-        timeIntervals={5}
-        dateFormat="h:mm aa"
-        placeholderText="Not set"
-        isClearable
-        popperProps={{ placement: "bottom", strategy: "fixed" }}
-        portalId="datepicker-portal"
+        aria-label="Target end time"
       />
     </label>
   ) : (
@@ -658,30 +654,72 @@ export const MeetingView = () => {
 
   const members = me.root.selectedOrganization.members;
 
-  return (
-    <div className="meeting-view-content">
-      <div className="plan-header">
-        <div className="plan-header-times">
+  const carryForwardSuggestions = isOfficer && carryForwardTopics.length > 0 && (
+    <div className="carry-forward-suggestions">
+      <h4>Carried forward from last meeting</h4>
+      <ul>
+        {carryForwardTopics.map((topic) => {
+          const added = carriedForwardIds.has(topic.id);
+          return (
+            <li key={topic.id}>
+              <span>
+                {topic.title}
+                {topic.durationMinutes ? ` (${topic.durationMinutes} min)` : ""}
+              </span>
+              <button
+                className="btn-small btn-secondary"
+                disabled={added}
+                onClick={() => {
+                  void addTopic({
+                    meetingId: meeting.id,
+                    list: "plannedAgenda",
+                    title: topic.title,
+                    durationMinutes: topic.durationMinutes,
+                  }).then(() => {
+                    setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
+                  });
+                }}
+              >
+                {added ? "Added" : "+ Add to agenda"}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+
+  const agendaEditor = (
+    <PlanAgendaEditor
+      meeting={meeting}
+      isOfficer={isOfficer}
+      organization={me.root.selectedOrganization}
+      startTime={meeting.date}
+      targetEndTime={targetEndTime}
+    >
+      {carryForwardSuggestions}
+    </PlanAgendaEditor>
+  );
+
+  // Officers actively editing the agenda get the two-column layout with
+  // editable start/end time fields and the timeline sidebar; everyone else
+  // (including officers who've stepped out of edit mode) gets a single,
+  // centered read view laid out like the post-meeting minutes page.
+  if (isOfficer && isEditingAgenda) {
+    return (
+      <div className="meeting-view-content">
+        <MeetingHeaderRow
+          meeting={meeting}
+          members={members}
+          isOfficer={isOfficer}
+          showAttendance={false}
+        >
           <div className="plan-field-row plan-start-time">
             <span className="plan-field-label">Start Time:</span>
-            {isOfficer ? (
-              <DatePicker
-                selected={meeting.date}
-                onChange={handleStartDateChange}
-                showTimeSelect
-                timeIntervals={5}
-                dateFormat="MMMM d, yyyy h:mm aa"
-                popperProps={{ placement: "bottom", strategy: "fixed" }}
-                portalId="datepicker-portal"
-              />
-            ) : (
-              <span>
-                {meeting.date.toLocaleString(undefined, {
-                  dateStyle: "long",
-                  timeStyle: "short",
-                })}
-              </span>
-            )}
+            <DateTimeField
+              selected={meeting.date}
+              onChange={(picked) => handleStartDateChange(picked)}
+            />
           </div>
           <div className="plan-field-row">
             {targetEndTimeControl}
@@ -692,58 +730,30 @@ export const MeetingView = () => {
               </span>
             )}
           </div>
-        </div>
-        <MeetingDetailsAccordion
-          meeting={meeting}
-          members={members}
-          isOfficer={isOfficer}
-          showAttendance={false}
-        />
+        </MeetingHeaderRow>
+        {agendaEditor}
       </div>
-      <PlanAgendaEditor
+    );
+  }
+
+  return (
+    <div className="meeting-minutes-completed">
+      <MeetingPageHeader
         meeting={meeting}
+        members={members}
         isOfficer={isOfficer}
-        organization={me.root.selectedOrganization}
-        startTime={meeting.date}
-        targetEndTime={targetEndTime}
-      >
-        {isOfficer && carryForwardTopics.length > 0 && (
-          <div className="carry-forward-suggestions">
-            <h4>Carried forward from last meeting</h4>
-            <ul>
-              {carryForwardTopics.map((topic) => {
-                const added = carriedForwardIds.has(topic.id);
-                return (
-                  <li key={topic.id}>
-                    <span>
-                      {topic.title}
-                      {topic.durationMinutes
-                        ? ` (${topic.durationMinutes} min)`
-                        : ""}
-                    </span>
-                    <button
-                      className="btn-small btn-secondary"
-                      disabled={added}
-                      onClick={() => {
-                        void addTopic({
-                          meetingId: meeting.id,
-                          list: "plannedAgenda",
-                          title: topic.title,
-                          durationMinutes: topic.durationMinutes,
-                        }).then(() => {
-                          setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
-                        });
-                      }}
-                    >
-                      {added ? "Added" : "+ Add to agenda"}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-      </PlanAgendaEditor>
+        showAttendance={false}
+        title="Meeting Agenda"
+        subtitle={
+          <p className="minutes-date">
+            {meeting.date.toLocaleString(undefined, {
+              dateStyle: "full",
+              timeStyle: "short",
+            })}
+          </p>
+        }
+      />
+      {agendaEditor}
     </div>
   );
 };

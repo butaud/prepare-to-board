@@ -6,8 +6,6 @@ import {
   type DropResult,
 } from "@hello-pangea/dnd";
 import { useMutation } from "convex/react";
-import DatePicker from "react-datepicker";
-import { useNavigate } from "react-router-dom";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { useMinutesEditMode } from "../../hooks/MinutesEditMode";
@@ -18,14 +16,15 @@ import { BoardMember, getCanonicalTopicId, Meeting, Note, Topic } from "../../sc
 import { stripTrailingPeriod } from "../../util/actionItems";
 import { api } from "../../convexClient";
 
-import "react-datepicker/dist/react-datepicker.css";
 import "./MeetingMinutes.css";
+import "./MeetingPageLayout.css";
 import { NoteDisplay, type ActionItemCompletionControl } from "../../ui/NoteDisplay";
 import { PrivateNoteEditor } from "../../ui/PrivateNoteEditor";
-import { MeetingDetailsAccordion } from "../../ui/MeetingDetailsAccordion";
+import { MeetingHeaderRow } from "../../ui/MeetingHeaderRow";
+import { MeetingPageHeader } from "../../ui/MeetingPageHeader";
+import { DateTimeField } from "../../ui/DateTimeField";
+import { DateOnlyInput } from "../../ui/DateOnlyInput";
 import { EditableInteger } from "../../ui/doc/EditableValue";
-import { exportSessionToDocx } from "../../docx/doc";
-import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import {
   AGENDA_BASE_SLOT_MINUTES,
   AGENDA_EVENT_GAP_PX,
@@ -50,12 +49,6 @@ const formatDuration = (totalSeconds: number): string => {
     return `${sign}${h}h ${m}m ${s}s`;
   }
   return `${sign}${m}m ${s}s`;
-};
-
-const formatTimeInputValue = (date: Date): string => {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
 };
 
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
@@ -172,12 +165,10 @@ const ActionItemForm = ({
           autoFocus
         />
         <span>by</span>
-        <DatePicker
+        <DateOnlyInput
           selected={dueDate}
           onChange={setDueDate}
-          dateFormat="M/d/yyyy"
-          placeholderText="Due date"
-          popperProps={{ placement: "bottom", strategy: "fixed" }}
+          aria-label="Due date"
         />
       </div>
       <div className="minutes-actions">
@@ -686,44 +677,6 @@ const PostMeetingMinutes = () => {
     .filter((t) => t !== null)
     .filter((t) => !coveredTopicIds.has(t.id));
 
-  const organization = me.root.selectedOrganization;
-  const notifyBoardMinutesShared = useMutation(api.app.notifyBoardMinutesShared);
-  const [isNotifying, setIsNotifying] = useState(false);
-  const [notifySent, setNotifySent] = useState(false);
-  const handleNotifyBoard = async () => {
-    setIsNotifying(true);
-    try {
-      await notifyBoardMinutesShared({ meetingId: meeting.id });
-      setNotifySent(true);
-    } finally {
-      setIsNotifying(false);
-    }
-  };
-  const [isExporting, setIsExporting] = useState(false);
-  const handleExportDocx = async () => {
-    if (!organization) return;
-    setIsExporting(true);
-    try {
-      const session = mapMeetingToSession(meeting, organization);
-      const blob = await exportSessionToDocx(session);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const dateStr = [
-        meeting.date.getFullYear(),
-        String(meeting.date.getMonth() + 1).padStart(2, "0"),
-        String(meeting.date.getDate()).padStart(2, "0"),
-      ].join("-");
-      a.download = `Board Meeting Minutes - ${dateStr}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const integrityIssues = collectIntegrityIssues(
     completedMinutes.map((minute) => ({
       topicId: minute.topic?.id ?? minute.id,
@@ -735,47 +688,20 @@ const PostMeetingMinutes = () => {
   // unplanned = live topics with no plannedTopic that have a minute
   return (
     <div className="meeting-minutes-completed">
-      <MeetingDetailsAccordion
+      <MeetingPageHeader
         meeting={meeting}
         members={members}
         isOfficer={Boolean(isOfficer)}
-      />
-      <div className="minutes-completed-header">
-        <div>
-          <h2>Meeting Minutes</h2>
+        title="Meeting Minutes"
+        subtitle={
           <p className="minutes-date">
-            {meeting.date.toLocaleDateString(undefined, {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
+            {meeting.date.toLocaleString(undefined, {
+              dateStyle: "full",
+              timeStyle: "short",
             })}
           </p>
-        </div>
-        <div className="minutes-completed-header-actions">
-          {isOfficer && (
-            <button
-              className="btn-secondary"
-              onClick={() => void handleNotifyBoard()}
-              disabled={isNotifying}
-              title="Send an in-app notification to the board that these minutes are ready"
-            >
-              {isNotifying
-                ? "Notifying…"
-                : notifySent
-                  ? "Board Notified"
-                  : "Notify Board"}
-            </button>
-          )}
-          <button
-            className="btn-secondary"
-            onClick={() => void handleExportDocx()}
-            disabled={isExporting || !organization}
-          >
-            {isExporting ? "Exporting…" : "Export as Word (.docx)"}
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <IntegrityBanner
         unresolvedMotions={integrityIssues.unresolvedMotions}
@@ -974,7 +900,6 @@ const PostMeetingMinutes = () => {
 const PostMeetingMinutesEdit = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
-  const navigate = useNavigate();
   const isOfficer = Boolean(me?.canWrite(meeting));
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
   const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
@@ -1030,36 +955,23 @@ const PostMeetingMinutesEdit = () => {
 
   return (
     <div className="meeting-minutes-completed minutes-edit">
-      <MeetingDetailsAccordion meeting={meeting} members={members} isOfficer={isOfficer} />
-
-      <div className="minutes-completed-header">
-        <div>
-          <h2>Edit Minutes</h2>
+      <MeetingPageHeader
+        meeting={meeting}
+        members={members}
+        isOfficer={isOfficer}
+        title="Edit Minutes"
+        subtitle={
           <label className="minutes-edit-start-time">
             <span className="plan-field-label">Start Time:</span>
-            <DatePicker
+            <DateTimeField
               selected={meeting.date}
-              onChange={(picked) => {
-                if (!picked) return;
-                void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() });
-              }}
-              showTimeSelect
-              timeIntervals={5}
-              dateFormat="MMMM d, yyyy h:mm aa"
-              popperProps={{ placement: "bottom", strategy: "fixed" }}
-              portalId="datepicker-portal"
+              onChange={(picked) =>
+                void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() })
+              }
             />
           </label>
-        </div>
-        <div className="minutes-completed-header-actions">
-          <button
-            className="btn-secondary"
-            onClick={() => void navigate(`/meetings/${meeting.id}/minutes`)}
-          >
-            Done Editing
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <section className="minutes-section">
         <h3>Covered Topics</h3>
@@ -1192,20 +1104,22 @@ const PostMeetingMinutesEdit = () => {
                   <span className="minutes-item-title">
                     <span className="badge badge-skipped">Skipped</span> {topic.title}
                   </span>
-                  <span className="minutes-item-duration">
-                    {topic.durationMinutes ?? "?"} min planned
+                  <span className="minutes-skipped-item-actions">
+                    <span className="minutes-item-duration">
+                      {topic.durationMinutes ?? "?"} min planned
+                    </span>
+                    <button
+                      className="btn-small btn-secondary"
+                      onClick={() =>
+                        void addSkippedTopicToMinutes({
+                          meetingId: meeting.id,
+                          plannedTopicId: topic.id,
+                        })
+                      }
+                    >
+                      + Add to Covered
+                    </button>
                   </span>
-                  <button
-                    className="btn-small btn-secondary"
-                    onClick={() =>
-                      void addSkippedTopicToMinutes({
-                        meetingId: meeting.id,
-                        plannedTopicId: topic.id,
-                      })
-                    }
-                  >
-                    + Add to Covered
-                  </button>
                 </div>
               </li>
             ))}
@@ -1257,13 +1171,11 @@ export const MeetingMinutes = () => {
   const [editingDuration, setEditingDuration] = useState("");
   const [editingMinuteId, setEditingMinuteId] = useState<string | null>(null);
   const [editingActualDuration, setEditingActualDuration] = useState("");
-  const [isEditingMeetingStartTime, setIsEditingMeetingStartTime] =
-    useState(false);
-  const [editingMeetingStartTime, setEditingMeetingStartTime] = useState("");
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
   const [editingCurrentNoteId, setEditingCurrentNoteId] = useState<string | null>(null);
   const advanceTopic = useMutation(api.app.advanceTopic);
   const skipTopic = useMutation(api.app.skipTopic);
+  const updateMeetingDate = useMutation(api.app.updateMeetingDate);
   const addTopic = useMutation(api.app.addTopic).withOptimisticUpdate(
     (localStore, rawArgs) => {
       const args = rawArgs as {
@@ -1349,7 +1261,6 @@ export const MeetingMinutes = () => {
   const updateCurrentNote = useMutation(api.app.updateCurrentNote);
   const removeCurrentNote = useMutation(api.app.removeCurrentNote);
   const setHighlightedTopic = useMutation(api.app.setFocusedTopic);
-  const updateLiveStartTime = useMutation(api.app.updateLiveStartTime);
   const updateMinuteDuration = useMutation(api.app.updateMinuteDuration);
 
   useEffect(() => {
@@ -2054,19 +1965,6 @@ export const MeetingMinutes = () => {
       </span>
     );
 
-  const commitMeetingStartTime = (value = editingMeetingStartTime) => {
-    const match = value.match(/^(\d{2}):(\d{2})$/);
-    if (match) {
-      const next = new Date(meetingActualStartTime);
-      next.setHours(Number(match[1]), Number(match[2]), 0, 0);
-      void updateLiveStartTime({
-        meetingId: meeting.id,
-        liveStartTime: next.getTime(),
-      });
-    }
-    setIsEditingMeetingStartTime(false);
-  };
-
   const notesCountForAgendaItem = (item: AgendaMenuItem): number => {
     if (item.kind === "completed") {
       return (item.minute.notes ?? []).filter((n) => n !== null).length;
@@ -2268,7 +2166,23 @@ export const MeetingMinutes = () => {
   ]);
 
   return (
-    <div className="meeting-minutes" ref={minutesLayoutRef}>
+    <div className="meeting-view-content">
+      <MeetingHeaderRow
+        meeting={meeting}
+        members={members}
+        isOfficer={Boolean(isOfficer)}
+      >
+        <div className="plan-field-row plan-start-time">
+          <span className="plan-field-label">Start Time:</span>
+          <DateTimeField
+            selected={meeting.date}
+            onChange={(picked) =>
+              void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() })
+            }
+          />
+        </div>
+      </MeetingHeaderRow>
+      <div className="meeting-minutes plan-agenda-layout" ref={minutesLayoutRef}>
       <svg
         className={`minutes-agenda-connections${
           isAgendaPaneOpen ? " is-tray-open" : ""
@@ -2288,11 +2202,6 @@ export const MeetingMinutes = () => {
         />
       </svg>
       <div className="minutes-topic-main">
-        <MeetingDetailsAccordion
-          meeting={meeting}
-          members={members}
-          isOfficer={Boolean(isOfficer)}
-        />
         <IntegrityBanner
           unresolvedMotions={integrityIssues.unresolvedMotions}
           unassignedActionItems={integrityIssues.unassignedActionItems}
@@ -2575,41 +2484,7 @@ export const MeetingMinutes = () => {
         tabIndex={isAgendaPaneOpen ? undefined : 0}
       >
         <div className="minutes-agenda-pane-header">
-          <h2>Agenda</h2>
-          <span className="minutes-agenda-pane-subtitle">
-            Starting{" "}
-            {isEditingMeetingStartTime ? (
-              <input
-                className="minutes-start-time-input"
-                type="time"
-                value={editingMeetingStartTime}
-                autoFocus
-                onChange={(e) => setEditingMeetingStartTime(e.target.value)}
-                onBlur={(e) => commitMeetingStartTime(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                  if (e.key === "Escape") setIsEditingMeetingStartTime(false);
-                }}
-              />
-            ) : (
-              <button
-                className="minutes-inline-edit-button"
-                type="button"
-                title="Edit actual start time"
-                onClick={() => {
-                  setEditingMeetingStartTime(
-                    formatTimeInputValue(meetingActualStartTime)
-                  );
-                  setIsEditingMeetingStartTime(true);
-                }}
-              >
-                {formatAgendaTime(meetingActualStartTime)}
-              </button>
-            )}
-          </span>
+          <h2>Timeline</h2>
           <button
             className="minutes-agenda-pane-close"
             aria-label={isAgendaPaneOpen ? "Close agenda" : "Open agenda"}
@@ -2798,6 +2673,7 @@ export const MeetingMinutes = () => {
         )}
       </aside>
 
+      </div>
     </div>
   );
 };

@@ -30,6 +30,7 @@ import {
 } from "./agendaTimeline";
 
 import "./MeetingMinutes.css";
+import "./MeetingPageLayout.css";
 import "./PlanAgendaEditor.css";
 
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
@@ -525,9 +526,6 @@ export const PlanAgendaEditor: FC<PlanAgendaEditorProps> = ({
   if (!isEditingAgenda || !isOfficer) {
     return (
       <div className="plan-agenda-view">
-        <div className="plan-agenda-view-header">
-          <h2>Agenda</h2>
-        </div>
         {entries.length === 0 ? (
           <p className="minutes-hint">No topics have been scheduled yet.</p>
         ) : (

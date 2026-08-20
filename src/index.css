@@ -26,6 +26,11 @@
 
   --border-color: hsl(217, 30%, 87%);
   --border-color-subtle: hsl(217, 20%, 93%);
+
+  /* Shared content width for the meeting pages (Plan, Take Minutes,
+     Present, Manage Agenda, Minutes) - keeps them visually consistent
+     without each page's CSS repeating the same max-width/margin pair. */
+  --meeting-content-max-width: 1200px;
 }
 
 /* dark mode */
@@ -218,20 +223,6 @@ input[type="submit"].btn-small {
   line-height: 1.4;
 }
 
-/* react-datepicker's own close-icon styling relies on being an
-   unstyled, absolutely-positioned overlay button with a small circular
-   "x" badge drawn via ::after — reset our global button chrome so that
-   still works instead of rendering as a full-size solid button. */
-button.react-datepicker__close-icon {
-  display: block;
-  height: 100%;
-  min-width: 0;
-  padding: 0 6px 0 0;
-  background-color: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
 a {
   cursor: pointer;
   color: var(--primary-color);
@@ -256,7 +247,9 @@ li {
 input[type="text"],
 input[type="email"],
 input[type="password"],
-input[type="number"] {
+input[type="number"],
+input[type="time"],
+input[type="date"] {
   display: inline-block;
   outline: 0;
   cursor: text;
@@ -276,7 +269,9 @@ input[type="number"] {
 input[type="text"]:focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+input[type="time"]:focus,
+input[type="date"]:focus {
   border: 1px solid var(--primary-color);
   box-shadow: 0 0 0 3px var(--primary-color-subtle);
 }
@@ -284,7 +279,9 @@ input[type="number"]:focus {
 input[type="text"]:disabled,
 input[type="email"]:disabled,
 input[type="password"]:disabled,
-input[type="number"]:disabled {
+input[type="number"]:disabled,
+input[type="time"]:disabled,
+input[type="date"]:disabled {
   background-color: var(--semitransparent);
   color: var(--font-color);
 }

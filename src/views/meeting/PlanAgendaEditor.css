@@ -69,15 +69,6 @@ button.plan-topic-delete:hover:not(:disabled) {
   box-shadow: none;
 }
 
-.plan-duration-display {
-  display: inline;
-}
-
-input.plan-duration-display {
-  width: 60px;
-  min-width: 60px;
-}
-
 /* The trailing "add topic" slot (after the last item) is the golden path
    for building an agenda, so it stays permanently visible and reads as a
    card rather than the thin hover-reveal strip used between items. */
@@ -148,24 +139,11 @@ input.plan-duration-display {
   max-width: none;
 }
 
+/* Nested inside .meeting-minutes-completed, which already centers and
+   constrains the column width - this just needs to fill it. */
 .plan-agenda-view {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.plan-agenda-view-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.plan-agenda-view-header h2 {
-  margin: 0;
 }
 
 .plan-agenda-view-list .minutes-item {

@@ -23,7 +23,7 @@ test("present view follows the topic highlighted by the minute taker", async ({
     dateSeed % 12,
     (dateSeed % 27) + 1
   );
-  const meetingDateInput = `${meetingDate.getMonth() + 1}/${meetingDate.getDate()}/${meetingDate.getFullYear()}`;
+  const meetingDateInput = `${meetingDate.getFullYear()}-${String(meetingDate.getMonth() + 1).padStart(2, "0")}-${String(meetingDate.getDate()).padStart(2, "0")}`;
   const meetingDatePattern = new RegExp(
     `${meetingDate.getMonth() + 1}\\/${meetingDate.getDate()}\\/${meetingDate.getFullYear()}`
   );
@@ -79,7 +79,7 @@ test("present view follows the topic highlighted by the minute taker", async ({
   await admin.getByRole("link", { name: /meetings/i }).click();
   await admin.getByRole("button", { name: /create a new meeting/i }).click();
   await admin.getByLabel("Meeting date").fill(meetingDateInput);
-  await admin.getByLabel("Meeting time").fill("7:00 PM");
+  await admin.getByLabel("Meeting time").fill("19:00");
   await admin.getByRole("button", { name: "Save" }).click();
   await admin.getByRole("link", { name: meetingDatePattern }).last().click();
   await admin.getByRole("button", { name: "Add Topic" }).click();

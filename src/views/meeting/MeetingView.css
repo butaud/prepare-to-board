@@ -3,60 +3,10 @@
   gap: 10px;
 }
 
-.meeting-view-content {
-  max-width: 1200px;
-}
-
 .meeting-view-live-start {
   font-size: 0.9rem;
   color: var(--color-muted, #555);
   margin: 4px 0 0 0;
-}
-
-.plan-header {
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  margin-bottom: 12px;
-}
-
-.plan-header-times {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Stays in place beside the stacked start/end time fields whether
-   collapsed or expanded - it just grows taller, not wider, when opened. */
-.plan-header .meeting-details-accordion {
-  flex: 1 1 240px;
-  min-width: 200px;
-}
-
-/* .meeting-minutes normally supplies its own top padding since it's the
-   whole page there — here it sits below .plan-header instead, so that
-   padding would just double up on the spacing already provided above. */
-.meeting-minutes.plan-agenda-layout {
-  padding-top: 0;
-  max-width: none;
-}
-
-.plan-field-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
-  color: var(--muted-text-color);
-}
-
-.plan-field-label {
-  font-weight: 600;
-}
-
-.plan-start-time input {
-  width: 190px;
 }
 
 .target-end-time-field {
@@ -67,15 +17,6 @@
   input {
     width: 130px;
   }
-}
-
-.plan-timeline-planned {
-  margin-left: 8px;
-  color: var(--muted-text-color);
-  font-size: 0.76rem;
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: normal;
 }
 
 .overrun-warning {
