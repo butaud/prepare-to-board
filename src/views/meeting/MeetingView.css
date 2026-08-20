@@ -36,10 +36,14 @@
 
 /* .meeting-minutes normally supplies its own top padding since it's the
    whole page there — here it sits below .plan-header instead, so that
-   padding would just double up on the spacing already provided above. */
+   padding would just double up on the spacing already provided above.
+   The first column is also widened to match .plan-header-times above it,
+   so the vertical line between the two columns lines up between the
+   header row and the timeline/topic-editor row beneath it. */
 .meeting-minutes.plan-agenda-layout {
   padding-top: 0;
   max-width: none;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
 }
 
 .plan-field-row {
