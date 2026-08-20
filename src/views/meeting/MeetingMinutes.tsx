@@ -50,12 +50,6 @@ const formatDuration = (totalSeconds: number): string => {
   return `${sign}${m}m ${s}s`;
 };
 
-const formatTimeInputValue = (date: Date): string => {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
-};
-
 const AGENDA_INSERTION_RESERVED_HEIGHT_PX = 9;
 const AGENDA_INSERTION_FORM_GAP_PX = 230;
 
@@ -1176,9 +1170,6 @@ export const MeetingMinutes = () => {
   const [editingDuration, setEditingDuration] = useState("");
   const [editingMinuteId, setEditingMinuteId] = useState<string | null>(null);
   const [editingActualDuration, setEditingActualDuration] = useState("");
-  const [isEditingMeetingStartTime, setIsEditingMeetingStartTime] =
-    useState(false);
-  const [editingMeetingStartTime, setEditingMeetingStartTime] = useState("");
   const [noteFormType, setNoteFormType] = useState<"text" | "action_item" | "motion" | null>(null);
   const [editingCurrentNoteId, setEditingCurrentNoteId] = useState<string | null>(null);
   const advanceTopic = useMutation(api.app.advanceTopic);
@@ -1269,7 +1260,6 @@ export const MeetingMinutes = () => {
   const updateCurrentNote = useMutation(api.app.updateCurrentNote);
   const removeCurrentNote = useMutation(api.app.removeCurrentNote);
   const setHighlightedTopic = useMutation(api.app.setFocusedTopic);
-  const updateLiveStartTime = useMutation(api.app.updateLiveStartTime);
   const updateMinuteDuration = useMutation(api.app.updateMinuteDuration);
 
   useEffect(() => {
@@ -1974,19 +1964,6 @@ export const MeetingMinutes = () => {
       </span>
     );
 
-  const commitMeetingStartTime = (value = editingMeetingStartTime) => {
-    const match = value.match(/^(\d{2}):(\d{2})$/);
-    if (match) {
-      const next = new Date(meetingActualStartTime);
-      next.setHours(Number(match[1]), Number(match[2]), 0, 0);
-      void updateLiveStartTime({
-        meetingId: meeting.id,
-        liveStartTime: next.getTime(),
-      });
-    }
-    setIsEditingMeetingStartTime(false);
-  };
-
   const notesCountForAgendaItem = (item: AgendaMenuItem): number => {
     if (item.kind === "completed") {
       return (item.minute.notes ?? []).filter((n) => n !== null).length;
@@ -2509,41 +2486,7 @@ export const MeetingMinutes = () => {
         tabIndex={isAgendaPaneOpen ? undefined : 0}
       >
         <div className="minutes-agenda-pane-header">
-          <h2>Agenda</h2>
-          <span className="minutes-agenda-pane-subtitle">
-            Starting{" "}
-            {isEditingMeetingStartTime ? (
-              <input
-                className="minutes-start-time-input"
-                type="time"
-                value={editingMeetingStartTime}
-                autoFocus
-                onChange={(e) => setEditingMeetingStartTime(e.target.value)}
-                onBlur={(e) => commitMeetingStartTime(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                  if (e.key === "Escape") setIsEditingMeetingStartTime(false);
-                }}
-              />
-            ) : (
-              <button
-                className="minutes-inline-edit-button"
-                type="button"
-                title="Edit actual start time"
-                onClick={() => {
-                  setEditingMeetingStartTime(
-                    formatTimeInputValue(meetingActualStartTime)
-                  );
-                  setIsEditingMeetingStartTime(true);
-                }}
-              >
-                {formatAgendaTime(meetingActualStartTime)}
-              </button>
-            )}
-          </span>
+          <h2>Timeline</h2>
           <button
             className="minutes-agenda-pane-close"
             aria-label={isAgendaPaneOpen ? "Close agenda" : "Open agenda"}

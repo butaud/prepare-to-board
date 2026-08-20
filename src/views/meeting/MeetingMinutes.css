@@ -253,40 +253,6 @@
   background: var(--primary-color-subtle);
 }
 
-.minutes-agenda-pane-subtitle {
-  display: block;
-  margin-bottom: 0;
-  color: var(--font-color);
-  font-size: 0.82rem;
-  opacity: 0.65;
-}
-
-.meeting-minutes button.minutes-inline-edit-button {
-  display: inline;
-  height: auto;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.minutes-start-time-input {
-  width: 132px;
-  max-width: 100%;
-  height: 28px;
-  margin-left: 4px;
-  padding: 0 6px;
-  border: 1px solid var(--primary-color-light);
-  border-radius: 4px;
-  background-color: var(--background-color);
-  color: var(--font-color);
-  font: inherit;
-}
-
 .minutes-current-topic h3 {
   font-size: 1.3rem;
   font-weight: 700;
