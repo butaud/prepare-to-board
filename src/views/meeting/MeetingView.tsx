@@ -739,27 +739,25 @@ export const MeetingView = () => {
   }
 
   return (
-    <div className="meeting-view-content">
-      <div className="meeting-minutes-completed">
-        <div className="minutes-completed-header">
-          <div>
-            <h2>Meeting Agenda</h2>
-            <p className="minutes-date">
-              {meeting.date.toLocaleString(undefined, {
-                dateStyle: "full",
-                timeStyle: "short",
-              })}
-            </p>
-          </div>
-          <MeetingDetailsAccordion
-            meeting={meeting}
-            members={members}
-            isOfficer={isOfficer}
-            showAttendance={false}
-          />
+    <div className="meeting-minutes-completed">
+      <div className="minutes-completed-header">
+        <div>
+          <h2>Meeting Agenda</h2>
+          <p className="minutes-date">
+            {meeting.date.toLocaleString(undefined, {
+              dateStyle: "full",
+              timeStyle: "short",
+            })}
+          </p>
         </div>
-        {agendaEditor}
+        <MeetingDetailsAccordion
+          meeting={meeting}
+          members={members}
+          isOfficer={isOfficer}
+          showAttendance={false}
+        />
       </div>
+      {agendaEditor}
     </div>
   );
 };
