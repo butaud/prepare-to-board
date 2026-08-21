@@ -661,6 +661,12 @@ const PostMeetingMinutes = () => {
   const meeting = useMeeting();
   const me = useLoadedAccount();
   const isOfficer = me?.canWrite(meeting);
+  // Minutes start unpublished when a meeting completes, so officers can
+  // finish reviewing/editing the discussion notes before the rest of the
+  // board sees them. Until publish, non-officers only get the agenda-level
+  // facts (topic, details, durations) plus their own private notes - not
+  // the outcome/notes recorded live, which is what publishing shares out.
+  const canSeeMinuteNotes = Boolean(isOfficer) || Boolean(meeting.minutesPublishedAt);
   const members = (me.root.selectedOrganization?.members ?? []).filter((m) => m !== null);
   const myBoardMemberId = members.find((m) => m.accountId === me.id)?.id;
   const setActionItemCompletedOn = useMutation(api.app.setActionItemCompletedOn);
@@ -703,13 +709,21 @@ const PostMeetingMinutes = () => {
         }
       />
 
-      <IntegrityBanner
-        unresolvedMotions={integrityIssues.unresolvedMotions}
-        unassignedActionItems={integrityIssues.unassignedActionItems}
-      />
+      {canSeeMinuteNotes && (
+        <IntegrityBanner
+          unresolvedMotions={integrityIssues.unresolvedMotions}
+          unassignedActionItems={integrityIssues.unassignedActionItems}
+        />
+      )}
 
       <section className="minutes-section">
         <h3>Official Minutes</h3>
+        {!canSeeMinuteNotes && (
+          <p className="minutes-hint">
+            The board hasn't published these minutes yet - you can see the
+            topics that were covered, but not the discussion notes.
+          </p>
+        )}
         {completedMinutes.length === 0 ? (
           <p>No minutes recorded.</p>
         ) : (
@@ -739,10 +753,15 @@ const PostMeetingMinutes = () => {
                       )}
                     </span>
                   </div>
-                  {topic?.outcome && (
+                  {topic?.details && (
+                    <div className="minutes-topic-details">
+                      {renderMarkdownBlocks(topic.details)}
+                    </div>
+                  )}
+                  {canSeeMinuteNotes && topic?.outcome && (
                     <div className="minutes-item-notes">{topic.outcome}</div>
                   )}
-                  {notes.length > 0 && (
+                  {canSeeMinuteNotes && notes.length > 0 && (
                     <div className="minutes-item-structured-notes">
                       {notes.map((note, ni) => (
                         <NoteDisplay
