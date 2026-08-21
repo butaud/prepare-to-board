@@ -27,9 +27,10 @@ export const InviteUserDialog: FC<InviteUserDialogProps> = ({
       className="invite-users"
     >
       <p>
-        Share this link with the user you want to invite. They will be able to
-        join your organization. If you need to change their role you can do so
-        after they join.
+        Share this link with the user you want to invite. They'll only be
+        able to join if they're already on the board member roster with a
+        matching email - add them there first if they aren't yet. If you
+        need to change their role you can do so after they join.
       </p>
       <input
         type="text"
