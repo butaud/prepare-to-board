@@ -6,6 +6,7 @@ import { useMutation } from "convex/react";
 import { useLoadedAccount } from "../hooks/Account";
 import { CreateOrganization } from "../ui/forms/Organization";
 import { SubHeader } from "../ui/SubHeader";
+import { ConfirmDialog } from "../ui/dialogs/ConfirmDialog";
 import { api } from "../convexClient";
 
 export const Settings = () => {
@@ -89,15 +90,10 @@ const OrganizationNode: FC<{
   removeOrg: (organization: Organization) => void;
   organization: Organization;
 }> = ({ removeOrg, organization }) => {
+  const [isConfirmingRemove, setConfirmingRemove] = useState(false);
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (
-      confirm(
-        "Are you sure you want to remove this organization from your list? You will need to be invited again by an administrator to rejoin."
-      )
-    ) {
-      removeOrg(organization);
-    }
+    setConfirmingRemove(true);
   };
   return (
     <li>
@@ -107,6 +103,19 @@ const OrganizationNode: FC<{
           <SlBan /> Remove
         </button>
       </span>
+      {isConfirmingRemove && (
+        <ConfirmDialog
+          title="Remove organization"
+          message="Are you sure you want to remove this organization from your list? You will need to be invited again by an administrator to rejoin."
+          confirmLabel="Remove"
+          danger
+          onConfirm={() => {
+            setConfirmingRemove(false);
+            removeOrg(organization);
+          }}
+          onCancel={() => setConfirmingRemove(false)}
+        />
+      )}
     </li>
   );
 };
