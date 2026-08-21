@@ -6,4 +6,28 @@ form.organization {
     min-width: 200px;
     field-sizing: content;
   }
+
+  .clone-meeting-agenda-source {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+
+    input {
+      margin-left: 0;
+      max-width: none;
+      min-width: 0;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 400;
+    }
+  }
+
+  .clone-meeting-agenda-source-label {
+    font-weight: 600;
+  }
 }
