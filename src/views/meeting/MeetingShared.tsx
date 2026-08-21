@@ -46,9 +46,8 @@ export const MeetingShared = () => {
   const startMeeting = useMutation(api.app.startMeeting);
   const setMeetingStatus = useMutation(api.app.setMeetingStatus);
   const recordMeetingViewed = useMutation(api.app.recordMeetingViewed);
-  const notifyBoardMinutesShared = useMutation(api.app.notifyBoardMinutesShared);
-  const [isNotifying, setIsNotifying] = useState(false);
-  const [notifySent, setNotifySent] = useState(false);
+  const publishMinutes = useMutation(api.app.publishMinutes);
+  const [isPublishingMinutes, setIsPublishingMinutes] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const meetingId = meeting?.id;
@@ -74,13 +73,12 @@ export const MeetingShared = () => {
     void deleteMeeting({ meetingId: meeting.id }).then(() => navigate("/meetings"));
   };
 
-  const handleNotifyBoard = async () => {
-    setIsNotifying(true);
+  const handlePublishMinutes = async () => {
+    setIsPublishingMinutes(true);
     try {
-      await notifyBoardMinutesShared({ meetingId: meeting.id });
-      setNotifySent(true);
+      await publishMinutes({ meetingId: meeting.id });
     } finally {
-      setIsNotifying(false);
+      setIsPublishingMinutes(false);
     }
   };
 
@@ -177,16 +175,14 @@ export const MeetingShared = () => {
       });
     }
     if (meeting.status === "completed") {
-      actions.push({
-        label: isNotifying
-          ? "Notifying…"
-          : notifySent
-            ? "Board Notified"
-            : "Notify Board",
-        onClick: () => void handleNotifyBoard(),
-        disabled: isNotifying,
-        icon: <MdNotificationsActive />,
-      });
+      if (!meeting.minutesPublishedAt) {
+        actions.push({
+          label: isPublishingMinutes ? "Publishing…" : "Publish Minutes",
+          onClick: () => void handlePublishMinutes(),
+          disabled: isPublishingMinutes,
+          icon: <MdNotificationsActive />,
+        });
+      }
       actions.push({
         label: isEditingMinutes ? "Done Editing" : "Edit Minutes",
         onClick: () => {

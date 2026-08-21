@@ -126,6 +126,7 @@ export default defineSchema({
     callerId: v.optional(v.string()),
     callerName: v.optional(v.string()),
     attendance: v.optional(v.array(attendanceEntry)),
+    minutesPublishedAt: v.optional(v.number()),
   }).index("by_org", ["organizationId"]),
 
   notifications: defineTable({

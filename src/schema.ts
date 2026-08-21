@@ -119,6 +119,7 @@ export type Meeting = {
   callerId?: Id;
   callerName?: string;
   attendance?: AttendanceEntry[];
+  minutesPublishedAt?: number;
 };
 
 export type NotificationType =

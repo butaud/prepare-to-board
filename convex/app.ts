@@ -249,6 +249,7 @@ const serializeMeeting = async (
     callerId: meeting.callerId,
     callerName: meeting.callerName,
     attendance: meeting.attendance,
+    minutesPublishedAt: meeting.minutesPublishedAt,
   };
 };
 
@@ -1707,12 +1708,17 @@ export const markAllNotificationsRead = mutation({
   },
 });
 
-export const notifyBoardMinutesShared = mutation({
+// Minutes start unpublished the moment a meeting completes, so officers can
+// finish reviewing/editing them before the rest of the board sees the
+// discussion notes. Publishing is the only thing that notifies the board -
+// there's no separate manual "notify" action.
+export const publishMinutes = mutation({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, args) => {
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) return;
     const { user } = await requireRole(ctx, meeting.organizationId, ["admin", "writer"]);
+    await ctx.db.patch(args.meetingId, { minutesPublishedAt: Date.now() });
     await notifyOrgMembers(
       ctx,
       meeting.organizationId,
