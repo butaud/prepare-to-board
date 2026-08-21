@@ -3,6 +3,10 @@ form.organization {
   flex-direction: column;
   gap: 16px;
 
+  button {
+    align-self: flex-start;
+  }
+
   input {
     margin-left: 20px;
 
