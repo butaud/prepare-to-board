@@ -73,7 +73,7 @@ export const CloneMeeting: FC<CloneMeetingProps> = ({ meeting, onCreated }) => {
             checked={agendaSource === "original"}
             onChange={() => setAgendaSource("original")}
           />
-          Original agenda
+          Original plan
         </label>
         <label>
           <input
@@ -83,7 +83,7 @@ export const CloneMeeting: FC<CloneMeetingProps> = ({ meeting, onCreated }) => {
             checked={agendaSource === "actual"}
             onChange={() => setAgendaSource("actual")}
           />
-          Actual agenda
+          Actual topics and timing
         </label>
       </div>
       <button type="submit" disabled={!date || !time}>

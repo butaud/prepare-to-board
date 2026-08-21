@@ -1,4 +1,8 @@
 form.organization {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
   input {
     margin-left: 20px;
 
@@ -9,9 +13,9 @@ form.organization {
 
   .clone-meeting-agenda-source {
     display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
 
     input {
       margin-left: 0;
