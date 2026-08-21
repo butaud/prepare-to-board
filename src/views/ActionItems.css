@@ -1,23 +1,6 @@
 .action-items-page {
-  padding-top: 16px;
-
-  .action-items-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-
-    h2 {
-      margin: 0;
-    }
-  }
-
-  .action-items-filter {
-    display: flex;
-    gap: 8px;
-  }
+  max-width: var(--page-content-max-width);
+  margin: 0 auto;
 
   .action-items-section {
     border: 1px solid var(--border-color);

@@ -1,3 +1,8 @@
+.meeting-list-page {
+  max-width: var(--page-content-max-width);
+  margin: 0 auto;
+}
+
 .meeting-list {
   padding-top: 4px;
 
