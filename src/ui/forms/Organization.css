@@ -1,9 +1,37 @@
 form.organization {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
   input {
     margin-left: 20px;
 
     max-width: 300px;
     min-width: 200px;
     field-sizing: content;
+  }
+
+  .clone-meeting-agenda-source {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+
+    input {
+      margin-left: 0;
+      max-width: none;
+      min-width: 0;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 400;
+    }
+  }
+
+  .clone-meeting-agenda-source-label {
+    font-weight: 600;
   }
 }

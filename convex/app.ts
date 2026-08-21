@@ -575,6 +575,71 @@ export const createMeeting = mutation({
   },
 });
 
+// Starts a new draft meeting from an existing one: meeting details (title,
+// subtitle, location, caller, target duration) and a topic list carry over,
+// but attendance, minutes/notes, and everything else tied to how the source
+// meeting actually ran do not - the clone is a fresh, empty draft otherwise.
+export const cloneMeeting = mutation({
+  args: {
+    sourceMeetingId: v.id("meetings"),
+    date: v.number(),
+    agendaSource: v.union(v.literal("original"), v.literal("actual")),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.sourceMeetingId);
+    if (!source) throw new ConvexError("Meeting not found");
+    await requireRole(ctx, source.organizationId, ["admin", "writer"]);
+
+    // "Actual agenda" is the live agenda minus anything cancelled - the same
+    // definition the "carried forward from last meeting" suggestions on the
+    // next meeting's Plan page use for what's still relevant, just without
+    // limiting it to deferred topics. For topics that were actually presented,
+    // advanceTopic never writes the real elapsed time back onto the liveAgenda
+    // topic itself - that only lives on the matching `minutes` entry - so pull
+    // duration/outcome/details from there when one exists, falling back to the
+    // liveAgenda topic (still just the plan) for anything skipped/deferred.
+    let plannedAgenda: { id: string; title: string; durationMinutes: number; outcome?: string; details?: string }[];
+    if (args.agendaSource === "original") {
+      plannedAgenda = source.plannedAgenda.map((topic) => ({
+        id: id(),
+        title: topic.title,
+        durationMinutes: topic.durationMinutes,
+        outcome: topic.outcome,
+        details: topic.details,
+      }));
+    } else {
+      const minuteByTopicId = new Map(source.minutes.map((minute) => [minute.topic.id, minute]));
+      plannedAgenda = source.liveAgenda
+        .filter((topic) => !topic.cancelled)
+        .map((topic) => {
+          const minute = minuteByTopicId.get(topic.id);
+          return {
+            id: id(),
+            title: minute ? minute.topic.title : topic.title,
+            durationMinutes: minute ? minute.durationMinutes : topic.durationMinutes,
+            outcome: minute ? minute.topic.outcome : topic.outcome,
+            details: minute ? minute.topic.details : topic.details,
+          };
+        });
+    }
+
+    return await ctx.db.insert("meetings", {
+      organizationId: source.organizationId,
+      date: args.date,
+      status: "draft",
+      plannedAgenda,
+      liveAgenda: [],
+      minutes: [],
+      expectedDurationMinutes: source.expectedDurationMinutes,
+      title: source.title,
+      subtitle: source.subtitle,
+      location: source.location,
+      callerId: source.callerId,
+      callerName: source.callerName,
+    });
+  },
+});
+
 export const createRandomMeeting = mutation({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {

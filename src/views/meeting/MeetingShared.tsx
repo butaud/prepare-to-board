@@ -10,6 +10,7 @@ import {
   MdDownload,
   MdEdit,
   MdNotificationsActive,
+  MdOutlineContentCopy,
   MdOutlinePresentToAll,
   MdPlayCircleOutline,
   MdPublish,
@@ -22,6 +23,7 @@ import { LuNotepadText } from "react-icons/lu";
 import { api } from "../../convexClient";
 import { exportSessionToDocx } from "../../docx/doc";
 import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
+import { CloneMeetingDialog } from "../../ui/dialogs/CloneMeetingDialog";
 
 import "./MeetingShared.css";
 
@@ -48,6 +50,7 @@ export const MeetingShared = () => {
   const [isNotifying, setIsNotifying] = useState(false);
   const [notifySent, setNotifySent] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const meetingId = meeting?.id;
   useEffect(() => {
     if (meetingId) {
@@ -195,6 +198,11 @@ export const MeetingShared = () => {
         },
         icon: <MdEdit />,
       });
+      actions.push({
+        label: "Clone Meeting",
+        onClick: () => setIsCloneDialogOpen(true),
+        icon: <MdOutlineContentCopy />,
+      });
     }
     actions.push({
       label: "Delete",
@@ -216,6 +224,12 @@ export const MeetingShared = () => {
             actions={actions}
             tabs={tabs}
           />
+          {isCloneDialogOpen && (
+            <CloneMeetingDialog
+              meeting={meeting}
+              closeDialog={() => setIsCloneDialogOpen(false)}
+            />
+          )}
           {outlet}
         </div>
       </MinutesEditModeContext.Provider>
