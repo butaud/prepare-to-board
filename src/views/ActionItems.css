@@ -1,7 +1,6 @@
 .action-items-page {
   max-width: var(--page-content-max-width);
   margin: 0 auto;
-  padding-top: 16px;
 
   .action-items-section {
     border: 1px solid var(--border-color);

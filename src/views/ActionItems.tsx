@@ -53,18 +53,16 @@ export const ActionItems = () => {
   return (
     <div className="action-items-page">
       <SubHeader
-        tabs={[
+        actions={[
           {
             icon: <MdOutlinePersonOutline />,
             label: "Assigned to me",
             onClick: () => setFilter("mine"),
-            isActive: filter === "mine",
           },
           {
             icon: <MdOutlineGroup />,
             label: "All",
             onClick: () => setFilter("all"),
-            isActive: filter === "all",
           },
         ]}
       />

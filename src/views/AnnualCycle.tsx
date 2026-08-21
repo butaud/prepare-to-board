@@ -8,7 +8,6 @@ import { api } from "../convexClient";
 import { isCalendarItemCompleted, MONTH_NAMES, orderMonthsFrom } from "../util/calendarItems";
 
 import "./Manage.css";
-import "./AnnualCycle.css";
 
 const CalendarItemRow = ({
   item,
@@ -296,7 +295,7 @@ export const AnnualCycle = () => {
   const monthOrder = orderMonthsFrom(org.boardYearStartMonth ?? DEFAULT_BOARD_YEAR_START_MONTH);
 
   return (
-    <div className="manage annual-cycle">
+    <div className="manage">
       <SubHeader />
       <div className="manage-section">
         {isAdmin && (
