@@ -62,35 +62,58 @@ const normalizeEmail = (email?: string) => {
   return trimmed || undefined;
 };
 
+// The org-wide invite link carries no secret beyond the organization id, so
+// it's only safe to let it grant membership to someone the org already
+// expects. That's either a roster entry an admin already added (by
+// name/email, with no account linked yet) or - for rejoining after
+// leaveOrganization, which deletes the membership but leaves the roster
+// entry linked - a boardMembers row already tied to this account.
+// joinOrganization uses this to gate new memberships; ensureBoardMemberForUser
+// reuses it for the same lookup once a join is already authorized (or the
+// caller is otherwise trusted, e.g. the org's own creator).
+type BoardMemberMatch =
+  | { kind: "already-linked" }
+  | { kind: "unclaimed"; member: Doc<"boardMembers"> }
+  | { kind: "none" };
+
+const findBoardMemberMatch = async (
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  user: Doc<"users">,
+  email?: string
+): Promise<BoardMemberMatch> => {
+  const members = await ctx.db
+    .query("boardMembers")
+    .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
+    .collect();
+  if (members.some((member) => member.accountId === user._id)) {
+    return { kind: "already-linked" };
+  }
+  const normalizedEmail = normalizeEmail(email);
+  const unclaimed = normalizedEmail
+    ? members.find(
+        (member) => !member.accountId && normalizeEmail(member.email) === normalizedEmail
+      )
+    : undefined;
+  return unclaimed ? { kind: "unclaimed", member: unclaimed } : { kind: "none" };
+};
+
 const ensureBoardMemberForUser = async (
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
   user: Doc<"users">,
   email?: string
 ) => {
-  const members = await ctx.db
-    .query("boardMembers")
-    .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
-    .collect();
-  if (members.some((member) => member.accountId === user._id)) return;
-
-  const normalizedEmail = normalizeEmail(email);
-  const matchingUnclaimedMember = normalizedEmail
-    ? members.find(
-        (member) =>
-          !member.accountId && normalizeEmail(member.email) === normalizedEmail
-      )
-    : undefined;
-
-  if (matchingUnclaimedMember) {
-    await ctx.db.patch(matchingUnclaimedMember._id, { accountId: user._id });
+  const match = await findBoardMemberMatch(ctx, organizationId, user, email);
+  if (match.kind === "already-linked") return;
+  if (match.kind === "unclaimed") {
+    await ctx.db.patch(match.member._id, { accountId: user._id });
     return;
   }
-
   await ctx.db.insert("boardMembers", {
     organizationId,
     name: user.name,
-    email: normalizedEmail,
+    email: normalizeEmail(email),
     accountId: user._id,
   });
 };
@@ -544,19 +567,21 @@ export const joinOrganization = mutation({
     const identity = await requireIdentity(ctx);
     const user = await getOrCreateCurrentUser(ctx);
     const existing = await membershipFor(ctx, args.organizationId, user._id);
+    const email = args.email ?? identity.email;
     if (!existing) {
+      const match = await findBoardMemberMatch(ctx, args.organizationId, user, email);
+      if (match.kind === "none") {
+        throw new ConvexError(
+          "This organization hasn't added you as a board member yet. Ask an admin to add you before you can join."
+        );
+      }
       await ctx.db.insert("memberships", {
         organizationId: args.organizationId,
         userId: user._id,
         role: "reader",
       });
     }
-    await ensureBoardMemberForUser(
-      ctx,
-      args.organizationId,
-      user,
-      args.email ?? identity.email
-    );
+    await ensureBoardMemberForUser(ctx, args.organizationId, user, email);
     await ctx.db.patch(user._id, { selectedOrganizationId: args.organizationId });
   },
 });
