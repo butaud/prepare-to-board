@@ -21,6 +21,7 @@ const OrganizationForm: FC<OrganizationFormProps> = ({
   onCancel,
 }) => {
   const [name, setName] = useState(organization.name ?? "");
+  const isDirty = name.trim() !== "" && name.trim() !== (organization.name ?? "").trim();
   return (
     <form
       className="organization"
@@ -39,7 +40,11 @@ const OrganizationForm: FC<OrganizationFormProps> = ({
           required
         />
       </div>
-      {onSave && <button type="submit">Save</button>}
+      {onSave && (
+        <button type="submit" disabled={!isDirty}>
+          Save
+        </button>
+      )}
       {onCancel && (
         <button type="button" onClick={onCancel} className="cancel-button">
           Cancel
