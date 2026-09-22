@@ -9,11 +9,12 @@ import {
   Role,
 } from "../schema";
 import { InviteUserDialog } from "../ui/dialogs/InviteUserDialog";
-import { SlPlus, SlPencil, SlTrash } from "react-icons/sl";
+import { SlPlus, SlPencil, SlTrash, SlBan } from "react-icons/sl";
 import { useLoadedAccount } from "../hooks/Account";
 import { SubHeader } from "../ui/SubHeader";
 import { EditOrganization } from "../ui/forms/Organization";
 import { EditableString } from "../ui/doc/EditableValue";
+import { ConfirmDialog } from "../ui/dialogs/ConfirmDialog";
 import { api } from "../convexClient";
 
 import "./Manage.css";
@@ -603,8 +604,11 @@ const MemberNode = ({
 }: MemberNodeProps) => {
   const updateRole = useMutation(api.app.updateMembershipRole);
   const updateBoardMember = useMutation(api.app.updateBoardMember);
+  const removeMembership = useMutation(api.app.removeMembership);
+  const [isConfirmingRemove, setConfirmingRemove] = useState(false);
 
   const canEditDetails = isOfficer && Boolean(boardMember);
+  const canRemove = isAdmin && !isSelf && startingRole !== "admin";
 
   // updateBoardMember patches every field on each call, so a single-field
   // edit still has to carry forward the member's current values for
@@ -708,7 +712,32 @@ const MemberNode = ({
           isMemberAdmin={startingRole === "admin"}
         />
       </td>
-      {(isOfficer || isAdmin) && <td className="member-actions" />}
+      {(isOfficer || isAdmin) && (
+        <td className="member-actions">
+          {canRemove && (
+            <button
+              className="btn-small danger"
+              onClick={() => setConfirmingRemove(true)}
+              title="Remove from organization"
+            >
+              <SlBan /> Remove
+            </button>
+          )}
+          {isConfirmingRemove && (
+            <ConfirmDialog
+              title="Remove member"
+              message={`Are you sure you want to remove ${displayName} from ${org.name}? They will lose access immediately and will need a new invite link to rejoin.`}
+              confirmLabel="Remove"
+              danger
+              onConfirm={() => {
+                setConfirmingRemove(false);
+                void removeMembership({ organizationId: org.id, userId: id });
+              }}
+              onCancel={() => setConfirmingRemove(false)}
+            />
+          )}
+        </td>
+      )}
     </tr>
   );
 };

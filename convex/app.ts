@@ -1632,6 +1632,56 @@ export const updateMembershipRole = mutation({
   },
 });
 
+// Admin-only removal of another member's access. Mirrors the RolePicker's
+// existing restriction (an admin's role can't be changed via this UI once
+// set) by refusing to remove another admin - that has to be downgraded
+// outside the app (Convex dashboard) if it's ever genuinely needed, which
+// keeps one admin from unilaterally locking out a co-admin. Self-removal
+// goes through leaveOrganization instead, same as the rest of the app.
+export const removeMembership = mutation({
+  args: { organizationId: v.id("organizations"), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const { user: actingUser } = await requireRole(ctx, args.organizationId, ["admin"]);
+    if (args.userId === actingUser._id) {
+      throw new ConvexError("Use Leave Organization to remove yourself");
+    }
+    const membership = await membershipFor(ctx, args.organizationId, args.userId);
+    if (!membership) return;
+    if (membership.role === "admin") {
+      throw new ConvexError("Admins can't be removed this way");
+    }
+    await ctx.db.delete(membership._id);
+
+    // Unlink rather than delete their board-member roster entry: they may
+    // still be a real board member for attendance/assignment purposes even
+    // after their app access is revoked, and past minutes already store a
+    // fallback assigneeName/etc. independent of this row. Unlinking also
+    // stops any further action-item-assigned notifications from reaching
+    // the removed account, and frees the entry to auto-link again if the
+    // same email rejoins later.
+    const boardMemberRows = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .collect();
+    await Promise.all(
+      boardMemberRows
+        .filter((member) => member.accountId === args.userId)
+        .map((member) => ctx.db.patch(member._id, { accountId: undefined }))
+    );
+
+    const user = await ctx.db.get(args.userId);
+    if (user?.selectedOrganizationId === args.organizationId) {
+      const remaining = await ctx.db
+        .query("memberships")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect();
+      await ctx.db.patch(args.userId, {
+        selectedOrganizationId: remaining[0]?.organizationId,
+      });
+    }
+  },
+});
+
 // Manual fallback for when auto-link (ensureBoardMemberForUser, driven by
 // email match) still can't apply — e.g. a typo'd email, or someone who
 // signed up with a different address than what's on file. An admin merges
