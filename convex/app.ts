@@ -360,6 +360,29 @@ export const updateProfile = mutation({
   },
 });
 
+// Reverts any boardMembers rows this user has claimed in this org back to
+// unclaimed (accountId cleared) rather than deleting them, so past minutes/
+// attendance that reference them are untouched. Shared by leaveOrganization
+// and removeMembership so both "membership ends" paths leave the roster in
+// the same state - in particular, this is what lets the join-by-invite-link
+// email gate below recognize the person if they (or an admin) later want
+// them back in: their roster entry needs to be unclaimed again to match.
+const unlinkBoardMemberRows = async (
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  userId: Id<"users">
+) => {
+  const boardMemberRows = await ctx.db
+    .query("boardMembers")
+    .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
+    .collect();
+  await Promise.all(
+    boardMemberRows
+      .filter((member) => member.accountId === userId)
+      .map((member) => ctx.db.patch(member._id, { accountId: undefined }))
+  );
+};
+
 export const leaveOrganization = mutation({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
@@ -367,6 +390,7 @@ export const leaveOrganization = mutation({
     const membership = await membershipFor(ctx, args.organizationId, user._id);
     if (membership) {
       await ctx.db.delete(membership._id);
+      await unlinkBoardMemberRows(ctx, args.organizationId, user._id);
     }
     if (user.selectedOrganizationId === args.organizationId) {
       const remaining = await ctx.db
@@ -532,31 +556,54 @@ export const updateOrganization = mutation({
 });
 
 export const joinOrganization = mutation({
-  args: { organizationId: v.id("organizations"), email: v.optional(v.string()) },
+  args: { organizationId: v.id("organizations") },
   handler: async (ctx, args) => {
-    // The Clerk JWT's identity.email is only populated if the "convex" JWT
-    // template has an email claim configured (Clerk dashboard, outside this
-    // codebase) - it's reliably empty otherwise. Accept the email as a
-    // client-supplied argument instead, the same way ensureCurrentUser
-    // already does, so auto-linking to an unclaimed roster entry doesn't
-    // silently depend on external configuration. identity.email is kept as
-    // a fallback in case the claim is present.
     const identity = await requireIdentity(ctx);
     const user = await getOrCreateCurrentUser(ctx);
+
     const existing = await membershipFor(ctx, args.organizationId, user._id);
-    if (!existing) {
-      await ctx.db.insert("memberships", {
-        organizationId: args.organizationId,
-        userId: user._id,
-        role: "reader",
-      });
+    if (existing) {
+      // Already a member (e.g. revisiting the invite link) - just reselect
+      // the org rather than re-running the email gate below, since their
+      // roster entry (if any) is no longer unclaimed.
+      await ctx.db.patch(user._id, { selectedOrganizationId: args.organizationId });
+      return;
     }
-    await ensureBoardMemberForUser(
-      ctx,
-      args.organizationId,
-      user,
-      args.email ?? identity.email
+
+    // The invite link only carries the organization id, not a token tied to
+    // a specific person, so it's only safe to grant membership when the
+    // caller's *verified* email matches a roster entry an admin/officer
+    // deliberately listed as unclaimed. identity.email comes from the
+    // Clerk JWT and is only populated if the "convex" JWT template has an
+    // email claim configured (Clerk dashboard, outside this codebase) - it
+    // is NOT taken from a client-supplied argument, since that would be
+    // trivially spoofable and defeat the whole point of this check.
+    const email = normalizeEmail(identity.email);
+    if (!email) {
+      throw new ConvexError(
+        "Your sign-in doesn't have a verified email address available to check against the member list. Ask an admin for help getting access."
+      );
+    }
+
+    const members = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .collect();
+    const matchingUnclaimedMember = members.find(
+      (member) => !member.accountId && normalizeEmail(member.email) === email
     );
+    if (!matchingUnclaimedMember) {
+      throw new ConvexError(
+        "This invite link isn't associated with your email address yet. Ask an admin to add you to the member list first."
+      );
+    }
+
+    await ctx.db.insert("memberships", {
+      organizationId: args.organizationId,
+      userId: user._id,
+      role: "reader",
+    });
+    await ctx.db.patch(matchingUnclaimedMember._id, { accountId: user._id });
     await ctx.db.patch(user._id, { selectedOrganizationId: args.organizationId });
   },
 });
@@ -1467,6 +1514,7 @@ export const updateBoardMember = mutation({
   args: {
     memberId: v.id("boardMembers"),
     name: v.optional(v.string()),
+    email: v.optional(v.string()),
     title: v.optional(v.string()),
     salutation: v.optional(boardMemberSalutation),
     type: v.optional(boardMemberType),
@@ -1477,6 +1525,7 @@ export const updateBoardMember = mutation({
     await requireRole(ctx, member.organizationId, ["admin", "writer"]);
     await ctx.db.patch(args.memberId, {
       name: args.name,
+      email: normalizeEmail(args.email),
       title: args.title,
       salutation: args.salutation,
       type: args.type,
@@ -1651,23 +1700,7 @@ export const removeMembership = mutation({
       throw new ConvexError("Admins can't be removed this way");
     }
     await ctx.db.delete(membership._id);
-
-    // Unlink rather than delete their board-member roster entry: they may
-    // still be a real board member for attendance/assignment purposes even
-    // after their app access is revoked, and past minutes already store a
-    // fallback assigneeName/etc. independent of this row. Unlinking also
-    // stops any further action-item-assigned notifications from reaching
-    // the removed account, and frees the entry to auto-link again if the
-    // same email rejoins later.
-    const boardMemberRows = await ctx.db
-      .query("boardMembers")
-      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
-      .collect();
-    await Promise.all(
-      boardMemberRows
-        .filter((member) => member.accountId === args.userId)
-        .map((member) => ctx.db.patch(member._id, { accountId: undefined }))
-    );
+    await unlinkBoardMemberRows(ctx, args.organizationId, args.userId);
 
     const user = await ctx.db.get(args.userId);
     if (user?.selectedOrganizationId === args.organizationId) {

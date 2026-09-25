@@ -356,6 +356,7 @@ export const Manage = () => {
         <table className="members-table">
           <colgroup>
             <col className="col-name" />
+            <col className="col-email" />
             <col className="col-title" />
             <col className="col-office" />
             <col className="col-type" />
@@ -365,6 +366,7 @@ export const Manage = () => {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Email</th>
               <th>Title</th>
               <th>Office</th>
               <th>Type</th>
@@ -375,7 +377,7 @@ export const Manage = () => {
           <tbody>
             {org.memberships.length === 0 && unclaimedBoardMembers.length === 0 && (
               <tr>
-                <td colSpan={showActionsColumn ? 6 : 5}>No members yet.</td>
+                <td colSpan={showActionsColumn ? 7 : 6}>No members yet.</td>
               </tr>
             )}
             {org.memberships.map((member) => {
@@ -500,11 +502,12 @@ const UnclaimedBoardMemberRow = ({
   // edit still has to carry forward the member's current values for
   // everything else - matching the convention used for meeting metadata.
   const saveField = (
-    changes: Partial<Pick<BoardMember, "name" | "salutation" | "title" | "type">>
+    changes: Partial<Pick<BoardMember, "name" | "email" | "salutation" | "title" | "type">>
   ) => {
     void updateBoardMember({
       memberId: boardMember.id,
       name: boardMember.name,
+      email: boardMember.email,
       salutation: boardMember.salutation,
       title: boardMember.title,
       type: boardMember.type,
@@ -527,6 +530,23 @@ const UnclaimedBoardMemberRow = ({
           />
         ) : (
           boardMember.name
+        )}
+      </td>
+      <td>
+        {isOfficer ? (
+          <EditableString
+            as="span"
+            className="manage-editable-field"
+            value={boardMember.email ?? ""}
+            onValueChange={(newValue) => saveField({ email: newValue || undefined })}
+            canEdit
+            autoFocus
+            label="Email"
+            emptyClickBehavior="single"
+            placeholder="Add email to allow invite"
+          />
+        ) : (
+          (boardMember.email ?? "-")
         )}
       </td>
       <td>
@@ -666,6 +686,7 @@ const MemberNode = ({
         )}
         {isSelf ? " (me)" : ""}
       </td>
+      <td>{boardMember?.email ?? "-"}</td>
       <td>
         {canEditDetails ? (
           <BoardMemberSalutationSelect
