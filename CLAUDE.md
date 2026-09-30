@@ -72,4 +72,10 @@ Required in Convex dashboard:
 
 ## Deployment
 
-Deployed to Cloudflare via `wrangler.jsonc`. CI/CD via `.github/workflows/ci-cd.yml` — runs tests, then deploys on merge to master.
+Deployed to Cloudflare Workers Builds via `wrangler.jsonc`. Every branch gets a build; the build command (set in the Cloudflare dashboard) is `node scripts/cloudflare-build.js`:
+
+- `master` deploys the Convex backend to production (`CONVEX_DEPLOY_KEY_PROD`, or `CONVEX_DEPLOY_KEY`), then builds.
+- Other branches never deploy to production. They deploy the backend to the dev deployment if `CONVEX_DEPLOY_KEY_PREVIEW` (a development deploy key) is set, otherwise they only build the frontend.
+- `scripts/select-preview-env.js` (run by `yarn build`) points preview frontends at the dev Clerk instance and dev Convex deployment.
+
+`.github/workflows/ci-cd.yml` runs the type check on PRs and pushes to master. `npx convex codegen` does not deploy functions; use `npx convex dev --once` to push to the dev deployment.
