@@ -122,6 +122,25 @@ export type Meeting = {
   minutesPublishedAt?: number;
 };
 
+// One row per meeting from the `meetingSummaries` query - enough for lists,
+// the calendar, the Home page and action item context. Full meeting content
+// comes from the `meeting` query.
+export type MeetingSummary = {
+  id: Id;
+  organizationId: Id;
+  date: Date;
+  status: MeetingStatus;
+  title?: string;
+  plannedTopicCount: number;
+  actionItemCount: number;
+  liveStartTime?: Date;
+  /** Sum of the recorded minutes' durations. */
+  minutesDurationMinutes: number;
+  agendaUpdatedAt?: number;
+  viewedAt?: number;
+  minutesPublishedAt?: number;
+};
+
 export type NotificationType =
   | "agenda_published"
   | "minutes_shared"
@@ -131,6 +150,7 @@ export type AppNotification = {
   id: Id;
   type: NotificationType;
   meetingId?: Id;
+  meeting?: { id: Id; date: Date; status: MeetingStatus };
   message: string;
   read: boolean;
   createdAt: Date;
@@ -156,7 +176,6 @@ export type Organization = {
   committeeDocUrl?: string;
   calendarContextMonths?: number;
   boardYearStartMonth?: number;
-  meetings: Meeting[];
   members: BoardMember[];
   memberships: Membership[];
   calendarItems: CalendarItem[];
@@ -174,11 +193,18 @@ export type UserProfile = {
   title: string;
 };
 
+/** An organization the user belongs to, and their role in it. */
+export type OrganizationSummary = {
+  id: Id;
+  name: string;
+  role: Role;
+};
+
 export type UserAccount = {
   id: Id;
   profile: UserProfile;
   root: {
-    organizations: Organization[];
+    organizations: OrganizationSummary[];
     selectedOrganization?: Organization;
   };
   canWrite: (entity?: { organizationId?: Id; id?: Id } | null) => boolean;
@@ -209,12 +235,14 @@ export const validateDraftOrganization = (
   return errors;
 };
 
-export const isAgendaUpdatedSinceViewed = (meeting: Meeting): boolean =>
+export const isAgendaUpdatedSinceViewed = (
+  meeting: Pick<Meeting, "status" | "agendaUpdatedAt" | "viewedAt">
+): boolean =>
   meeting.status === "published" &&
   meeting.agendaUpdatedAt !== undefined &&
   (meeting.viewedAt === undefined || meeting.agendaUpdatedAt > meeting.viewedAt);
 
-export const getMeetingDisplayStatus = (meeting: Meeting) => {
+export const getMeetingDisplayStatus = (meeting: Pick<Meeting, "status">) => {
   if (meeting.status === "draft") return "Draft";
   if (meeting.status === "published") return "Scheduled";
   if (meeting.status === "live") return "Live";

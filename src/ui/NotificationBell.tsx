@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import { LuBell, LuListChecks, LuNotepadText } from "react-icons/lu";
 import { MdPublish } from "react-icons/md";
 import { useNotifications } from "../hooks/Notifications";
-import { useLoadedAccount } from "../hooks/Account";
-import { AppNotification, Meeting, NotificationType } from "../schema";
+import { AppNotification, NotificationType } from "../schema";
 import { formatRelativeMeetingDate, meetingLink } from "../util/actionItems";
 
 import "./NotificationBell.css";
@@ -28,7 +27,6 @@ const formatNotificationTime = (date: Date): string => {
 };
 
 export const NotificationBell = () => {
-  const me = useLoadedAccount();
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -46,15 +44,6 @@ export const NotificationBell = () => {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [isOpen]);
-
-  const meetingForNotification = (notification: AppNotification): Meeting | undefined => {
-    if (!notification.meetingId) return undefined;
-    for (const org of me.root.organizations) {
-      const meeting = org.meetings.find((m) => m.id === notification.meetingId);
-      if (meeting) return meeting;
-    }
-    return undefined;
-  };
 
   const onOpen = () => setIsOpen((open) => !open);
 
@@ -100,7 +89,7 @@ export const NotificationBell = () => {
           ) : (
             <ul className="notification-list">
               {notifications.map((notification) => {
-                const meeting = meetingForNotification(notification);
+                const meeting = notification.meeting;
                 const link = meeting
                   ? meetingLink(meeting)
                   : notification.meetingId

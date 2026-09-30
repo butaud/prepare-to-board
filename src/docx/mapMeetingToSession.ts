@@ -4,6 +4,7 @@ import {
   BoardMember,
   getBoardMemberLastName,
   Meeting,
+  MeetingSummary,
   MotionNote as SourceMotionNote,
   Note as SourceNote,
   Organization,
@@ -23,6 +24,7 @@ import {
   Topic,
 } from "./model";
 import { isCalendarItemCompleted, monthsWithinContext, MONTH_NAMES } from "../util/calendarItems";
+import type { ActionItemWithContext } from "../util/actionItems";
 
 const personFromBoardMemberOrName = (
   member: BoardMember | undefined,
@@ -96,12 +98,9 @@ const mapNote = (note: SourceNote): Note => {
 // A meeting's actual end, for deciding whether an action item was already
 // reported as closed by the time of the previous meeting. Falls back to the
 // scheduled date if the meeting was never actually run live.
-const computeMeetingEndTime = (meeting: Meeting): number => {
+const computeMeetingEndTime = (meeting: MeetingSummary): number => {
   const start = meeting.liveStartTime ?? meeting.date;
-  const totalMinutes = (meeting.minutes ?? [])
-    .filter((m) => m !== null)
-    .reduce((sum, m) => sum + m.durationMinutes, 0);
-  return start.getTime() + totalMinutes * 60 * 1000;
+  return start.getTime() + meeting.minutesDurationMinutes * 60 * 1000;
 };
 
 // Action items carry their completion status in place on the original
@@ -119,10 +118,10 @@ const computeMeetingEndTime = (meeting: Meeting): number => {
 // were already closed out and reported done long ago.
 const buildPastActionItems = (
   meeting: Meeting,
-  organization: Organization
+  meetings: MeetingSummary[],
+  actionItems: ActionItemWithContext[]
 ): PastActionItem[] => {
-  const meetingsById = new Map(organization.meetings.map((m) => [m.id, m]));
-  const previousMeeting = organization.meetings
+  const previousMeeting = meetings
     .filter((m) => m.id !== meeting.id && m.date.getTime() < meeting.date.getTime())
     .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
   const previousMeetingEndTime = previousMeeting
@@ -130,32 +129,22 @@ const buildPastActionItems = (
     : undefined;
 
   const pastActionItems: PastActionItem[] = [];
-  for (const sourceMeeting of organization.meetings) {
-    for (const minute of sourceMeeting.minutes ?? []) {
-      if (!minute) continue;
-      for (const note of minute.notes ?? []) {
-        if (!note || note.type !== "action_item") continue;
-        if (note.dueDate === undefined) continue;
+  for (const item of actionItems) {
+    if (item.dueDate === undefined) continue;
+    if (item.createdInMeeting.date.getTime() >= meeting.date.getTime()) continue;
 
-        const createdInMeeting = note.createdInMeetingId
-          ? (meetingsById.get(note.createdInMeetingId) ?? sourceMeeting)
-          : sourceMeeting;
-        if (createdInMeeting.date.getTime() >= meeting.date.getTime()) continue;
+    const alreadyClosedAsOfPreviousMeeting =
+      item.completedOn !== undefined &&
+      previousMeetingEndTime !== undefined &&
+      item.completedOn < previousMeetingEndTime;
+    if (alreadyClosedAsOfPreviousMeeting) continue;
 
-        const alreadyClosedAsOfPreviousMeeting =
-          note.completedOn !== undefined &&
-          previousMeetingEndTime !== undefined &&
-          note.completedOn < previousMeetingEndTime;
-        if (alreadyClosedAsOfPreviousMeeting) continue;
-
-        pastActionItems.push({
-          text: note.text,
-          assignee: personFromBoardMemberOrName(note.assignee),
-          dueDate: new Date(note.dueDate),
-          completed: note.completedOn !== undefined,
-        });
-      }
-    }
+    pastActionItems.push({
+      text: item.text,
+      assignee: personFromBoardMemberOrName(item.assignee),
+      dueDate: new Date(item.dueDate),
+      completed: item.completedOn !== undefined,
+    });
   }
   return pastActionItems;
 };
@@ -252,7 +241,9 @@ const buildCommittees = (organization: Organization): Committee[] =>
 
 export const mapMeetingToSession = (
   meeting: Meeting,
-  organization: Organization
+  organization: Organization,
+  meetings: MeetingSummary[],
+  actionItems: ActionItemWithContext[]
 ): Session => {
   const members = organization.members;
   const completedMinutes = (meeting.minutes ?? []).filter((m) => m !== null);
@@ -291,6 +282,6 @@ export const mapMeetingToSession = (
     ),
     topics,
     committees: buildCommittees(organization),
-    pastActionItems: buildPastActionItems(meeting, organization),
+    pastActionItems: buildPastActionItems(meeting, meetings, actionItems),
   };
 };
