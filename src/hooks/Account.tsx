@@ -3,35 +3,29 @@ import { createContext, useContext, useEffect, useMemo } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../convexClient";
-import { Meeting, Organization, UserAccount } from "../schema";
+import { Organization, OrganizationSummary, UserAccount, UserProfile } from "../schema";
 
-type ServerAccount = Omit<UserAccount, "canWrite" | "canAdmin"> | null;
+type ServerAccount = {
+  id: string;
+  profile: UserProfile;
+  organizations: OrganizationSummary[];
+  selectedOrganizationId?: string;
+} | null;
 
-const toDateMeeting = (meeting: Meeting & { date: number; liveStartTime?: number }): Meeting => ({
-  ...meeting,
-  date: new Date(meeting.date),
-  liveStartTime: meeting.liveStartTime ? new Date(meeting.liveStartTime) : undefined,
-});
-
-const hydrateAccount = (serverAccount: ServerAccount): UserAccount | null => {
-  if (!serverAccount) return null;
-  const organizations = serverAccount.root.organizations.map((org) => ({
-    ...org,
-    meetings: org.meetings.map((meeting) => toDateMeeting(meeting as Meeting & { date: number; liveStartTime?: number })),
-  }));
-  const selectedOrganization =
-    organizations.find(
-      (org) => org.id === serverAccount.root.selectedOrganization?.id
-    ) ?? organizations[0];
-
+const hydrateAccount = (
+  serverAccount: NonNullable<ServerAccount>,
+  selectedOrganization: Organization | undefined
+): UserAccount => {
+  const { organizations } = serverAccount;
   const roleFor = (entity?: { organizationId?: string; id?: string } | null) => {
-    const organizationId = entity?.organizationId ?? entity?.id ?? selectedOrganization?.id;
-    const org = organizations.find((candidate) => candidate.id === organizationId);
-    return org?.memberships.find((member) => member.userId === serverAccount.id)?.role;
+    const organizationId =
+      entity?.organizationId ?? entity?.id ?? serverAccount.selectedOrganizationId;
+    return organizations.find((candidate) => candidate.id === organizationId)?.role;
   };
 
   return {
-    ...serverAccount,
+    id: serverAccount.id,
+    profile: serverAccount.profile,
     root: { organizations, selectedOrganization },
     canWrite: (entity?: { organizationId?: string; id?: string } | null) => {
       const role = roleFor(entity);
@@ -72,18 +66,36 @@ export const useEnsureCurrentUser = () => {
   }, [ensureCurrentUser, shouldLoadAccount, user?.fullName, user?.primaryEmailAddress?.emailAddress]);
 };
 
+// Both queries are subscribed at once (neither needs the other's result),
+// and the account only counts as loaded when both have arrived.
 export const useLoadAccount = () => {
   const shouldLoadAccount = useShouldLoadAccount();
   const serverAccount = useQuery(
-    api.app.me,
+    api.app.account,
     shouldLoadAccount ? {} : "skip"
   ) as ServerAccount | undefined;
+  const serverOrganization = useQuery(
+    api.app.selectedOrganization,
+    shouldLoadAccount ? {} : "skip"
+  ) as Organization | null | undefined;
 
-  const me = useMemo(() => hydrateAccount(serverAccount ?? null), [serverAccount]);
+  const isLoading =
+    shouldLoadAccount && (serverAccount === undefined || serverOrganization === undefined);
+
+  const me = useMemo(() => {
+    if (!serverAccount) return null;
+    // Both queries resolve the selection the same way on the server; only
+    // use the organization details once they match the account's selection.
+    const selectedOrganization =
+      serverOrganization && serverOrganization.id === serverAccount.selectedOrganizationId
+        ? serverOrganization
+        : undefined;
+    return hydrateAccount(serverAccount, selectedOrganization);
+  }, [serverAccount, serverOrganization]);
 
   return {
-    me: serverAccount === undefined && shouldLoadAccount ? undefined : me ?? undefined,
-    outlet: me && (
+    me: isLoading ? undefined : me ?? undefined,
+    outlet: !isLoading && me && (
       <LoadedAccountContext.Provider value={me}>
         <Outlet />
       </LoadedAccountContext.Provider>

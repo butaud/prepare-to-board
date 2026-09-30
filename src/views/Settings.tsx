@@ -1,4 +1,4 @@
-import { Organization } from "../schema";
+import { OrganizationSummary } from "../schema";
 import { FC, useState } from "react";
 import "./Settings.css";
 import { SlBan, SlPlus } from "react-icons/sl";
@@ -55,7 +55,7 @@ export const ManageOrganizations = () => {
   const leaveOrganization = useMutation(api.app.leaveOrganization);
   const [isCreatingOrganization, setCreatingOrganization] = useState(false);
 
-  const removeOrg = (organization: Organization) => {
+  const removeOrg = (organization: OrganizationSummary) => {
     void leaveOrganization({ organizationId: organization.id });
   };
 
@@ -87,8 +87,8 @@ export const ManageOrganizations = () => {
 };
 
 const OrganizationNode: FC<{
-  removeOrg: (organization: Organization) => void;
-  organization: Organization;
+  removeOrg: (organization: OrganizationSummary) => void;
+  organization: OrganizationSummary;
 }> = ({ removeOrg, organization }) => {
   const [isConfirmingRemove, setConfirmingRemove] = useState(false);
   const handleRemoveClick = (e: React.MouseEvent) => {

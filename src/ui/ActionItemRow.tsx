@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation } from "convex/react";
 import { api } from "../convexClient";
-import { BoardMember, getBoardMemberFormalName, Meeting } from "../schema";
+import { BoardMember, getBoardMemberFormalName, MeetingSummary } from "../schema";
 import {
   type ActionItemWithContext,
   formatRelativeMeetingDate,
@@ -13,7 +13,7 @@ import { DateOnlyInput } from "./DateOnlyInput";
 import { NoteDisplay } from "./NoteDisplay";
 import "./ActionItemRow.css";
 
-const formatMeetingOption = (meeting: Meeting): string =>
+const formatMeetingOption = (meeting: MeetingSummary): string =>
   meeting.date.toLocaleDateString(undefined, {
     dateStyle: "medium",
   });
@@ -29,7 +29,7 @@ export const ActionItemRow = ({
   canToggle: boolean;
   canEdit: boolean;
   members: BoardMember[];
-  meetings: Meeting[];
+  meetings: MeetingSummary[];
 }) => {
   const setActionItemCompletedOn = useMutation(api.app.setActionItemCompletedOn);
   const updateActionItem = useMutation(api.app.updateActionItem);
