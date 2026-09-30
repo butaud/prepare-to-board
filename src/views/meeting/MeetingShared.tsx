@@ -21,8 +21,6 @@ import { useMutation } from "convex/react";
 import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
 import { api } from "../../convexClient";
-import { exportSessionToDocx } from "../../docx/doc";
-import { mapMeetingToSession } from "../../docx/mapMeetingToSession";
 import { CloneMeetingDialog } from "../../ui/dialogs/CloneMeetingDialog";
 
 import "./MeetingShared.css";
@@ -87,6 +85,12 @@ export const MeetingShared = () => {
     if (!organization) return;
     setIsExporting(true);
     try {
+      // Loaded on demand: the docx library is over a third of the app's
+      // JavaScript and is only needed when someone actually exports.
+      const [{ exportSessionToDocx }, { mapMeetingToSession }] = await Promise.all([
+        import("../../docx/doc"),
+        import("../../docx/mapMeetingToSession"),
+      ]);
       const session = mapMeetingToSession(meeting, organization);
       const blob = await exportSessionToDocx(session);
       const url = URL.createObjectURL(blob);

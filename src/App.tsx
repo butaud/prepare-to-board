@@ -1,23 +1,33 @@
+import { lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Home } from "./views/Home";
 import { useConvexAuth } from "convex/react";
 import { Welcome } from "./views/Welcome";
 import { Layout } from "./views/Layout";
 import { ActionItems } from "./views/ActionItems";
-import { MeetingView } from "./views/meeting/MeetingView";
-import { MeetingPresent } from "./views/meeting/MeetingPresent";
-import { MeetingShared } from "./views/meeting/MeetingShared";
-import { Manage } from "./views/Manage";
-import { AnnualCycle } from "./views/AnnualCycle";
 import { Invite } from "./views/Invite";
 import { MeetingList } from "./views/meeting/MeetingList";
 import { AuthenticatedShared } from "./views/AuthenticatedShared";
-import { useLoadAccount } from "./hooks/Account";
-import { MeetingMinutes } from "./views/meeting/MeetingMinutes";
+import { useEnsureCurrentUser, useLoadAccount } from "./hooks/Account";
+
+// The larger pages are split out of the main bundle so the first screen has
+// less JavaScript to download and parse. Their downloads are started right
+// away (not when first visited), so opening a meeting link doesn't wait on
+// an extra round trip after sign-in.
+const loadMeetingPages = import("./views/meeting/pages");
+const loadManage = import("./views/Manage");
+const loadAnnualCycle = import("./views/AnnualCycle");
+const MeetingShared = lazy(() => loadMeetingPages.then((m) => ({ default: m.MeetingShared })));
+const MeetingView = lazy(() => loadMeetingPages.then((m) => ({ default: m.MeetingView })));
+const MeetingPresent = lazy(() => loadMeetingPages.then((m) => ({ default: m.MeetingPresent })));
+const MeetingMinutes = lazy(() => loadMeetingPages.then((m) => ({ default: m.MeetingMinutes })));
+const Manage = lazy(() => loadManage.then((m) => ({ default: m.Manage })));
+const AnnualCycle = lazy(() => loadAnnualCycle.then((m) => ({ default: m.AnnualCycle })));
 
 function App() {
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const { me } = useLoadAccount();
+  useEnsureCurrentUser();
 
   const isAdmin =
     isAuthenticated &&
@@ -26,8 +36,16 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        {!isAuthenticated && <Route index element={<Welcome />} />}
-        {isAuthenticated && (
+        {/* Until Clerk and Convex know whether you're signed in, show a
+            neutral loading state rather than the signed-out Welcome page. */}
+        {isLoading && (
+          <>
+            <Route index element={<p>Loading...</p>} />
+            <Route path="*" element={<p>Loading...</p>} />
+          </>
+        )}
+        {!isLoading && !isAuthenticated && <Route index element={<Welcome />} />}
+        {!isLoading && isAuthenticated && (
           <Route element={<AuthenticatedShared />}>
             <Route index element={<Home />} />
             <Route path="meetings" element={<MeetingList />} />
