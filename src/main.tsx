@@ -11,6 +11,10 @@ import { convexUrl } from "./convexClient.ts";
 const CLERK_PUBLISHABLE_KEY = import.meta.env
   .VITE_CLERK_PUBLISHABLE_KEY as string;
 const convex = new ConvexReactClient(convexUrl);
+// The client otherwise opens its WebSocket lazily on first use, which is only
+// once Clerk has a sign-in token. Touching it here starts the connection
+// setup in parallel with Clerk loading instead of after it.
+convex.connectionState();
 const useConvexClerkAuth = useAuth as never;
 
 if (!CLERK_PUBLISHABLE_KEY) {

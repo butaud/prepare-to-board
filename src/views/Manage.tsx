@@ -532,7 +532,7 @@ const UnclaimedBoardMemberRow = ({
           boardMember.name
         )}
       </td>
-      <td>
+      <td className="email-cell" title={boardMember.email}>
         {isOfficer ? (
           <EditableString
             as="span"
@@ -543,7 +543,7 @@ const UnclaimedBoardMemberRow = ({
             autoFocus
             label="Email"
             emptyClickBehavior="single"
-            placeholder="Add email to allow invite"
+            placeholder="Add email"
           />
         ) : (
           (boardMember.email ?? "-")
@@ -686,7 +686,9 @@ const MemberNode = ({
         )}
         {isSelf ? " (me)" : ""}
       </td>
-      <td>{boardMember?.email ?? "-"}</td>
+      <td className="email-cell" title={boardMember?.email}>
+        {boardMember?.email ?? "-"}
+      </td>
       <td>
         {canEditDetails ? (
           <BoardMemberSalutationSelect

@@ -38,10 +38,11 @@ export const Header = () => {
   const { isAuthenticated: convexAuthenticated } = useConvexAuth();
 
   const isAuthenticated = convexAuthenticated && !!me;
-
-  if (!clerkLoaded || (isSignedIn && me === undefined)) {
-    return <p>Loading...</p>;
-  }
+  // The main nav links don't depend on account data, so show them as soon
+  // as Clerk knows you're signed in rather than waiting for Convex. Only the
+  // Manage/Members link and the right-hand controls need `me`.
+  const showNav = clerkLoaded && isSignedIn === true;
+  const showSignIn = clerkLoaded && !isSignedIn;
 
   const isAdmin =
     isAuthenticated &&
@@ -61,7 +62,7 @@ export const Header = () => {
         </div>
       </div>
       <nav>
-        {isAuthenticated && (
+        {showNav && (
           <>
             <NavLink to="/meetings">
               <CgFileDocument />
@@ -75,17 +76,18 @@ export const Header = () => {
               <LuRepeat />
               <span className="name">Annual Cycle</span>
             </NavLink>
-            {isAdmin ? (
-              <NavLink to="/manage">
-                <LiaUsersCogSolid />
-                <span className="name">Manage</span>
-              </NavLink>
-            ) : (
-              <NavLink to="/members">
-                <LiaUsersSolid />
-                <span className="name">Members</span>
-              </NavLink>
-            )}
+            {isAuthenticated &&
+              (isAdmin ? (
+                <NavLink to="/manage">
+                  <LiaUsersCogSolid />
+                  <span className="name">Manage</span>
+                </NavLink>
+              ) : (
+                <NavLink to="/members">
+                  <LiaUsersSolid />
+                  <span className="name">Members</span>
+                </NavLink>
+              ))}
           </>
         )}
       </nav>
@@ -110,7 +112,7 @@ export const Header = () => {
             </UserButton>
           </LoadedAccountContext.Provider>
         ) : (
-          <SignInButton />
+          showSignIn && <SignInButton />
         )}
       </div>
     </header>

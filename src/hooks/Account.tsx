@@ -48,16 +48,19 @@ export const LoadedAccountContext = createContext<LoadedAccount | undefined>(
   undefined
 );
 
-export const useLoadAccount = () => {
-  const { user, isLoaded, isSignedIn } = useUser();
+const useShouldLoadAccount = () => {
+  const { isLoaded, isSignedIn } = useUser();
   const { isAuthenticated, isLoading } = useConvexAuth();
+  return isLoaded && isSignedIn === true && !isLoading && isAuthenticated;
+};
+
+// Call once, near the root. useLoadAccount is used by several components at
+// once, so running this effect there sent the same mutation several times
+// on every page load.
+export const useEnsureCurrentUser = () => {
+  const { user } = useUser();
+  const shouldLoadAccount = useShouldLoadAccount();
   const ensureCurrentUser = useMutation(api.app.ensureCurrentUser);
-  const shouldLoadAccount =
-    isLoaded && isSignedIn === true && !isLoading && isAuthenticated;
-  const serverAccount = useQuery(
-    api.app.me,
-    shouldLoadAccount ? {} : "skip"
-  ) as ServerAccount | undefined;
 
   useEffect(() => {
     if (!shouldLoadAccount) return;
@@ -67,6 +70,14 @@ export const useLoadAccount = () => {
       email,
     });
   }, [ensureCurrentUser, shouldLoadAccount, user?.fullName, user?.primaryEmailAddress?.emailAddress]);
+};
+
+export const useLoadAccount = () => {
+  const shouldLoadAccount = useShouldLoadAccount();
+  const serverAccount = useQuery(
+    api.app.me,
+    shouldLoadAccount ? {} : "skip"
+  ) as ServerAccount | undefined;
 
   const me = useMemo(() => hydrateAccount(serverAccount ?? null), [serverAccount]);
 

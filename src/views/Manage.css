@@ -94,27 +94,39 @@
     table-layout: fixed;
 
     .col-name {
-      width: 16%;
-    }
-
-    .col-title {
-      width: 10%;
-    }
-
-    .col-office {
-      width: 15%;
-    }
-
-    .col-type {
-      width: 18%;
-    }
-
-    .col-role {
       width: 14%;
     }
 
+    .col-email {
+      width: 18%;
+    }
+
+    .col-title {
+      width: 8%;
+    }
+
+    .col-office {
+      width: 13%;
+    }
+
+    .col-type {
+      width: 14%;
+    }
+
+    .col-role {
+      width: 11%;
+    }
+
     .col-actions {
-      width: 27%;
+      width: 22%;
+    }
+
+    /* Emails are long and unbreakable, so truncate them rather than let
+       them spill into the neighbouring columns. */
+    td.email-cell {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* A <select>'s closed-state rendering can be wider than its cell (sized
