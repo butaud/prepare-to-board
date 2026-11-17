@@ -6,6 +6,9 @@
 //     Instead, text notes are run through the same inline markdown parser
 //     the app renders them with, so [text](url) becomes a real hyperlink
 //     (and **bold** / *italic* carry over) rather than raw markdown.
+//     Line breaks and "- " bullet lists in a note are kept the same way.
+//   - Topic details (prep notes on the agenda item) are rendered under the
+//     topic header, before the recorded notes, as on the Minutes page.
 //   - makeSeconderParagraph is skipped when a motion has no seconder, since
 //     our motion form treats the seconder as optional.
 //   - makeCallToOrderParagraph and the Session type both tolerate a meeting
@@ -45,7 +48,7 @@ import {
   TopicHeaderCellShading,
 } from "./style";
 import { stripTrailingPeriod } from "../util/actionItems";
-import { parseInlineMarkdown } from "../util/markdown";
+import { parseInlineMarkdown, parseMarkdownBlocks } from "../util/markdown";
 
 const isTextNote = (note: Topic["notes"][number]): note is TextNote => note.type === "text";
 const isActionItemNote = (note: Topic["notes"][number]): note is ActionItemNote =>
@@ -261,12 +264,37 @@ const makeMarkdownRuns = (text: string): (TextRun | ExternalHyperlink)[] =>
     }
   });
 
-const makeTextNoteParagraphs = (note: TextNote): Paragraph[] => [
-  new Paragraph({
-    children: makeMarkdownRuns(note.text),
-    style: "NoteFinalLine",
-  }),
-];
+// One paragraph per markdown block, with line breaks kept inside a block
+// and list items as bullets. Every paragraph block - and the last item of
+// each list - gets NoteFinalLine's after-spacing so blocks stay visually
+// separate.
+const makeMarkdownParagraphs = (text: string): Paragraph[] =>
+  parseMarkdownBlocks(text).flatMap((block) => {
+    if (block.type === "paragraph") {
+      return [
+        new Paragraph({
+          children: block.lines.flatMap((line, i) => [
+            ...(i > 0 ? [new TextRun({ break: 1 })] : []),
+            ...makeMarkdownRuns(line),
+          ]),
+          style: "NoteFinalLine",
+        }),
+      ];
+    }
+    return block.items.map(
+      (item, i) =>
+        new Paragraph({
+          children: makeMarkdownRuns(item),
+          bullet: { level: 0 },
+          // Set directly rather than via NoteFinalLine, since docx forces
+          // bullets onto its own ListParagraph style.
+          ...(i === block.items.length - 1 ? { spacing: { after: 200 } } : {}),
+        })
+    );
+  });
+
+const makeTextNoteParagraphs = (note: TextNote): Paragraph[] =>
+  makeMarkdownParagraphs(note.text);
 
 type ActionItemNoteOrPastActionItem = {
   assignee: Person;
@@ -416,6 +444,9 @@ const makeMotionParagraphs = (note: MotionNote): Paragraph[] => {
 };
 
 const makeTopicBody = (topic: Topic): Paragraph[] => {
+  const detailParagraphs = topic.details?.trim()
+    ? makeMarkdownParagraphs(topic.details)
+    : [];
   const noteParagraphs = topic.notes.flatMap((note) => {
     if (isTextNote(note)) {
       return makeTextNoteParagraphs(note);
@@ -425,10 +456,11 @@ const makeTopicBody = (topic: Topic): Paragraph[] => {
       return makeMotionParagraphs(note);
     }
   });
-  if (noteParagraphs.length === 0) {
+  const bodyParagraphs = [...detailParagraphs, ...noteParagraphs];
+  if (bodyParagraphs.length === 0) {
     return [emptyLine()];
   } else {
-    return noteParagraphs;
+    return bodyParagraphs;
   }
 };
 

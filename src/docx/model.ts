@@ -89,6 +89,10 @@ export type Topic = {
   startTime: Date;
   durationMinutes?: number;
   leader?: Person;
+  // Deviation: not present in minutes-taker. prepare-to-board topics carry
+  // optional prep "details" (multi-line markdown), shown under the topic
+  // header ahead of the recorded notes, matching the Minutes page.
+  details?: string;
 };
 
 export type Note = TextNote | ActionItemNote | MotionNote;
