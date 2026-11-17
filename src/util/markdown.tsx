@@ -85,43 +85,32 @@ export function renderMarkdown(text: string): ReactNode[] {
 
 const bulletListItemPattern = /^\s*[-*]\s+(.+)$/;
 
+export type MarkdownBlock =
+  | { type: "paragraph"; lines: string[] }
+  | { type: "list"; items: string[] };
+
 /**
- * Renders multi-line markdown text, in addition to the inline styles
- * handled by renderMarkdown: consecutive lines starting with "- " or "* "
- * become a bulleted list, blank lines separate blocks, and other
- * consecutive lines are joined into a paragraph with line breaks between
- * them. Not a full markdown parser — just enough structure for prep notes.
+ * Splits multi-line markdown text into blocks: consecutive lines starting
+ * with "- " or "* " become a bulleted list, blank lines separate blocks,
+ * and other consecutive lines are grouped into a paragraph (one entry per
+ * line, so callers can put line breaks between them). Not a full markdown
+ * parser — just enough structure for prep notes. Shared by the on-screen
+ * renderer and the Word export.
  */
-export function renderMarkdownBlocks(text: string): ReactNode[] {
-  const blocks: ReactNode[] = [];
+export function parseMarkdownBlocks(text: string): MarkdownBlock[] {
+  const blocks: MarkdownBlock[] = [];
   let paragraphLines: string[] = [];
   let listItems: string[] = [];
-  let blockKey = 0;
 
   const flushParagraph = () => {
     if (paragraphLines.length === 0) return;
-    blocks.push(
-      <p key={`p-${blockKey++}`}>
-        {paragraphLines.map((line, i) => (
-          <React.Fragment key={i}>
-            {i > 0 && <br />}
-            {renderMarkdown(line)}
-          </React.Fragment>
-        ))}
-      </p>
-    );
+    blocks.push({ type: "paragraph", lines: paragraphLines });
     paragraphLines = [];
   };
 
   const flushList = () => {
     if (listItems.length === 0) return;
-    blocks.push(
-      <ul key={`ul-${blockKey++}`}>
-        {listItems.map((item, i) => (
-          <li key={i}>{renderMarkdown(item)}</li>
-        ))}
-      </ul>
-    );
+    blocks.push({ type: "list", items: listItems });
     listItems = [];
   };
 
@@ -142,4 +131,29 @@ export function renderMarkdownBlocks(text: string): ReactNode[] {
   flushList();
 
   return blocks;
+}
+
+/**
+ * Renders multi-line markdown text (see parseMarkdownBlocks), with each
+ * line's inline styles handled by renderMarkdown.
+ */
+export function renderMarkdownBlocks(text: string): ReactNode[] {
+  return parseMarkdownBlocks(text).map((block, blockKey) =>
+    block.type === "paragraph" ? (
+      <p key={`p-${blockKey}`}>
+        {block.lines.map((line, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <br />}
+            {renderMarkdown(line)}
+          </React.Fragment>
+        ))}
+      </p>
+    ) : (
+      <ul key={`ul-${blockKey}`}>
+        {block.items.map((item, i) => (
+          <li key={i}>{renderMarkdown(item)}</li>
+        ))}
+      </ul>
+    )
+  );
 }

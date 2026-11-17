@@ -270,6 +270,7 @@ export const mapMeetingToSession = (
       notes,
       startTime: topicStart,
       durationMinutes: minute.durationMinutes,
+      details: minute.topic?.details,
     };
   });
 
