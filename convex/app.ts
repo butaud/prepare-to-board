@@ -503,6 +503,215 @@ export const me = query({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Per-screen queries. These replace the all-in-one `me` query above, which
+// returned every meeting's full minutes for every organization and so was
+// re-run and re-sent to every open browser on any change to any meeting.
+// `me` is kept only so tabs still running the previous frontend keep
+// working during rollout - delete it once that version is gone.
+//
+// Everything below except `account` is scoped to the user's selected
+// organization and takes no organization argument, so the client can
+// subscribe to all of them at once instead of waiting for `account` to learn
+// the organization id first.
+// ---------------------------------------------------------------------------
+
+// Mirrors `me`'s choice of selected organization: the user's saved
+// selection if they're still a member of it, otherwise their first
+// membership whose organization still exists.
+const resolveSelectedOrganization = async (ctx: QueryCtx) => {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) return null;
+  const user = await getCurrentUser(ctx);
+  if (!user) return null;
+  const memberships = await ctx.db
+    .query("memberships")
+    .withIndex("by_user", (q) => q.eq("userId", user._id))
+    .collect();
+  const candidates = [
+    ...memberships.filter((m) => m.organizationId === user.selectedOrganizationId),
+    ...memberships.filter((m) => m.organizationId !== user.selectedOrganizationId),
+  ];
+  for (const membership of candidates) {
+    const organization = await ctx.db.get(membership.organizationId);
+    if (organization) return { user, membership, organization };
+  }
+  return null;
+};
+
+export const account = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const organizations = (
+      await Promise.all(
+        memberships.map(async (membership) => {
+          const org = await ctx.db.get(membership.organizationId);
+          return org ? { id: org._id, name: org.name, role: membership.role } : null;
+        })
+      )
+    ).filter((org) => org !== null);
+    const selected = await resolveSelectedOrganization(ctx);
+    return {
+      id: user._id,
+      profile: { name: user.name, title: user.title },
+      organizations,
+      selectedOrganizationId: selected?.organization._id,
+    };
+  },
+});
+
+// Roster, settings, committees and calendar for the selected organization:
+// everything `me` returned for it except the meetings.
+export const selectedOrganization = query({
+  args: {},
+  handler: async (ctx) => {
+    const selected = await resolveSelectedOrganization(ctx);
+    if (!selected) return null;
+    const org = selected.organization;
+    const [orgMemberships, boardMembers, calendarItems, committees] = await Promise.all([
+      ctx.db
+        .query("memberships")
+        .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+        .collect(),
+      ctx.db
+        .query("boardMembers")
+        .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+        .collect(),
+      ctx.db
+        .query("calendarItems")
+        .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+        .collect(),
+      ctx.db
+        .query("committees")
+        .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+        .collect(),
+    ]);
+    const memberUsers = await Promise.all(orgMemberships.map((m) => ctx.db.get(m.userId)));
+    return {
+      id: org._id,
+      name: org.name,
+      committeeDocUrl: org.committeeDocUrl,
+      calendarContextMonths: org.calendarContextMonths,
+      boardYearStartMonth: org.boardYearStartMonth,
+      memberships: orgMemberships.map((m, index) => ({
+        userId: m.userId,
+        role: m.role,
+        name: memberUsers[index]?.name ?? "Unknown User",
+      })),
+      members: boardMembers.map((m) => ({
+        id: m._id,
+        name: m.name,
+        email: m.email,
+        title: m.title,
+        salutation: m.salutation,
+        accountId: m.accountId,
+        type: m.type,
+      })),
+      calendarItems: calendarItems.map((c) => ({
+        id: c._id,
+        month: c.month,
+        text: c.text,
+        completedOn: c.completedOn,
+      })),
+      committees: committees.map((c) => ({ id: c._id, name: c.name, type: c.type })),
+    };
+  },
+});
+
+// One small row per meeting, for lists, the calendar, the Home page and
+// action item context. Full meeting content comes from `meeting` instead.
+export const meetingSummaries = query({
+  args: {},
+  handler: async (ctx) => {
+    const selected = await resolveSelectedOrganization(ctx);
+    if (!selected) return null;
+    const [meetings, meetingViews] = await Promise.all([
+      ctx.db
+        .query("meetings")
+        .withIndex("by_org", (q) => q.eq("organizationId", selected.organization._id))
+        .collect(),
+      ctx.db
+        .query("meetingViews")
+        .withIndex("by_user_meeting", (q) => q.eq("userId", selected.user._id))
+        .collect(),
+    ]);
+    const viewedAtByMeeting = new Map(meetingViews.map((view) => [view.meetingId, view.viewedAt]));
+    return meetings.map((meeting) => ({
+      id: meeting._id,
+      organizationId: meeting.organizationId,
+      date: meeting.date,
+      status: meeting.status,
+      title: meeting.title,
+      plannedTopicCount: meeting.plannedAgenda.length,
+      actionItemCount: meeting.minutes.reduce(
+        (sum, minute) =>
+          sum + (minute.notes ?? []).filter((note) => note.type === "action_item").length,
+        0
+      ),
+      liveStartTime: meeting.liveStartTime,
+      minutesDurationMinutes: meeting.minutes.reduce(
+        (sum, minute) => sum + minute.durationMinutes,
+        0
+      ),
+      agendaUpdatedAt: meeting.agendaUpdatedAt,
+      viewedAt: viewedAtByMeeting.get(meeting._id),
+      minutesPublishedAt: meeting.minutesPublishedAt,
+    }));
+  },
+});
+
+// Every action item recorded in the selected organization's minutes, with
+// just enough context to link back to where it lives. Still reads every
+// meeting until action items move into their own table, but only sends the
+// action items themselves.
+export const actionItems = query({
+  args: {},
+  handler: async (ctx) => {
+    const selected = await resolveSelectedOrganization(ctx);
+    if (!selected) return null;
+    const orgId = selected.organization._id;
+    const [meetings, members] = await Promise.all([
+      ctx.db
+        .query("meetings")
+        .withIndex("by_org", (q) => q.eq("organizationId", orgId))
+        .collect(),
+      ctx.db
+        .query("boardMembers")
+        .withIndex("by_org", (q) => q.eq("organizationId", orgId))
+        .collect(),
+    ]);
+    return meetings.flatMap((meeting) =>
+      meeting.minutes.flatMap((minute) =>
+        (minute.notes ?? [])
+          .filter((note) => note.type === "action_item")
+          .map((note) => {
+            const serialized = serializeNote(note, members);
+            return {
+              id: serialized.id,
+              type: "action_item" as const,
+              text: serialized.text,
+              assignee: serialized.assignee,
+              dueDate: serialized.dueDate,
+              completedOn: serialized.completedOn,
+              createdInMeetingId: serialized.createdInMeetingId,
+              meetingId: meeting._id,
+              minuteId: minute.id,
+              topicTitle: minute.topic.title,
+            };
+          })
+      )
+    );
+  },
+});
+
 export const meeting = query({
   args: { meetingId: v.id("meetings") },
   handler: async (ctx, args) => {
@@ -1757,14 +1966,33 @@ export const notifications = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .order("desc")
       .take(50);
-    return items.map((item) => ({
-      id: item._id,
-      type: item.type,
-      meetingId: item.meetingId,
-      message: item.message,
-      read: item.read,
-      createdAt: item._creationTime,
-    }));
+    // Include the meeting's date and status so the bell can label and link
+    // it without the client having every organization's meetings loaded -
+    // only for organizations the user still belongs to.
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    const memberOrgIds = new Set(memberships.map((m) => m.organizationId));
+    return await Promise.all(
+      items.map(async (item) => {
+        const meeting =
+          item.meetingId && memberOrgIds.has(item.organizationId)
+            ? await ctx.db.get(item.meetingId)
+            : null;
+        return {
+          id: item._id,
+          type: item.type,
+          meetingId: item.meetingId,
+          meeting: meeting
+            ? { id: meeting._id, date: meeting.date, status: meeting.status }
+            : undefined,
+          message: item.message,
+          read: item.read,
+          createdAt: item._creationTime,
+        };
+      })
+    );
   },
 });
 

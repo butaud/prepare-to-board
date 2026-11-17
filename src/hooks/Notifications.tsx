@@ -2,8 +2,9 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../convexClient";
 import { AppNotification } from "../schema";
 
-type ServerNotification = Omit<AppNotification, "createdAt"> & {
+type ServerNotification = Omit<AppNotification, "createdAt" | "meeting"> & {
   createdAt: number;
+  meeting?: Omit<NonNullable<AppNotification["meeting"]>, "date"> & { date: number };
 };
 
 export const useNotifications = () => {
@@ -17,6 +18,10 @@ export const useNotifications = () => {
     (notification) => ({
       ...notification,
       createdAt: new Date(notification.createdAt),
+      meeting: notification.meeting && {
+        ...notification.meeting,
+        date: new Date(notification.meeting.date),
+      },
     })
   );
 

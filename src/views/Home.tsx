@@ -3,19 +3,16 @@ import { CreateOrganization } from "../ui/forms/Organization";
 import {
   getUserProfileFormalName,
   isAgendaUpdatedSinceViewed,
-  type Meeting,
+  type MeetingSummary,
 } from "../schema";
 import { useLoadedAccount } from "../hooks/Account";
+import { useActionItems, useMeetingSummaries } from "../hooks/OrganizationData";
 import { ActionItemRow } from "../ui/ActionItemRow";
-import {
-  extractActionItems,
-  formatRelativeMeetingDate,
-  meetingLink,
-} from "../util/actionItems";
+import { formatRelativeMeetingDate, meetingLink } from "../util/actionItems";
 import "./Home.css";
 
-const StatusBadge = ({ status }: { status: Meeting["status"] }) => {
-  const labels: Record<Meeting["status"], string> = {
+const StatusBadge = ({ status }: { status: MeetingSummary["status"] }) => {
+  const labels: Record<MeetingSummary["status"], string> = {
     draft: "Draft",
     published: "Scheduled",
     live: "Live",
@@ -30,10 +27,10 @@ const MeetingCard = ({
   meeting,
   isLive,
 }: {
-  meeting: Meeting;
+  meeting: MeetingSummary;
   isLive?: boolean;
 }) => {
-  const topicCount = meeting.plannedAgenda.length;
+  const topicCount = meeting.plannedTopicCount;
   return (
     <Link
       to={meetingLink(meeting)}
@@ -59,6 +56,8 @@ const MeetingCard = ({
 
 export const Home = () => {
   const me = useLoadedAccount();
+  const meetingSummaries = useMeetingSummaries();
+  const actionItems = useActionItems();
 
   if (me.root?.organizations.length === 0) {
     return (
@@ -80,12 +79,13 @@ export const Home = () => {
   }
 
   const org = me.root.selectedOrganization;
+  const meetings = meetingSummaries ?? [];
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const liveMeeting = org.meetings.find((m) => m.status === "live");
+  const liveMeeting = meetings.find((m) => m.status === "live");
 
-  const upcomingMeetings = org.meetings
+  const upcomingMeetings = meetings
     .filter(
       (m) =>
         m.status !== "live" &&
@@ -95,7 +95,7 @@ export const Home = () => {
     .sort((a, b) => a.date.getTime() - b.date.getTime())
     .slice(0, 4);
 
-  const recentMeetings = org.meetings
+  const recentMeetings = meetings
     .filter((m) => m.status === "completed")
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .slice(0, 4);
@@ -105,7 +105,7 @@ export const Home = () => {
 
   const myBoardMember = org.members.find((m) => m.accountId === me.id);
   const isOfficer = me.canWrite(org);
-  const allActionItems = extractActionItems(org.meetings);
+  const allActionItems = actionItems ?? [];
 
   const myActionItems = myBoardMember
     ? allActionItems.filter((item) => item.assignee?.id === myBoardMember.id)
@@ -131,7 +131,8 @@ export const Home = () => {
       <div className="home-grid">
         <section className="home-section">
           <h3>Meetings</h3>
-          {!showMeetings && (
+          {meetingSummaries === undefined && <p className="empty-state">Loading...</p>}
+          {meetingSummaries !== undefined && !showMeetings && (
             <p className="empty-state">No upcoming or recent meetings.</p>
           )}
           {liveMeeting && (
@@ -163,7 +164,8 @@ export const Home = () => {
 
         <section className="home-section">
           <h3>Action Items</h3>
-          {!showActionItems && (
+          {actionItems === undefined && <p className="empty-state">Loading...</p>}
+          {actionItems !== undefined && !showActionItems && (
             <p className="empty-state">
               No action items from recent meetings.
             </p>
@@ -178,7 +180,7 @@ export const Home = () => {
                   canToggle
                   canEdit={false}
                   members={org.members}
-                  meetings={org.meetings}
+                  meetings={meetings}
                 />
               ))}
             </div>
@@ -193,7 +195,7 @@ export const Home = () => {
                   canToggle={isOfficer}
                   canEdit={false}
                   members={org.members}
-                  meetings={org.meetings}
+                  meetings={meetings}
                 />
               ))}
             </div>

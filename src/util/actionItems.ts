@@ -1,37 +1,17 @@
-import { type ActionItemNote, type Meeting } from "../schema";
+import { type ActionItemNote, type Meeting, type MeetingSummary } from "../schema";
 
 export type ActionItemWithContext = ActionItemNote & {
   /** The meeting whose minutes this item's note is physically stored under. */
-  meeting: Meeting;
+  meeting: MeetingSummary;
   /**
    * The meeting credited as this item's origin - normally the same as
    * `meeting`, but editable independently (e.g. correcting a
    * backdated/misfiled item) without moving the note itself. Falls back to
    * `meeting` for items recorded before this field existed.
    */
-  createdInMeeting: Meeting;
+  createdInMeeting: MeetingSummary;
   minuteId: string;
   topicTitle: string;
-};
-
-export const extractActionItems = (meetings: Meeting[]): ActionItemWithContext[] => {
-  const meetingsById = new Map(meetings.map((meeting) => [meeting.id, meeting]));
-  return meetings.flatMap((meeting) =>
-    meeting.minutes.flatMap((minute) =>
-      (minute.notes ?? [])
-        .filter((note): note is ActionItemNote => note.type === "action_item")
-        .map((note) => ({
-          ...note,
-          meeting,
-          createdInMeeting:
-            (note.createdInMeetingId
-              ? meetingsById.get(note.createdInMeetingId)
-              : undefined) ?? meeting,
-          minuteId: minute.id,
-          topicTitle: minute.topic.title,
-        }))
-    )
-  );
 };
 
 // Action item text is rendered as "<assignee> to <text>." (app and docx
@@ -51,7 +31,7 @@ export const formatActionItemSentence = (text: string): string => {
   return `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}.`;
 };
 
-export const meetingLink = (meeting: Meeting): string => {
+export const meetingLink = (meeting: Pick<Meeting, "id" | "status">): string => {
   if (meeting.status === "live") return `/meetings/${meeting.id}/present`;
   if (meeting.status === "completed") return `/meetings/${meeting.id}/minutes`;
   return `/meetings/${meeting.id}`;

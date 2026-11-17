@@ -6,13 +6,14 @@ import {
   Draggable,
   type DropResult,
 } from "@hello-pangea/dnd";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useMeeting } from "../../hooks/Meeting";
 import { useLoadedAccount } from "../../hooks/Account";
 import { usePlanAgendaEditMode } from "../../hooks/PlanAgendaEditMode";
 import { computeProjectedEndTime } from "../../util/data";
 import { renderMarkdownBlocks } from "../../util/markdown";
-import { Topic } from "../../schema";
+import { Meeting, Topic } from "../../schema";
+import { useMeetingSummaries } from "../../hooks/OrganizationData";
 import { api } from "../../convexClient";
 import { MeetingPresent } from "./MeetingPresent";
 import { PlanAgendaEditor } from "./PlanAgendaEditor";
@@ -55,9 +56,6 @@ export const MeetingView = () => {
   const skipTopic = useMutation(api.app.skipTopic);
   const updateExpectedDuration = useMutation(api.app.updateExpectedDuration);
   const updateMeetingDate = useMutation(api.app.updateMeetingDate);
-  const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(
-    new Set()
-  );
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -632,13 +630,6 @@ export const MeetingView = () => {
     void updateMeetingDate({ meetingId: meeting.id, date: picked.getTime() });
   };
 
-  const lastCompletedMeeting = [...(me.root.selectedOrganization?.meetings ?? [])]
-    .filter((candidate) => candidate.status === "completed")
-    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
-  const carryForwardTopics = (lastCompletedMeeting?.liveAgenda ?? []).filter(
-    (topic) => topic.deferred && !topic.cancelled
-  );
-
   const targetEndTimeControl = isOfficer ? (
     <label className="target-end-time-field">
       Target end time:
@@ -654,40 +645,7 @@ export const MeetingView = () => {
 
   const members = me.root.selectedOrganization.members;
 
-  const carryForwardSuggestions = isOfficer && carryForwardTopics.length > 0 && (
-    <div className="carry-forward-suggestions">
-      <h4>Carried forward from last meeting</h4>
-      <ul>
-        {carryForwardTopics.map((topic) => {
-          const added = carriedForwardIds.has(topic.id);
-          return (
-            <li key={topic.id}>
-              <span>
-                {topic.title}
-                {topic.durationMinutes ? ` (${topic.durationMinutes} min)` : ""}
-              </span>
-              <button
-                className="btn-small btn-secondary"
-                disabled={added}
-                onClick={() => {
-                  void addTopic({
-                    meetingId: meeting.id,
-                    list: "plannedAgenda",
-                    title: topic.title,
-                    durationMinutes: topic.durationMinutes,
-                  }).then(() => {
-                    setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
-                  });
-                }}
-              >
-                {added ? "Added" : "+ Add to agenda"}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
+  const carryForwardSuggestions = isOfficer && <CarryForwardSuggestions meeting={meeting} />;
 
   const agendaEditor = (
     <PlanAgendaEditor
@@ -754,6 +712,61 @@ export const MeetingView = () => {
         }
       />
       {agendaEditor}
+    </div>
+  );
+};
+
+// Deferred (not cancelled) topics from the most recent completed meeting,
+// offered as one-click additions to this meeting's agenda.
+const CarryForwardSuggestions = ({ meeting }: { meeting: Meeting }) => {
+  const addTopic = useMutation(api.app.addTopic);
+  const [carriedForwardIds, setCarriedForwardIds] = useState<Set<string>>(new Set());
+  const meetings = useMeetingSummaries();
+  const lastCompletedMeetingId = [...(meetings ?? [])]
+    .filter((candidate) => candidate.status === "completed")
+    .sort((a, b) => b.date.getTime() - a.date.getTime())[0]?.id;
+  const lastCompletedMeeting = useQuery(
+    api.app.meeting,
+    lastCompletedMeetingId ? { meetingId: lastCompletedMeetingId } : "skip"
+  ) as Pick<Meeting, "liveAgenda"> | null | undefined;
+  const carryForwardTopics = (lastCompletedMeeting?.liveAgenda ?? []).filter(
+    (topic) => topic.deferred && !topic.cancelled
+  );
+
+  if (carryForwardTopics.length === 0) return null;
+
+  return (
+    <div className="carry-forward-suggestions">
+      <h4>Carried forward from last meeting</h4>
+      <ul>
+        {carryForwardTopics.map((topic) => {
+          const added = carriedForwardIds.has(topic.id);
+          return (
+            <li key={topic.id}>
+              <span>
+                {topic.title}
+                {topic.durationMinutes ? ` (${topic.durationMinutes} min)` : ""}
+              </span>
+              <button
+                className="btn-small btn-secondary"
+                disabled={added}
+                onClick={() => {
+                  void addTopic({
+                    meetingId: meeting.id,
+                    list: "plannedAgenda",
+                    title: topic.title,
+                    durationMinutes: topic.durationMinutes,
+                  }).then(() => {
+                    setCarriedForwardIds((prev) => new Set(prev).add(topic.id));
+                  });
+                }}
+              >
+                {added ? "Added" : "+ Add to agenda"}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };

@@ -3,7 +3,8 @@ import { MdOutlinePersonOutline, MdOutlineGroup } from "react-icons/md";
 import { SubHeader } from "../ui/SubHeader";
 import { ActionItemRow } from "../ui/ActionItemRow";
 import { useLoadedAccount } from "../hooks/Account";
-import { extractActionItems, type ActionItemWithContext } from "../util/actionItems";
+import { type ActionItemWithContext } from "../util/actionItems";
+import { useActionItems, useMeetingSummaries } from "../hooks/OrganizationData";
 import "./ActionItems.css";
 
 type Filter = "mine" | "all";
@@ -20,6 +21,8 @@ const sortItems = (items: ActionItemWithContext[]): ActionItemWithContext[] =>
 export const ActionItems = () => {
   const me = useLoadedAccount();
   const [filter, setFilter] = useState<Filter>("mine");
+  const meetings = useMeetingSummaries();
+  const actionItems = useActionItems();
 
   const org = me.root?.selectedOrganization;
 
@@ -36,7 +39,7 @@ export const ActionItems = () => {
 
   const myBoardMember = org.members.find((m) => m.accountId === me.id);
   const isOfficer = me.canWrite(org);
-  const allItems = extractActionItems(org.meetings);
+  const allItems = actionItems ?? [];
 
   const visibleItems =
     filter === "mine" && myBoardMember
@@ -67,7 +70,9 @@ export const ActionItems = () => {
         ]}
       />
 
-      {sorted.length === 0 && (
+      {actionItems === undefined && <p className="empty-state">Loading...</p>}
+
+      {actionItems !== undefined && sorted.length === 0 && (
         <p className="empty-state">
           {filter === "mine"
             ? "No action items are assigned to you."
@@ -85,7 +90,7 @@ export const ActionItems = () => {
               canToggle={canToggle(item)}
               canEdit={isOfficer}
               members={org.members}
-              meetings={org.meetings}
+              meetings={meetings ?? []}
             />
           ))}
         </section>
@@ -101,7 +106,7 @@ export const ActionItems = () => {
               canToggle={canToggle(item)}
               canEdit={isOfficer}
               members={org.members}
-              meetings={org.meetings}
+              meetings={meetings ?? []}
             />
           ))}
         </section>

@@ -3,14 +3,15 @@ import { CreateMeetingDialog } from "../../ui/dialogs/CreateMeetingDialog";
 import { Link } from "react-router-dom";
 import { SlPlus } from "react-icons/sl";
 import { useLoadedAccount } from "../../hooks/Account";
+import { useMeetingSummaries } from "../../hooks/OrganizationData";
 import { SubHeader } from "../../ui/SubHeader";
 import { MeetingCalendar } from "./MeetingCalendar";
 import { MdFormatListBulleted } from "react-icons/md";
 import { IoCalendarOutline } from "react-icons/io5";
-import { isAgendaUpdatedSinceViewed, type Meeting } from "../../schema";
+import { isAgendaUpdatedSinceViewed, type MeetingSummary } from "../../schema";
 import "./MeetingList.css";
 
-const meetingLink = (meeting: Meeting): string => {
+const meetingLink = (meeting: MeetingSummary): string => {
   if (meeting.status === "live") return `/meetings/${meeting.id}/present`;
   if (meeting.status === "completed") return `/meetings/${meeting.id}/minutes`;
   return `/meetings/${meeting.id}`;
@@ -24,16 +25,8 @@ const formatDate = (date: Date): string =>
     year: "numeric",
   });
 
-const countActionItems = (meeting: Meeting): number =>
-  meeting.minutes.reduce(
-    (sum, minute) =>
-      sum +
-      (minute.notes ?? []).filter((n) => n.type === "action_item").length,
-    0
-  );
-
-const StatusBadge = ({ status }: { status: Meeting["status"] }) => {
-  const labels: Record<Meeting["status"], string> = {
+const StatusBadge = ({ status }: { status: MeetingSummary["status"] }) => {
+  const labels: Record<MeetingSummary["status"], string> = {
     draft: "Draft",
     published: "Scheduled",
     live: "Live",
@@ -44,10 +37,9 @@ const StatusBadge = ({ status }: { status: Meeting["status"] }) => {
   );
 };
 
-const MeetingCard = ({ meeting }: { meeting: Meeting }) => {
-  const topicCount = meeting.plannedAgenda.length;
-  const actionItemCount =
-    meeting.status === "completed" ? countActionItems(meeting) : 0;
+const MeetingCard = ({ meeting }: { meeting: MeetingSummary }) => {
+  const topicCount = meeting.plannedTopicCount;
+  const actionItemCount = meeting.status === "completed" ? meeting.actionItemCount : 0;
 
   return (
     <Link
@@ -77,10 +69,10 @@ const MeetingCard = ({ meeting }: { meeting: Meeting }) => {
 
 type Section = {
   label: string;
-  meetings: Meeting[];
+  meetings: MeetingSummary[];
 };
 
-const groupMeetings = (meetings: Meeting[]): Section[] => {
+const groupMeetings = (meetings: MeetingSummary[]): Section[] => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const thirtyDaysAgo = new Date(today);
@@ -121,6 +113,7 @@ export const MeetingList = () => {
   const [isCreateMeetingOpen, setCreateMeetingOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [view, setView] = useState<"list" | "calendar">("list");
+  const meetings = useMeetingSummaries();
 
   if (!me.root.selectedOrganization) {
     return <p>No organization selected</p>;
@@ -129,11 +122,13 @@ export const MeetingList = () => {
   const isOfficer =
     me?.root.selectedOrganization && me.canWrite(me.root.selectedOrganization);
 
+  if (meetings === undefined) {
+    return <p>Loading...</p>;
+  }
+
   const myMeetings = isOfficer
-    ? me.root.selectedOrganization.meetings
-    : me.root.selectedOrganization.meetings.filter(
-        (meeting) => meeting.status !== "draft"
-      );
+    ? meetings
+    : meetings.filter((meeting) => meeting.status !== "draft");
 
   const sections = groupMeetings(myMeetings);
 

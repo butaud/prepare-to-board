@@ -17,11 +17,17 @@ import {
   MdStopCircle,
 } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { PiListNumbersFill } from "react-icons/pi";
 import { LuNotepadText } from "react-icons/lu";
 import { api } from "../../convexClient";
 import { CloneMeetingDialog } from "../../ui/dialogs/CloneMeetingDialog";
+import {
+  joinActionItems,
+  toMeetingSummary,
+  type ServerActionItem,
+  type ServerMeetingSummary,
+} from "../../hooks/OrganizationData";
 
 import "./MeetingShared.css";
 
@@ -30,6 +36,7 @@ export const MeetingShared = () => {
   const { meeting, outlet } = useLoadMeetingFromParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const convex = useConvex();
   // The edit-agenda and edit-minutes pages each have their own URL rather
   // than being local component state, so they reopen on refresh and are
   // real, linkable/back-button-able pages instead of a transient toggle.
@@ -87,11 +94,18 @@ export const MeetingShared = () => {
     try {
       // Loaded on demand: the docx library is over a third of the app's
       // JavaScript and is only needed when someone actually exports.
-      const [{ exportSessionToDocx }, { mapMeetingToSession }] = await Promise.all([
-        import("../../docx/doc"),
-        import("../../docx/mapMeetingToSession"),
-      ]);
-      const session = mapMeetingToSession(meeting, organization);
+      // One-off reads rather than live subscriptions: the export only needs
+      // the organization's meetings and action items at the moment of export.
+      const [{ exportSessionToDocx }, { mapMeetingToSession }, serverMeetings, serverActionItems] =
+        await Promise.all([
+          import("../../docx/doc"),
+          import("../../docx/mapMeetingToSession"),
+          convex.query(api.app.meetingSummaries, {}) as Promise<ServerMeetingSummary[] | null>,
+          convex.query(api.app.actionItems, {}) as Promise<ServerActionItem[] | null>,
+        ]);
+      const meetings = (serverMeetings ?? []).map(toMeetingSummary);
+      const actionItems = joinActionItems(serverActionItems ?? [], meetings);
+      const session = mapMeetingToSession(meeting, organization, meetings, actionItems);
       const blob = await exportSessionToDocx(session);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
