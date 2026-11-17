@@ -3,6 +3,9 @@
 // document looks like minutes-taker's output. Deviations from the original
 // (all driven by real differences in our data model, not stylistic choices):
 //   - No LinkNote support: prepare-to-board doesn't have a link note type.
+//     Instead, text notes are run through the same inline markdown parser
+//     the app renders them with, so [text](url) becomes a real hyperlink
+//     (and **bold** / *italic* carry over) rather than raw markdown.
 //   - makeSeconderParagraph is skipped when a motion has no seconder, since
 //     our motion form treats the seconder as optional.
 //   - makeCallToOrderParagraph and the Session type both tolerate a meeting
@@ -12,6 +15,7 @@
 //     otherwise lastName holds the full name - see model.ts for why.
 import {
   Document,
+  ExternalHyperlink,
   Packer,
   Paragraph,
   TextRun,
@@ -41,6 +45,7 @@ import {
   TopicHeaderCellShading,
 } from "./style";
 import { stripTrailingPeriod } from "../util/actionItems";
+import { parseInlineMarkdown } from "../util/markdown";
 
 const isTextNote = (note: Topic["notes"][number]): note is TextNote => note.type === "text";
 const isActionItemNote = (note: Topic["notes"][number]): note is ActionItemNote =>
@@ -239,9 +244,26 @@ const makeTopicHeader = (topic: Topic): Table => {
   });
 };
 
+const makeMarkdownRuns = (text: string): (TextRun | ExternalHyperlink)[] =>
+  parseInlineMarkdown(text).map((token) => {
+    switch (token.type) {
+      case "text":
+        return new TextRun(token.text);
+      case "bold":
+        return new TextRun({ text: token.text, bold: true });
+      case "italic":
+        return new TextRun({ text: token.text, italics: true });
+      case "link":
+        return new ExternalHyperlink({
+          link: token.url,
+          children: [new TextRun({ text: token.text, style: "Hyperlink" })],
+        });
+    }
+  });
+
 const makeTextNoteParagraphs = (note: TextNote): Paragraph[] => [
   new Paragraph({
-    children: [new TextRun(note.text)],
+    children: makeMarkdownRuns(note.text),
     style: "NoteFinalLine",
   }),
 ];

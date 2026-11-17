@@ -2,11 +2,18 @@ import React from "react";
 
 type ReactNode = React.ReactNode;
 
-export function renderMarkdown(text: string): ReactNode[] {
-  // Parse the string into React nodes handling **bold**, *italic*, _italic_, [text](url)
-  const nodes: ReactNode[] = [];
+export type InlineMarkdownToken =
+  | { type: "text"; text: string }
+  | { type: "bold"; text: string }
+  | { type: "italic"; text: string }
+  | { type: "link"; text: string; url: string };
+
+// Splits a single line into inline tokens for **bold**, *italic*, _italic_,
+// and [text](url). Shared by the on-screen renderer and the Word export so
+// both interpret note text identically.
+export function parseInlineMarkdown(text: string): InlineMarkdownToken[] {
+  const tokens: InlineMarkdownToken[] = [];
   let remaining = text;
-  let keyIdx = 0;
 
   while (remaining.length > 0) {
     // Try bold: **text**
@@ -25,7 +32,7 @@ export function renderMarkdown(text: string): ReactNode[] {
     if (linkMatch) candidates.push({ prefixLen: linkMatch[1].length, type: "link", match: linkMatch });
 
     if (candidates.length === 0) {
-      nodes.push(remaining);
+      tokens.push({ type: "text", text: remaining });
       break;
     }
 
@@ -34,31 +41,46 @@ export function renderMarkdown(text: string): ReactNode[] {
     const { prefixLen, type, match } = winner;
 
     if (prefixLen > 0) {
-      nodes.push(match[1]);
+      tokens.push({ type: "text", text: match[1] });
     }
 
     if (type === "bold") {
-      nodes.push(<strong key={keyIdx++}>{match[2]}</strong>);
+      tokens.push({ type: "bold", text: match[2] });
       remaining = remaining.slice(prefixLen + match[2].length + 4);
     } else if (type === "italic-star") {
-      nodes.push(<em key={keyIdx++}>{match[2]}</em>);
+      tokens.push({ type: "italic", text: match[2] });
       remaining = remaining.slice(prefixLen + match[2].length + 2);
     } else if (type === "italic-under") {
-      nodes.push(<em key={keyIdx++}>{match[2]}</em>);
+      tokens.push({ type: "italic", text: match[2] });
       remaining = remaining.slice(prefixLen + match[2].length + 2);
     } else if (type === "link") {
       const url = match[3];
       const linkText = match[2];
-      nodes.push(
-        <a key={keyIdx++} href={url} target="_blank" rel="noopener noreferrer">
-          {linkText}
-        </a>
-      );
+      tokens.push({ type: "link", text: linkText, url });
       remaining = remaining.slice(prefixLen + 1 + linkText.length + 2 + url.length + 1);
     }
   }
 
-  return nodes;
+  return tokens;
+}
+
+export function renderMarkdown(text: string): ReactNode[] {
+  return parseInlineMarkdown(text).map((token, keyIdx) => {
+    switch (token.type) {
+      case "text":
+        return token.text;
+      case "bold":
+        return <strong key={keyIdx}>{token.text}</strong>;
+      case "italic":
+        return <em key={keyIdx}>{token.text}</em>;
+      case "link":
+        return (
+          <a key={keyIdx} href={token.url} target="_blank" rel="noopener noreferrer">
+            {token.text}
+          </a>
+        );
+    }
+  });
 }
 
 const bulletListItemPattern = /^\s*[-*]\s+(.+)$/;
